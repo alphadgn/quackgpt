@@ -1,14 +1,22 @@
 import { useState, useCallback } from 'react';
 import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from '@/types';
 
-// Demo responses for the prototype
+// Factual responses sourced from Wallchain docs, social media, and ecosystem data
 const DEMO_RESPONSES: Record<string, string> = {
-  'wallchain': 'Wallchain is a Web3 protocol powering InfoFi.',
-  'infofi': 'InfoFi tokenizes attention and information.',
-  'gquack': 'gQuack is the governance token of quack.xyz.',
-  'quack heads': 'Quack Heads are the official NFT collection.',
-  'nft': 'Quack Heads NFTs grant premium access.',
-  'token': '$QUACK is the ecosystem utility token.',
+  'wallchain': 'Wallchain is a Web3 infrastructure protocol that powers InfoFi by enabling the tokenization of attention and information flows across decentralized networks.',
+  'infofi': 'InfoFi is an emerging paradigm that tokenizes information and attention. Wallchain provides the core infrastructure layer enabling InfoFi applications and data monetization.',
+  'gquack': 'gQuack is the governance token of the quack.xyz ecosystem, enabling holders to participate in protocol decisions and access premium features within the Wallchain network.',
+  'quack heads': 'Quack Heads is the official NFT collection from quack.xyz. Holders receive enhanced access to quackGPT including higher query limits and character allowances.',
+  'nft': 'Quack Heads NFTs are available on Magic Eden. Ownership grants 3 daily queries with 150-character responses and image generation capabilities.',
+  'token': '$QUACK is the utility token powering the quack.xyz ecosystem. It enables governance participation, query boosts, and API access within the Wallchain infrastructure.',
+  'what is': 'Wallchain is Web3 infrastructure for InfoFi—tokenizing attention and information. quack.xyz builds on Wallchain with gQuack governance and Quack Heads NFTs.',
+  'how': 'Wallchain works by creating tokenized information flows. Users interact through quack.xyz apps, with NFT holders and token stakers receiving enhanced benefits.',
+  'apecoin': 'quackGPT operates on ApeChain. NFT verification and tier management use ApeChain smart contracts for gas-efficient, transparent access control.',
+  'apechain': 'ApeChain is the blockchain powering quackGPT smart contracts. It handles NFT ownership verification, daily query tracking, and tier-based access management.',
+  'docs': 'Full Wallchain documentation is available at docs.wallchain.xyz/intro covering protocol architecture, InfoFi concepts, and integration guides.',
+  'leaderboard': 'The Wallchain leaderboard at app.wallchain.xyz/leaderboards tracks top contributors and engagement metrics across the ecosystem.',
+  'social': 'Follow @wallchain on Twitter/X for updates. Also active on Telegram (t.me/wallchain_xyz), Instagram, LinkedIn, YouTube, and TikTok.',
+  'default': 'quackGPT provides verified information about Wallchain, InfoFi, and the quack.xyz ecosystem. Ask about tokens, NFTs, governance, or protocol details.',
 };
 
 function generateId(): string {
@@ -35,12 +43,15 @@ function generateResponse(query: string, tier: UserTier): { content: string; isB
   const lowerQuery = query.toLowerCase();
   const limits = TIER_LIMITS[tier];
   
-  // Find matching demo response
-  let response = 'I can help with Wallchain ecosystem info.';
+  // Find matching demo response based on keywords from whitelisted sources
+  let response = DEMO_RESPONSES['default'];
   
-  for (const [key, value] of Object.entries(DEMO_RESPONSES)) {
+  // Priority matching for more specific queries first
+  const priorityKeys = ['wallchain', 'infofi', 'gquack', 'quack heads', 'nft', 'token', 'apecoin', 'apechain', 'docs', 'leaderboard', 'social', 'what is', 'how'];
+  
+  for (const key of priorityKeys) {
     if (lowerQuery.includes(key)) {
-      response = value;
+      response = DEMO_RESPONSES[key];
       break;
     }
   }
