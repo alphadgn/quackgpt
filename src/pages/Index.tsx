@@ -1,12 +1,77 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { WelcomeScreen } from "@/components/WelcomeScreen";
+import { ChatInput } from "@/components/ChatInput";
+import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
+import { useChat } from "@/hooks/useChat";
+import { UserTier } from "@/types";
 
 const Index = () => {
+  // Demo state - in production this would come from auth
+  const [tier] = useState<UserTier>('free');
+  const [isLoggedIn] = useState(false);
+  
+  const { 
+    messages, 
+    isTyping, 
+    queriesRemaining, 
+    sendMessage 
+  } = useChat(tier);
+
+  const handleLogin = () => {
+    // TODO: Implement auth
+    console.log('Login clicked');
+  };
+
+  const handleConnectWallet = () => {
+    // TODO: Implement wallet connection
+    console.log('Connect wallet clicked');
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header 
+        tier={tier}
+        isLoggedIn={isLoggedIn}
+        onLogin={handleLogin}
+        onConnectWallet={handleConnectWallet}
+      />
+      
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+        {/* Chat area */}
+        <div className="flex-1 overflow-y-auto">
+          {messages.length === 0 ? (
+            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} />
+          ) : (
+            <div className="divide-y divide-border/30">
+              {messages.map((message) => (
+                <ChatMessage key={message.id} message={message} />
+              ))}
+              {isTyping && <TypingIndicator />}
+            </div>
+          )}
+        </div>
+        
+        {/* Input area */}
+        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
+          <ChatInput
+            onSend={sendMessage}
+            disabled={isTyping}
+            tier={tier}
+            queriesRemaining={queriesRemaining}
+            className="max-w-3xl mx-auto"
+          />
+          
+          {/* Disclaimer */}
+          <p className="text-center text-xs text-muted-foreground mt-4 max-w-xl mx-auto">
+            quackGPT provides information only. Not financial advice. 
+            Data sourced from official Wallchain channels.
+          </p>
+        </div>
+      </main>
+      
+      <Footer />
     </div>
   );
 };
