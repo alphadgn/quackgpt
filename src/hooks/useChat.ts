@@ -1,24 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from '@/types';
 
-// Factual responses sourced from Wallchain docs, social media, and ecosystem data
-const DEMO_RESPONSES: Record<string, string> = {
-  'wallchain': 'Wallchain is a Web3 infrastructure protocol that powers InfoFi by enabling the tokenization of attention and information flows across decentralized networks.',
-  'infofi': 'InfoFi is an emerging paradigm that tokenizes information and attention. Wallchain provides the core infrastructure layer enabling InfoFi applications and data monetization.',
-  'gquack': 'gQuack is the governance token of the quack.xyz ecosystem, enabling holders to participate in protocol decisions and access premium features within the Wallchain network.',
-  'quack heads': 'Quack Heads is the official NFT collection from quack.xyz. Holders receive enhanced access to quackGPT including higher query limits and character allowances.',
-  'nft': 'Quack Heads NFTs are available on Magic Eden. Ownership grants 3 daily queries with 150-character responses and image generation capabilities.',
-  'token': '$QUACK is the utility token powering the quack.xyz ecosystem. It enables governance participation, query boosts, and API access within the Wallchain infrastructure.',
-  'what is': 'Wallchain is Web3 infrastructure for InfoFi—tokenizing attention and information. quack.xyz builds on Wallchain with gQuack governance and Quack Heads NFTs.',
-  'how': 'Wallchain works by creating tokenized information flows. Users interact through quack.xyz apps, with NFT holders and token stakers receiving enhanced benefits.',
-  'apecoin': 'quackGPT operates on ApeChain. NFT verification and tier management use ApeChain smart contracts for gas-efficient, transparent access control.',
-  'apechain': 'ApeChain is the blockchain powering quackGPT smart contracts. It handles NFT ownership verification, daily query tracking, and tier-based access management.',
-  'docs': 'Full Wallchain documentation is available at docs.wallchain.xyz/intro covering protocol architecture, InfoFi concepts, and integration guides.',
-  'leaderboard': 'The Wallchain leaderboard at app.wallchain.xyz/leaderboards tracks top contributors and engagement metrics across the ecosystem.',
-  'social': 'Follow @wallchain on Twitter/X for updates. Also active on Telegram (t.me/wallchain_xyz), Instagram, LinkedIn, YouTube, and TikTok.',
-  'default': 'quackGPT provides verified information about Wallchain, InfoFi, and the quack.xyz ecosystem. Ask about tokens, NFTs, governance, or protocol details.',
-};
-
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
@@ -30,39 +12,8 @@ function isContentCreationRequest(text: string): boolean {
   );
 }
 
-function generateResponse(query: string, tier: UserTier): { content: string; isBlocked: boolean; blockReason?: string } {
-  // Check for content creation requests
-  if (isContentCreationRequest(query)) {
-    return {
-      content: '',
-      isBlocked: true,
-      blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from verified sources.',
-    };
-  }
-  
-  const lowerQuery = query.toLowerCase();
-  const limits = TIER_LIMITS[tier];
-  
-  // Find matching demo response based on keywords from whitelisted sources
-  let response = DEMO_RESPONSES['default'];
-  
-  // Priority matching for more specific queries first
-  const priorityKeys = ['wallchain', 'infofi', 'gquack', 'quack heads', 'nft', 'token', 'apecoin', 'apechain', 'docs', 'leaderboard', 'social', 'what is', 'how'];
-  
-  for (const key of priorityKeys) {
-    if (lowerQuery.includes(key)) {
-      response = DEMO_RESPONSES[key];
-      break;
-    }
-  }
-  
-  // Truncate to character limit
-  if (response.length > limits.maxCharacters) {
-    response = response.substring(0, limits.maxCharacters - 3) + '...';
-  }
-  
-  return { content: response, isBlocked: false };
-}
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
 
 export function useChat(tier: UserTier) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -75,6 +26,28 @@ export function useChat(tier: UserTier) {
   const sendMessage = useCallback(async (content: string) => {
     if (queriesRemaining <= 0) return;
     
+    // Check for content creation requests
+    if (isContentCreationRequest(content)) {
+      const userMessage: Message = {
+        id: generateId(),
+        role: 'user',
+        content,
+        timestamp: new Date(),
+      };
+      
+      const blockedMessage: Message = {
+        id: generateId(),
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        isBlocked: true,
+        blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from verified sources.',
+      };
+      
+      setMessages(prev => [...prev, userMessage, blockedMessage]);
+      return;
+    }
+    
     // Add user message
     const userMessage: Message = {
       id: generateId(),
@@ -86,29 +59,148 @@ export function useChat(tier: UserTier) {
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
-    
-    // Generate response
-    const { content: responseContent, isBlocked, blockReason } = generateResponse(content, tier);
-    
-    const assistantMessage: Message = {
-      id: generateId(),
-      role: 'assistant',
-      content: responseContent,
-      timestamp: new Date(),
-      isBlocked,
-      blockReason,
-    };
-    
-    setMessages(prev => [...prev, assistantMessage]);
-    setIsTyping(false);
-    
-    // Increment query count (blocked messages don't count)
-    if (!isBlocked) {
+    try {
+      // First, try to scrape relevant context from whitelisted sources
+      let context = '';
+      try {
+        const scrapeResponse = await fetch(SCRAPE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ query: content }),
+        });
+        
+        if (scrapeResponse.ok) {
+          const scrapeData = await scrapeResponse.json();
+          if (scrapeData.success && scrapeData.context) {
+            context = scrapeData.context;
+          }
+        }
+      } catch (scrapeError) {
+        console.log('Scraping skipped:', scrapeError);
+      }
+      
+      // Prepare chat history for AI
+      const chatHistory = messages.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }));
+      
+      // Stream AI response
+      const response = await fetch(CHAT_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          messages: [...chatHistory, { role: 'user', content }],
+          context,
+          maxCharacters: limits.maxCharacters,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get response');
+      }
+      
+      if (!response.body) {
+        throw new Error('No response body');
+      }
+      
+      // Stream and parse response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantContent = '';
+      let textBuffer = '';
+      
+      // Create assistant message placeholder
+      const assistantId = generateId();
+      setMessages(prev => [...prev, {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      }]);
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        textBuffer += decoder.decode(value, { stream: true });
+        
+        // Process SSE lines
+        let newlineIndex: number;
+        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+          let line = textBuffer.slice(0, newlineIndex);
+          textBuffer = textBuffer.slice(newlineIndex + 1);
+          
+          if (line.endsWith('\r')) line = line.slice(0, -1);
+          if (line.startsWith(':') || line.trim() === '') continue;
+          if (!line.startsWith('data: ')) continue;
+          
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === '[DONE]') break;
+          
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const deltaContent = parsed.choices?.[0]?.delta?.content;
+            if (deltaContent) {
+              assistantContent += deltaContent;
+              
+              // Enforce character limit
+              let displayContent = assistantContent;
+              if (displayContent.length > limits.maxCharacters) {
+                displayContent = displayContent.substring(0, limits.maxCharacters);
+              }
+              
+              setMessages(prev => 
+                prev.map(msg => 
+                  msg.id === assistantId 
+                    ? { ...msg, content: displayContent }
+                    : msg
+                )
+              );
+            }
+          } catch {
+            // Partial JSON, continue buffering
+          }
+        }
+      }
+      
+      // Final truncation to ensure limit
+      let finalContent = assistantContent;
+      if (finalContent.length > limits.maxCharacters) {
+        finalContent = finalContent.substring(0, limits.maxCharacters);
+      }
+      
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === assistantId 
+            ? { ...msg, content: finalContent }
+            : msg
+        )
+      );
+      
       setQueriesUsedToday(prev => prev + 1);
+      
+    } catch (error) {
+      console.error('Chat error:', error);
+      
+      // Add error message
+      setMessages(prev => [...prev, {
+        id: generateId(),
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsTyping(false);
     }
-  }, [tier, queriesRemaining]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
