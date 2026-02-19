@@ -169,6 +169,14 @@
   .animate-slide-up {
     animation: slide-up 0.5s ease-out forwards;
   }
+
+  .animate-search-glow {
+    animation: search-glow 2.5s ease-in-out infinite;
+  }
+
+  .animate-search-text-pulse {
+    animation: search-text-pulse 3s ease-in-out infinite;
+  }
 }
 
 @keyframes float {
@@ -195,6 +203,22 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes search-glow {
+  0%, 100% { 
+    box-shadow: 0 0 8px hsl(42 92% 58% / 0.2), 0 0 20px hsl(42 92% 58% / 0.1);
+    border-color: hsl(42 92% 58% / 0.3);
+  }
+  50% { 
+    box-shadow: 0 0 16px hsl(42 92% 58% / 0.4), 0 0 40px hsl(42 92% 58% / 0.2);
+    border-color: hsl(42 92% 58% / 0.6);
+  }
+}
+
+@keyframes search-text-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
 }
 
 /* Scrollbar styling */

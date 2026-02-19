@@ -89,7 +89,7 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
         "relative flex items-end gap-2 p-2 rounded-2xl border transition-all duration-300",
         isBlocked || isOnCooldown
           ? "border-destructive/50 bg-destructive/5" 
-          : "border-border/50 bg-secondary/30 focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)]"
+          : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
       )}>
         <textarea
           ref={textareaRef}
@@ -106,7 +106,7 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           disabled={isDisabled}
           rows={1}
           className={cn(
-            "flex-1 bg-transparent resize-none border-0 outline-none text-foreground placeholder:text-muted-foreground px-3 py-2 max-h-[200px] text-sm leading-relaxed",
+            "flex-1 bg-transparent resize-none border-0 outline-none text-foreground placeholder:text-primary/50 placeholder:animate-search-text-pulse px-3 py-2 max-h-[200px] text-sm leading-relaxed",
             isDisabled && "opacity-50 cursor-not-allowed"
           )}
         />
