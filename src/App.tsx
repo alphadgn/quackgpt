@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import AIDisclosure from "./pages/AIDisclosure";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/ai-disclosure" element={<AIDisclosure />} />
+          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

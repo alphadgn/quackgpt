@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { UserTier } from "@/types";
-import { Wallet, LogIn, LogOut, Menu, Loader2, Plus } from "lucide-react";
+import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface LinkedWallet {
@@ -28,7 +29,23 @@ function shortenAddress(address: string) {
 }
 
 export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet }: HeaderProps) {
+  const [showNotification, setShowNotification] = useState(false);
+
   return (
+    <>
+      {/* Dismissible notification */}
+      {showNotification && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm p-4" onClick={() => setShowNotification(false)}>
+          <div className="relative max-w-md w-full rounded-xl border border-primary/30 bg-card p-6 shadow-lg glow-primary" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowNotification(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <p className="text-sm text-foreground leading-relaxed pr-6">
+              We are the deep Quack State anti slop crime fighters. We hope you'll help us to continue our mission of proof of humanity and protecting the integrity of information dissemination from becoming a slop wasteland.
+            </p>
+          </div>
+        </div>
+      )}
     <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo */}
@@ -108,6 +125,12 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                 </span>
               )}
               
+              <Link to="/settings">
+                <Button variant="ghost" size="icon-sm" title="Settings">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </Link>
+              
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -128,12 +151,13 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
             </Button>
           )}
           
-          {/* Mobile menu */}
-          <Button variant="ghost" size="icon-sm" className="sm:hidden">
+          {/* Menu button */}
+          <Button variant="ghost" size="icon-sm" onClick={() => setShowNotification(true)}>
             <Menu className="w-5 h-5" />
           </Button>
         </div>
       </div>
     </header>
+    </>
   );
 }

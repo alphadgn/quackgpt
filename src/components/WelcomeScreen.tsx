@@ -93,12 +93,12 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         </div>
       ) : (
         <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">Sign in to start asking questions</p>
+          <p className="text-sm text-muted-foreground mb-4">Create a free account</p>
           <button 
             onClick={onLogin}
             className="px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
           >
-            Sign In to Get Started
+            Sign in to Quack check
           </button>
         </div>
       )}
