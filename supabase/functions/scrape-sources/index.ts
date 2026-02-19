@@ -6,10 +6,12 @@ const corsHeaders = {
 };
 
 // Expanded whitelisted sources
+// Wallchain NFT collection = Quack Heads NFT collection
 const SCRAPE_URLS = [
   "https://docs.wallchain.xyz/intro",
   "https://news.wallchain.xyz/",
   "https://app.wallchain.xyz/leaderboards",
+  "https://app.wallchain.xyz/",
   "https://wallchain.notion.site",
 ];
 
