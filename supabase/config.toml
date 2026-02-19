@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.scrape-sources]
 verify_jwt = false
+
+[functions.verify-nft]
+verify_jwt = false

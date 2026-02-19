@@ -1,19 +1,59 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { UserTier } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 export function useAuth() {
   const { ready, authenticated, user, login, logout } = usePrivy();
   const { address, isConnected } = useAccount();
+  const [isNftHolder, setIsNftHolder] = useState(false);
+  const [nftCheckLoading, setNftCheckLoading] = useState(false);
+
+  // Get Solana wallet address from Privy user
+  const solanaAddress = useMemo(() => {
+    if (!user) return undefined;
+    const solanaWallet = user.linkedAccounts?.find(
+      (account: any) => account.type === 'wallet' && account.chainType === 'solana'
+    );
+    return (solanaWallet as any)?.address;
+  }, [user]);
+
+  // Verify Quack Heads NFT ownership on Solana
+  useEffect(() => {
+    if (!authenticated || !solanaAddress) {
+      setIsNftHolder(false);
+      return;
+    }
+
+    let cancelled = false;
+    setNftCheckLoading(true);
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('verify-nft', {
+          body: { walletAddress: solanaAddress },
+        });
+
+        if (!cancelled) {
+          setIsNftHolder(data?.isHolder === true);
+        }
+      } catch (err) {
+        console.error('NFT verification failed:', err);
+        if (!cancelled) setIsNftHolder(false);
+      } finally {
+        if (!cancelled) setNftCheckLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [authenticated, solanaAddress]);
 
   const tier: UserTier = useMemo(() => {
     if (!authenticated) return 'free';
-    // TODO: Check on-chain for Quack Heads NFT ownership
-    // For now, connected wallet = nft_holder tier as placeholder
-    if (isConnected && address) return 'nft_holder';
+    if (isNftHolder) return 'nft_holder';
     return 'paid';
-  }, [authenticated, isConnected, address]);
+  }, [authenticated, isNftHolder]);
 
   return {
     ready,
@@ -22,8 +62,10 @@ export function useAuth() {
     login,
     logout,
     walletAddress: address,
+    solanaAddress,
     isWalletConnected: isConnected,
     tier,
+    nftCheckLoading,
     email: user?.email?.address,
   };
 }
