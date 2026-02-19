@@ -3,10 +3,11 @@ import { Header } from "@/components/Header";
 import { TierBadge } from "@/components/TierBadge";
 import { Button } from "@/components/ui/button";
 import { TIER_LIMITS, UserTier } from "@/types";
-import { Wallet, ArrowLeft, Crown, Zap, Shield } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const tierInfo: Record<UserTier, { label: string; icon: typeof Crown; price: string }> = {
   free: { label: "Free", icon: Shield, price: "$0" },
@@ -21,7 +22,20 @@ function shortenAddress(address: string) {
 export default function Settings() {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user } = useAuth();
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
 
+  // Check for checkout success
+  useEffect(() => {
+    if (searchParams.get("checkout") === "success") {
+      toast.success("Subscription activated! Welcome to quackGPT Paid.");
+    }
+  }, [searchParams]);
+
+  // Fetch daily usage
   useEffect(() => {
     if (!user?.id) return;
     (async () => {
@@ -35,6 +49,78 @@ export default function Settings() {
       setQueriesUsedToday(data?.queries_used ?? 0);
     })();
   }, [user?.id]);
+
+  // Check subscription status
+  useEffect(() => {
+    if (!user?.id || !authenticated) return;
+    (async () => {
+      try {
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            "x-privy-user-id": user.id,
+          },
+        });
+        const data = await resp.json();
+        setIsSubscribed(data.subscribed === true);
+        setSubscriptionEnd(data.subscription_end || null);
+      } catch (err) {
+        console.error("Failed to check subscription:", err);
+      }
+    })();
+  }, [user?.id, authenticated, searchParams]);
+
+  const handleCheckout = async () => {
+    if (!user?.id) return;
+    setCheckoutLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "x-privy-user-id": user.id,
+        },
+      });
+      const data = await resp.json();
+      if (data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        toast.error(data.error || "Failed to create checkout session");
+      }
+    } catch (err) {
+      toast.error("Failed to start checkout");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    if (!user?.id) return;
+    setPortalLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/customer-portal`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "x-privy-user-id": user.id,
+        },
+      });
+      const data = await resp.json();
+      if (data.url) {
+        window.open(data.url, "_blank");
+      } else {
+        toast.error(data.error || "Failed to open subscription portal");
+      }
+    } catch (err) {
+      toast.error("Failed to open portal");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const limits = TIER_LIMITS[tier];
 
@@ -81,6 +167,41 @@ export default function Settings() {
                   <p className="text-foreground font-medium">{limits.maxCharacters} chars</p>
                 </div>
               </div>
+              {isSubscribed && subscriptionEnd && (
+                <p className="text-xs text-muted-foreground mt-3">
+                  Subscription renews: {new Date(subscriptionEnd).toLocaleDateString()}
+                </p>
+              )}
+            </section>
+
+            {/* Subscription Actions */}
+            <section className="rounded-xl border border-border/50 bg-card/50 p-6">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Subscription</h2>
+              {tier === "free" ? (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week.
+                  </p>
+                  <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
+                    {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                    Subscribe — $1.49/week
+                  </Button>
+                </div>
+              ) : isSubscribed ? (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Manage your subscription, update payment method, or cancel.
+                  </p>
+                  <Button onClick={handleManageSubscription} disabled={portalLoading} variant="outline">
+                    {portalLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ExternalLink className="w-4 h-4 mr-2" />}
+                    Manage Subscription
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {tier === "nft_holder" ? "You have NFT holder access — no subscription needed." : "You have an active plan."}
+                </p>
+              )}
             </section>
 
             {/* Tier Comparison Table */}
