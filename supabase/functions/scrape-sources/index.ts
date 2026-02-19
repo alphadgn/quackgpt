@@ -2,16 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Whitelisted sources for Wallchain/InfoFi/quack ecosystem
-const WHITELISTED_DOMAINS = [
-  "docs.wallchain.xyz",
-  "news.wallchain.xyz",
-  "app.wallchain.xyz",
-  "wallchain.xyz",
-  "quack.xyz",
+// Expanded whitelisted sources
+const SCRAPE_URLS = [
+  "https://docs.wallchain.xyz/intro",
+  "https://news.wallchain.xyz/",
+  "https://app.wallchain.xyz/leaderboards",
+  "https://wallchain.notion.site",
 ];
 
 serve(async (req) => {
@@ -31,49 +30,59 @@ serve(async (req) => {
       );
     }
 
-    // First, scrape the main docs page for context
-    const docsUrl = "https://docs.wallchain.xyz/intro";
-    
-    console.log("Scraping Wallchain docs for query:", query);
+    console.log("Scraping Wallchain sources for query:", query);
 
-    const scrapeResponse = await fetch("https://api.firecrawl.dev/v1/scrape", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        url: docsUrl,
-        formats: ["markdown"],
-        onlyMainContent: true,
-      }),
+    // Scrape all sources in parallel
+    const scrapePromises = SCRAPE_URLS.map(async (url) => {
+      try {
+        const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url,
+            formats: ["markdown"],
+            onlyMainContent: true,
+          }),
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to scrape ${url}:`, response.status);
+          return "";
+        }
+
+        const data = await response.json();
+        const markdown = data.data?.markdown || data.markdown || "";
+        // Tag source and truncate per-source
+        const maxPerSource = 1500;
+        const truncated = markdown.length > maxPerSource
+          ? markdown.substring(0, maxPerSource) + "..."
+          : markdown;
+        return `[Source: ${url}]\n${truncated}`;
+      } catch (e) {
+        console.error(`Error scraping ${url}:`, e);
+        return "";
+      }
     });
 
-    if (!scrapeResponse.ok) {
-      const errorData = await scrapeResponse.text();
-      console.error("Firecrawl API error:", scrapeResponse.status, errorData);
-      return new Response(
-        JSON.stringify({ success: false, error: "Failed to scrape sources", context: "" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const results = await Promise.all(scrapePromises);
+    const combined = results.filter(Boolean).join("\n\n---\n\n");
 
-    const scrapeData = await scrapeResponse.json();
-    const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+    // Truncate total context
+    const maxContextLength = 6000;
+    const context = combined.length > maxContextLength
+      ? combined.substring(0, maxContextLength) + "..."
+      : combined;
 
-    // Truncate context to avoid token limits
-    const maxContextLength = 3000;
-    const context = markdown.length > maxContextLength 
-      ? markdown.substring(0, maxContextLength) + "..."
-      : markdown;
-
-    console.log("Successfully scraped docs, context length:", context.length);
+    console.log("Successfully scraped sources, context length:", context.length);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         context,
-        source: docsUrl 
+        sources: SCRAPE_URLS,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
