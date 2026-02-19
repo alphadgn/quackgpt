@@ -1,16 +1,13 @@
-import { useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { useChat } from "@/hooks/useChat";
-import { UserTier } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  // Demo state - in production this would come from auth
-  const [tier] = useState<UserTier>('free');
-  const [isLoggedIn] = useState(false);
+  const { authenticated, login, logout, tier, walletAddress, email } = useAuth();
   
   const { 
     messages, 
@@ -19,23 +16,15 @@ const Index = () => {
     sendMessage 
   } = useChat(tier);
 
-  const handleLogin = () => {
-    // TODO: Implement auth
-    console.log('Login clicked');
-  };
-
-  const handleConnectWallet = () => {
-    // TODO: Implement wallet connection
-    console.log('Connect wallet clicked');
-  };
-
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header 
         tier={tier}
-        isLoggedIn={isLoggedIn}
-        onLogin={handleLogin}
-        onConnectWallet={handleConnectWallet}
+        isLoggedIn={authenticated}
+        walletAddress={walletAddress}
+        email={email}
+        onLogin={login}
+        onLogout={logout}
       />
       
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
