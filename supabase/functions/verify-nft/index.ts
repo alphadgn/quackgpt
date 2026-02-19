@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const QUACK_HEADS_COLLECTION = 'HxSsfM9WxQWj79chAUNL6osZxQjJj5iMUwrjEfRBvYBR';
@@ -14,6 +15,7 @@ serve(async (req) => {
 
   try {
     const { walletAddress } = await req.json();
+    const privyUserId = req.headers.get('x-privy-user-id');
 
     if (!walletAddress) {
       return new Response(
@@ -59,7 +61,6 @@ serve(async (req) => {
 
     const assets = data.result?.items || [];
 
-    // Check if any asset belongs to the Quack Heads collection
     const quackHeadsNFTs = assets.filter((asset: any) => {
       const grouping = asset.grouping || [];
       return grouping.some(
@@ -68,6 +69,34 @@ serve(async (req) => {
     });
 
     const isHolder = quackHeadsNFTs.length > 0;
+
+    // Update user profile tier if we have a Privy user ID
+    if (privyUserId) {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+
+      const newTier = isHolder ? 'nft_holder' : 'free';
+      
+      // Upsert profile with tier
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('external_user_id', privyUserId)
+        .single();
+
+      if (existing) {
+        await supabase
+          .from('profiles')
+          .update({ tier: newTier })
+          .eq('external_user_id', privyUserId);
+      } else {
+        await supabase
+          .from('profiles')
+          .insert({ external_user_id: privyUserId, tier: newTier });
+      }
+    }
 
     return new Response(
       JSON.stringify({

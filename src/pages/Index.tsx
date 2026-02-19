@@ -8,7 +8,7 @@ import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -18,7 +18,7 @@ const Index = () => {
     queriesRemaining, 
     sendMessage,
     cooldownUntil,
-  } = useChat(tier, authenticated);
+  } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

@@ -17,6 +17,7 @@ export type Database = {
       daily_query_usage: {
         Row: {
           created_at: string
+          external_user_id: string | null
           id: string
           queries_used: number
           query_date: string
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          external_user_id?: string | null
           id?: string
           queries_used?: number
           query_date?: string
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          external_user_id?: string | null
           id?: string
           queries_used?: number
           query_date?: string
@@ -45,6 +48,7 @@ export type Database = {
         Row: {
           bound_at: string
           expires_at: string
+          external_user_id: string | null
           id: string
           token_id: string
           user_id: string
@@ -52,6 +56,7 @@ export type Database = {
         Insert: {
           bound_at?: string
           expires_at?: string
+          external_user_id?: string | null
           id?: string
           token_id: string
           user_id: string
@@ -59,6 +64,7 @@ export type Database = {
         Update: {
           bound_at?: string
           expires_at?: string
+          external_user_id?: string | null
           id?: string
           token_id?: string
           user_id?: string
@@ -68,24 +74,27 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          external_user_id: string | null
           id: string
           tier: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
+          external_user_id?: string | null
           id?: string
           tier?: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
+          external_user_id?: string | null
           id?: string
           tier?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
