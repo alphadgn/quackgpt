@@ -69,6 +69,16 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
         ) : (
           <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
             {message.content}
+            {message.isTruncated && message.userTier === 'free' && (
+              <span className="text-muted-foreground italic">
+                …………{message.maxCharacters} character free user limit
+              </span>
+            )}
+            {message.isTruncated && message.userTier && message.userTier !== 'free' && (
+              <span className="text-muted-foreground italic text-xs ml-1">
+                [Response truncated at {message.maxCharacters} characters]
+              </span>
+            )}
           </div>
         )}
       </div>

@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
+  free: { maxQueries: 1, maxCharacters: 100 },
+  nft_holder: { maxQueries: 3, maxCharacters: 500 },
+  paid: { maxQueries: 2, maxCharacters: 300 },
 };
 
 const SYSTEM_PROMPT = `You are quackGPT, an intelligence interface that provides ONLY factual, verified information about:
@@ -24,6 +31,7 @@ CRITICAL RULES:
    - Generating promotional or persuasive content
    - Storytelling or creative writing
    - Any form of content creation
+   - Making up information about gQuack tokens that is not from verified sources
 
 3. You ONLY provide:
    - Definitions and factual explanations
@@ -32,8 +40,8 @@ CRITICAL RULES:
    - Direct answers based on verified sources
 
 4. Keep responses concise and factual. Never speculate or invent information.
-
-5. If asked to create content, respond: "Content creation is not supported. quackGPT only provides factual information from verified sources."
+5. If you don't have verified information about something (like gQuack tokens), say so honestly rather than making up details.
+6. If asked to create content, respond: "Content creation is not supported. quackGPT only provides factual information from verified sources."
 
 If context from scraped sources is provided, prioritize that information in your response.`;
 
@@ -43,31 +51,94 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, context, maxCharacters } = await req.json();
+    const { messages, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build system message with optional context (trimmed to avoid exceeding limits)
+    // Authenticate user
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Sign in required to use quackGPT" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await anonClient.auth.getUser();
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get user profile/tier
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tier")
+      .eq("user_id", user.id)
+      .single();
+
+    const tier = profile?.tier || "free";
+    const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+    // Check daily query usage
+    const today = new Date().toISOString().split("T")[0];
+    const { data: usage } = await supabase
+      .from("daily_query_usage")
+      .select("queries_used")
+      .eq("user_id", user.id)
+      .eq("query_date", today)
+      .single();
+
+    const queriesUsed = usage?.queries_used || 0;
+
+    if (queriesUsed >= limits.maxQueries) {
+      return new Response(JSON.stringify({ 
+        error: "Daily query limit reached",
+        queriesUsed,
+        maxQueries: limits.maxQueries,
+      }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Increment query count
+    if (usage) {
+      await supabase
+        .from("daily_query_usage")
+        .update({ queries_used: queriesUsed + 1 })
+        .eq("user_id", user.id)
+        .eq("query_date", today);
+    } else {
+      await supabase
+        .from("daily_query_usage")
+        .insert({ user_id: user.id, query_date: today, queries_used: 1 });
+    }
+
+    // Build system message
     let systemContent = SYSTEM_PROMPT;
     if (context && context.length > 0) {
-      // Strip base64 images, HTML tags, and excessive whitespace
       let cleanContext = context
-        .replace(/<Base64-Image-Removed>/g, '')
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // remove markdown images
-        .replace(/https?:\/\/[^\s)]+\.(png|jpg|jpeg|gif|svg|webp|ico)[^\s)]*/gi, '') // remove image URLs
-        .replace(/\s{3,}/g, '\n') // collapse whitespace
+        .replace(/<Base64-Image-Removed>/g, "")
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
+        .replace(/https?:\/\/[^\s)]+\.(png|jpg|jpeg|gif|svg|webp|ico)[^\s)]*/gi, "")
+        .replace(/\s{3,}/g, "\n")
         .trim();
-      // Trim to reasonable size
       cleanContext = cleanContext.substring(0, 2000);
       systemContent += `\n\nRELEVANT CONTEXT FROM VERIFIED SOURCES:\n${cleanContext}`;
     }
-    
-    if (maxCharacters) {
-      systemContent += `\n\nIMPORTANT: Your response MUST be ${maxCharacters} characters or less. Be extremely concise.`;
-    }
+
+    // Always enforce character limit in the prompt
+    systemContent += `\n\nIMPORTANT: Your response MUST be ${limits.maxCharacters} characters or less. Be extremely concise.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -86,34 +157,34 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (response.status === 402) {
-        return new Response(JSON.stringify({ error: "Service temporarily unavailable." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       return new Response(JSON.stringify({ error: "AI service error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Return stream with tier info in headers
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "X-User-Tier": tier,
+        "X-Max-Characters": String(limits.maxCharacters),
+        "X-Queries-Used": String(queriesUsed + 1),
+        "X-Max-Queries": String(limits.maxQueries),
+      },
     });
   } catch (e) {
     console.error("Chat error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });

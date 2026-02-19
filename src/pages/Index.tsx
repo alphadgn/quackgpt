@@ -18,7 +18,7 @@ const Index = () => {
     queriesRemaining, 
     sendMessage,
     cooldownUntil,
-  } = useChat(tier);
+  } = useChat(tier, authenticated);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -47,7 +47,7 @@ const Index = () => {
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
-            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} />
+            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} />
           ) : (
             <div className="divide-y divide-border/30">
               {messages.map((message) => (
@@ -61,16 +61,25 @@ const Index = () => {
         
         {/* Input area */}
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
-          <ChatInput
-            onSend={sendMessage}
-            disabled={isTyping}
-            tier={tier}
-            queriesRemaining={queriesRemaining}
-            className="max-w-3xl mx-auto"
-            prefillValue={prefillMessage}
-            onPrefillConsumed={handlePrefillConsumed}
-            cooldownUntil={cooldownUntil}
-          />
+          {authenticated ? (
+            <ChatInput
+              onSend={sendMessage}
+              disabled={isTyping}
+              tier={tier}
+              queriesRemaining={queriesRemaining}
+              className="max-w-3xl mx-auto"
+              prefillValue={prefillMessage}
+              onPrefillConsumed={handlePrefillConsumed}
+              cooldownUntil={cooldownUntil}
+            />
+          ) : (
+            <div className="max-w-3xl mx-auto text-center py-4">
+              <p className="text-muted-foreground mb-3">Sign in to start asking questions</p>
+              <button onClick={login} className="px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity">
+                Sign In
+              </button>
+            </div>
+          )}
           
           {/* Disclaimer */}
           <p className="text-center text-xs text-muted-foreground mt-4 max-w-xl mx-auto">
