@@ -84,7 +84,11 @@ export default function Settings() {
       });
       const data = await resp.json();
       if (data.url) {
-        window.location.href = data.url;
+        const w = window.open(data.url, '_blank');
+        if (!w) {
+          // Fallback if popup blocked
+          window.location.href = data.url;
+        }
       } else {
         toast.error(data.error || "Failed to create checkout session");
       }
@@ -242,11 +246,19 @@ export default function Settings() {
             {/* Linked Wallets */}
             <section className="rounded-xl border border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Linked Wallets</h2>
-            {linkedWallets.length === 0 && !walletAddress && !solanaAddress ? (
-                <p className="text-sm text-muted-foreground">No wallets linked yet.</p>
-              ) : (
+              {/* Show connected authentication method */}
+              {email && linkedWallets.length === 0 && !walletAddress && !solanaAddress && (
+                <div className="flex items-center gap-2 text-sm bg-secondary/50 px-4 py-3 rounded-lg mb-2">
+                  <Shield className="w-4 h-4 text-primary shrink-0" />
+                  <span className="truncate">{email}</span>
+                  <span className="text-muted-foreground ml-auto text-xs">Email (primary)</span>
+                </div>
+              )}
+              {linkedWallets.length === 0 && !walletAddress && !solanaAddress && (
+                <p className="text-sm text-muted-foreground mb-2">No wallets linked yet. Link a wallet to enable NFT verification.</p>
+              )}
+              {(linkedWallets.length > 0 || walletAddress || solanaAddress) && (
                 <div className="space-y-2 mb-4">
-                  {/* Show all Privy-linked wallets */}
                   {linkedWallets.map((w, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
@@ -256,7 +268,6 @@ export default function Settings() {
                       </span>
                     </div>
                   ))}
-                  {/* Show connected EVM wallet if not already in linkedWallets */}
                   {walletAddress && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
                     <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
