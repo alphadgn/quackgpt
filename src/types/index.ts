@@ -23,12 +23,12 @@ export const TIER_LIMITS: Record<UserTier, TierLimits> = {
   },
   nft_holder: {
     maxQueries: 3,
-    maxCharacters: 200,
+    maxCharacters: 500,
     maxImages: 3,
   },
   paid: {
     maxQueries: 2,
-    maxCharacters: 150,
+    maxCharacters: 300,
     maxImages: 2,
   },
 };
@@ -40,6 +40,9 @@ export interface Message {
   timestamp: Date;
   isBlocked?: boolean;
   blockReason?: string;
+  isTruncated?: boolean;
+  userTier?: UserTier;
+  maxCharacters?: number;
 }
 
 export interface ChatSession {

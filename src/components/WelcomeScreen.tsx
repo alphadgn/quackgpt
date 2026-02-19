@@ -7,6 +7,8 @@ interface WelcomeScreenProps {
   tier: UserTier;
   queriesRemaining: number;
   onQuerySelect?: (query: string) => void;
+  isAuthenticated?: boolean;
+  onLogin?: () => void;
 }
 
 const features = [
@@ -34,7 +36,7 @@ const exampleQueries = [
   "What are Quack Heads NFTs?",
 ];
 
-export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect }: WelcomeScreenProps) {
+export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin }: WelcomeScreenProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
@@ -73,21 +75,33 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect }: Welcome
         ))}
       </div>
       
-      {/* Example queries */}
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
-        <div className="flex flex-wrap justify-center gap-2">
-          {exampleQueries.map((query) => (
-            <button
-              key={query}
-              onClick={() => onQuerySelect?.(query)}
-              className="px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm text-foreground/80 hover:bg-secondary hover:border-primary/30 hover:text-foreground transition-all"
-            >
-              {query}
-            </button>
-          ))}
+      {/* Example queries - only for authenticated users */}
+      {isAuthenticated ? (
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {exampleQueries.map((query) => (
+              <button
+                key={query}
+                onClick={() => onQuerySelect?.(query)}
+                className="px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm text-foreground/80 hover:bg-secondary hover:border-primary/30 hover:text-foreground transition-all"
+              >
+                {query}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground mb-4">Sign in to start asking questions</p>
+          <button 
+            onClick={onLogin}
+            className="px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+          >
+            Sign In to Get Started
+          </button>
+        </div>
+      )}
       
       {/* Sources reference */}
       <div className="mt-12 text-center">

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
@@ -17,13 +18,12 @@ function hasMultipleQuestions(text: string): boolean {
   return questionMarks > 1;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
 
-const VIOLATION_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
-const COOLDOWN_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const VIOLATION_WINDOW_MS = 5 * 60 * 1000;
+const COOLDOWN_DURATION_MS = 60 * 60 * 1000;
 
-export function useChat(tier: UserTier) {
+export function useChat(tier: UserTier, isAuthenticated: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
@@ -32,10 +32,18 @@ export function useChat(tier: UserTier) {
   
   const limits = TIER_LIMITS[tier];
   const queriesRemaining = limits.maxQueries - queriesUsedToday;
-
   const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
 
   const sendMessage = useCallback(async (content: string) => {
+    if (!isAuthenticated) {
+      setMessages(prev => [...prev, 
+        { id: generateId(), role: 'user', content, timestamp: new Date() },
+        { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
+          blockReason: 'Please sign in to use quackGPT.' }
+      ]);
+      return;
+    }
+
     // Check cooldown
     if (cooldownUntil && Date.now() < cooldownUntil) {
       const minutesLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
@@ -61,7 +69,7 @@ export function useChat(tier: UserTier) {
         setCooldownUntil(now + COOLDOWN_DURATION_MS);
         setMessages(prev => [...prev, userMessage, {
           id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: 'You have been placed on a 1-hour cooldown for repeatedly sending multiple questions at once. This cooldown counts toward your 24-hour query period.',
+          blockReason: 'You have been placed on a 1-hour cooldown for repeatedly sending multiple questions at once.',
         }]);
       } else {
         setMessages(prev => [...prev, userMessage, {
@@ -75,21 +83,27 @@ export function useChat(tier: UserTier) {
     // Check for content creation requests
     if (isContentCreationRequest(content)) {
       const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
-      const blockedMessage: Message = {
+      setMessages(prev => [...prev, userMessage, {
         id: generateId(), role: 'assistant', content: '', timestamp: new Date(),
         isBlocked: true, blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from verified sources.',
-      };
-      setMessages(prev => [...prev, userMessage, blockedMessage]);
+      }]);
       return;
     }
     
-    // Add user message
     const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
     
     try {
-      // First, try to scrape relevant context from whitelisted sources
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      // Scrape context
       let context = '';
       try {
         const scrapeResponse = await fetch(SCRAPE_URL, {
@@ -111,36 +125,46 @@ export function useChat(tier: UserTier) {
         console.log('Scraping skipped:', scrapeError);
       }
       
-      // Prepare chat history for AI
+      // Chat history
       const chatHistory = messages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
       }));
       
-      // Stream AI response
+      // Call chat edge function with auth
+      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
           context,
-          maxCharacters: limits.maxCharacters,
         }),
       });
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          throw new Error('Please sign in to use quackGPT');
+        }
+        if (response.status === 429) {
+          throw new Error(errorData.error || 'Daily query limit reached');
+        }
         throw new Error(errorData.error || 'Failed to get response');
       }
       
       if (!response.body) {
         throw new Error('No response body');
       }
+
+      // Get server-enforced limits from headers
+      const serverMaxChars = parseInt(response.headers.get('X-Max-Characters') || String(limits.maxCharacters));
+      const serverQueriesUsed = parseInt(response.headers.get('X-Queries-Used') || '0');
       
-      // Stream and parse response
+      // Stream response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
@@ -175,9 +199,10 @@ export function useChat(tier: UserTier) {
             if (deltaContent) {
               assistantContent += deltaContent;
               
+              // Truncate at server limit
               let displayContent = assistantContent;
-              if (displayContent.length > limits.maxCharacters) {
-                displayContent = displayContent.substring(0, limits.maxCharacters);
+              if (displayContent.length > serverMaxChars) {
+                displayContent = displayContent.substring(0, serverMaxChars);
               }
               
               setMessages(prev => 
@@ -189,37 +214,49 @@ export function useChat(tier: UserTier) {
               );
             }
           } catch {
-            // Partial JSON, continue buffering
+            // Partial JSON
           }
         }
       }
       
+      // Final truncation with free-user indicator
       let finalContent = assistantContent;
-      if (finalContent.length > limits.maxCharacters) {
-        finalContent = finalContent.substring(0, limits.maxCharacters);
+      const wasTruncated = finalContent.length > serverMaxChars;
+      if (wasTruncated) {
+        finalContent = finalContent.substring(0, serverMaxChars);
       }
-      
+
       setMessages(prev => 
         prev.map(msg => 
           msg.id === assistantId 
-            ? { ...msg, content: finalContent }
+            ? { 
+                ...msg, 
+                content: finalContent,
+                isTruncated: wasTruncated,
+                userTier: tier,
+                maxCharacters: serverMaxChars,
+              }
             : msg
         )
       );
       
-      setQueriesUsedToday(prev => prev + 1);
+      if (serverQueriesUsed > 0) {
+        setQueriesUsedToday(serverQueriesUsed);
+      } else {
+        setQueriesUsedToday(prev => prev + 1);
+      }
       
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, {
         id: generateId(), role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date(),
       }]);
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
