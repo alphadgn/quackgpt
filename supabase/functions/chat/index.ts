@@ -53,9 +53,16 @@ serve(async (req) => {
     // Build system message with optional context (trimmed to avoid exceeding limits)
     let systemContent = SYSTEM_PROMPT;
     if (context && context.length > 0) {
-      // Trim context to a reasonable size to avoid gateway errors
-      const trimmedContext = context.substring(0, 3000);
-      systemContent += `\n\nRELEVANT CONTEXT FROM VERIFIED SOURCES:\n${trimmedContext}`;
+      // Strip base64 images, HTML tags, and excessive whitespace
+      let cleanContext = context
+        .replace(/<Base64-Image-Removed>/g, '')
+        .replace(/!\[[^\]]*\]\([^)]*\)/g, '') // remove markdown images
+        .replace(/https?:\/\/[^\s)]+\.(png|jpg|jpeg|gif|svg|webp|ico)[^\s)]*/gi, '') // remove image URLs
+        .replace(/\s{3,}/g, '\n') // collapse whitespace
+        .trim();
+      // Trim to reasonable size
+      cleanContext = cleanContext.substring(0, 2000);
+      systemContent += `\n\nRELEVANT CONTEXT FROM VERIFIED SOURCES:\n${cleanContext}`;
     }
     
     if (maxCharacters) {
