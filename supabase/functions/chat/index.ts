@@ -8,8 +8,8 @@ const corsHeaders = {
 
 const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
   free: { maxQueries: 1, maxCharacters: 100 },
-  nft_holder: { maxQueries: 3, maxCharacters: 500 },
-  paid: { maxQueries: 2, maxCharacters: 300 },
+  nft_holder: { maxQueries: 5, maxCharacters: 1000 },
+  paid: { maxQueries: 3, maxCharacters: 300 },
 };
 
 const SYSTEM_PROMPT = `You are quackGPT, an intelligence interface that provides ONLY factual, verified information about:
