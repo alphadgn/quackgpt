@@ -20,7 +20,7 @@ function shortenAddress(address: string) {
 }
 
 export default function Settings() {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, solanaAddress } = useAuth();
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -244,10 +244,19 @@ export default function Settings() {
             {/* Linked Wallets */}
             <section className="rounded-xl border border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Linked Wallets</h2>
-              {linkedWallets.length === 0 ? (
+              {linkedWallets.length === 0 && !walletAddress && !solanaAddress ? (
                 <p className="text-sm text-muted-foreground">No wallets linked yet.</p>
               ) : (
                 <div className="space-y-2 mb-4">
+                  {/* Show connected EVM wallet */}
+                  {walletAddress && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
+                    <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
+                      <Wallet className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate">{shortenAddress(walletAddress)}</span>
+                      <span className="text-muted-foreground ml-auto text-xs">EVM (connected)</span>
+                    </div>
+                  )}
+                  {/* Show all Privy-linked wallets */}
                   {linkedWallets.map((w, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
@@ -259,7 +268,7 @@ export default function Settings() {
               )}
               {linkedWallets.length < 3 && (
                 <Button variant="outline" size="sm" onClick={linkWallet}>
-                  Link {linkedWallets.length === 0 ? "a" : "Another"} Wallet
+                  Link {linkedWallets.length === 0 && !walletAddress ? "a" : "Another"} Wallet
                 </Button>
               )}
             </section>
