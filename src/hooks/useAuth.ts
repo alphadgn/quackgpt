@@ -9,6 +9,8 @@ export function useAuth() {
   const { address, isConnected } = useAccount();
   const [isNftHolder, setIsNftHolder] = useState(false);
   const [nftCheckLoading, setNftCheckLoading] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   // Get all linked wallets from Privy user
   const linkedWallets = useMemo(() => {
@@ -16,6 +18,15 @@ export function useAuth() {
     return (user.linkedAccounts?.filter(
       (account: any) => account.type === 'wallet'
     ) || []) as Array<{ address: string; chainType: string }>;
+  }, [user]);
+
+  // Get embedded wallet from Privy user
+  const embeddedWallet = useMemo(() => {
+    if (!user) return undefined;
+    const embedded = user.linkedAccounts?.find(
+      (account: any) => account.type === 'wallet' && account.walletClientType === 'privy'
+    );
+    return embedded as any;
   }, [user]);
 
   // Get Solana wallet address from Privy user
@@ -26,6 +37,41 @@ export function useAuth() {
     );
     return (solanaWallet as any)?.address;
   }, [user]);
+
+  // Check Stripe subscription status
+  useEffect(() => {
+    if (!authenticated || !user?.id) {
+      setIsSubscribed(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSubscriptionLoading(true);
+
+    (async () => {
+      try {
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'x-privy-user-id': user.id,
+          },
+        });
+        const data = await resp.json();
+        if (!cancelled) {
+          setIsSubscribed(data?.subscribed === true);
+        }
+      } catch (err) {
+        console.error('Subscription check failed:', err);
+        if (!cancelled) setIsSubscribed(false);
+      } finally {
+        if (!cancelled) setSubscriptionLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [authenticated, user?.id]);
 
   // Verify Quack Heads NFT ownership on Solana
   useEffect(() => {
@@ -61,8 +107,9 @@ export function useAuth() {
   const tier: UserTier = useMemo(() => {
     if (!authenticated) return 'free';
     if (isNftHolder) return 'nft_holder';
-    return 'paid';
-  }, [authenticated, isNftHolder]);
+    if (isSubscribed) return 'paid';
+    return 'free';
+  }, [authenticated, isNftHolder, isSubscribed]);
 
   const handleLinkWallet = useCallback(() => {
     if (linkedWallets.length >= 3) return;
@@ -77,9 +124,11 @@ export function useAuth() {
     logout,
     walletAddress: address,
     solanaAddress,
+    embeddedWallet,
     isWalletConnected: isConnected,
     tier,
     nftCheckLoading,
+    isSubscribed,
     email: user?.email?.address,
     linkedWallets,
     linkWallet: handleLinkWallet,
