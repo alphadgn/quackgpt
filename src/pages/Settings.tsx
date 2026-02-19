@@ -20,11 +20,10 @@ function shortenAddress(address: string) {
 }
 
 export default function Settings() {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, solanaAddress } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, solanaAddress, embeddedWallet, isSubscribed } = useAuth();
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
 
@@ -50,7 +49,7 @@ export default function Settings() {
     })();
   }, [user?.id]);
 
-  // Check subscription status
+  // Fetch subscription end date for display
   useEffect(() => {
     if (!user?.id || !authenticated) return;
     (async () => {
@@ -64,7 +63,6 @@ export default function Settings() {
           },
         });
         const data = await resp.json();
-        setIsSubscribed(data.subscribed === true);
         setSubscriptionEnd(data.subscription_end || null);
       } catch (err) {
         console.error("Failed to check subscription:", err);
@@ -244,20 +242,28 @@ export default function Settings() {
             {/* Linked Wallets */}
             <section className="rounded-xl border border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Linked Wallets</h2>
-              {linkedWallets.length === 0 && !walletAddress && !solanaAddress ? (
+              {linkedWallets.length === 0 && !walletAddress && !solanaAddress && !embeddedWallet ? (
                 <p className="text-sm text-muted-foreground">No wallets linked yet.</p>
               ) : (
                 <div className="space-y-2 mb-4">
-                  {/* Show connected EVM wallet */}
-                  {walletAddress && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
+                  {/* Show Privy embedded wallet */}
+                  {embeddedWallet?.address && (
+                    <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
+                      <Wallet className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate">{shortenAddress(embeddedWallet.address)}</span>
+                      <span className="text-muted-foreground ml-auto text-xs">Privy Wallet</span>
+                    </div>
+                  )}
+                  {/* Show connected EVM wallet (if different from embedded) */}
+                  {walletAddress && walletAddress.toLowerCase() !== embeddedWallet?.address?.toLowerCase() && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
                     <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
                       <span className="truncate">{shortenAddress(walletAddress)}</span>
                       <span className="text-muted-foreground ml-auto text-xs">EVM (connected)</span>
                     </div>
                   )}
-                  {/* Show all Privy-linked wallets */}
-                  {linkedWallets.map((w, i) => (
+                  {/* Show all Privy-linked wallets (excluding embedded to avoid dupes) */}
+                  {linkedWallets.filter(w => w.address.toLowerCase() !== embeddedWallet?.address?.toLowerCase()).map((w, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
                       <span className="truncate">{shortenAddress(w.address)}</span>
