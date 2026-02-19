@@ -1,12 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import Stripe from "https://esm.sh/stripe@18.5.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-const SUPER_ADMIN_EMAIL = "a1cust0msenterprises@gmail.com";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -44,7 +43,6 @@ serve(async (req) => {
     const action = url.searchParams.get("action") || "list";
 
     if (action === "list") {
-      // List all profiles with their usage
       const { data: profiles, error } = await supabase
         .from("profiles")
         .select("*")
@@ -52,7 +50,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Get today's usage for all users
       const today = new Date().toISOString().split("T")[0];
       const { data: usage } = await supabase
         .from("daily_query_usage")
@@ -61,9 +58,60 @@ serve(async (req) => {
 
       const usageMap = new Map((usage || []).map(u => [u.external_user_id, u]));
 
-      const enriched = (profiles || []).map(p => ({
-        ...p,
-        todayUsage: usageMap.get(p.external_user_id)?.queries_used || 0,
+      // Check NFT bindings for all users
+      const { data: nftBindings } = await supabase
+        .from("nft_token_bindings")
+        .select("external_user_id")
+        .gte("expires_at", new Date().toISOString());
+
+      const nftHolderSet = new Set((nftBindings || []).map(b => b.external_user_id));
+
+      // Derive real tier from Stripe + NFT, not stale DB column
+      const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+      let stripe: Stripe | null = null;
+      if (stripeKey) {
+        stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+      }
+
+      const enriched = await Promise.all((profiles || []).map(async (p) => {
+        let realTier = "free";
+
+        if (nftHolderSet.has(p.external_user_id)) {
+          realTier = "nft_holder";
+        } else if (stripe && p.external_user_id) {
+          try {
+            const customers = await stripe.customers.search({
+              query: `metadata["privy_user_id"]:"${p.external_user_id}"`,
+              limit: 1,
+            });
+            if (customers.data.length > 0) {
+              const subs = await stripe.subscriptions.list({
+                customer: customers.data[0].id,
+                status: "active",
+                limit: 1,
+              });
+              if (subs.data.length > 0) {
+                realTier = "paid";
+              }
+            }
+          } catch (e) {
+            console.error("Stripe check failed for", p.external_user_id, e);
+          }
+        }
+
+        // Sync the DB if stale
+        if (p.tier !== realTier) {
+          await supabase
+            .from("profiles")
+            .update({ tier: realTier })
+            .eq("external_user_id", p.external_user_id);
+        }
+
+        return {
+          ...p,
+          tier: realTier,
+          todayUsage: usageMap.get(p.external_user_id)?.queries_used || 0,
+        };
       }));
 
       return new Response(JSON.stringify({ accounts: enriched }), {
