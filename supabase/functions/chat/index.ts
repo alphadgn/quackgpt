@@ -2,13 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const SYSTEM_PROMPT = `You are quackGPT, an intelligence interface that provides ONLY factual, verified information about:
-- Wallchain (Web3 infrastructure protocol powering InfoFi)
+- Wallchain (Web3 infrastructure protocol powering InfoFi/AttentionFi)
 - InfoFi (tokenization of attention and information)
-- Quack Heads (official NFT collection from quack.xyz)
+- Quack Heads (the official NFT collection of Wallchain, available on Solana via Magic Eden)
 - gQuack (governance token of quack.xyz ecosystem)
 - $QUACK token and quack.xyz ecosystem
 
@@ -50,10 +50,12 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build system message with optional context
+    // Build system message with optional context (trimmed to avoid exceeding limits)
     let systemContent = SYSTEM_PROMPT;
     if (context && context.length > 0) {
-      systemContent += `\n\nRELEVANT CONTEXT FROM VERIFIED SOURCES:\n${context}`;
+      // Trim context to a reasonable size to avoid gateway errors
+      const trimmedContext = context.substring(0, 3000);
+      systemContent += `\n\nRELEVANT CONTEXT FROM VERIFIED SOURCES:\n${trimmedContext}`;
     }
     
     if (maxCharacters) {
@@ -67,7 +69,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemContent },
           ...messages,
