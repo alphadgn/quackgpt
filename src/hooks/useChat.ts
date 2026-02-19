@@ -12,50 +12,79 @@ function isContentCreationRequest(text: string): boolean {
   );
 }
 
+function hasMultipleQuestions(text: string): boolean {
+  const questionMarks = (text.match(/\?/g) || []).length;
+  return questionMarks > 1;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
+
+const VIOLATION_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
+const COOLDOWN_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
 export function useChat(tier: UserTier) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
+  const [violations, setViolations] = useState<number[]>([]);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   
   const limits = TIER_LIMITS[tier];
   const queriesRemaining = limits.maxQueries - queriesUsedToday;
 
+  const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
+
   const sendMessage = useCallback(async (content: string) => {
+    // Check cooldown
+    if (cooldownUntil && Date.now() < cooldownUntil) {
+      const minutesLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
+      setMessages(prev => [...prev, 
+        { id: generateId(), role: 'user', content, timestamp: new Date() },
+        { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
+          blockReason: `You are on a ${minutesLeft}-minute cooldown due to repeated multi-question violations. Please wait before asking again.` }
+      ]);
+      return;
+    }
+
     if (queriesRemaining <= 0) return;
     
+    // Check for multiple questions
+    if (hasMultipleQuestions(content)) {
+      const now = Date.now();
+      const recentViolations = [...violations.filter(t => now - t < VIOLATION_WINDOW_MS), now];
+      setViolations(recentViolations);
+
+      const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
+      
+      if (recentViolations.length >= 3) {
+        setCooldownUntil(now + COOLDOWN_DURATION_MS);
+        setMessages(prev => [...prev, userMessage, {
+          id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
+          blockReason: 'You have been placed on a 1-hour cooldown for repeatedly sending multiple questions at once. This cooldown counts toward your 24-hour query period.',
+        }]);
+      } else {
+        setMessages(prev => [...prev, userMessage, {
+          id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
+          blockReason: `Please ask only one question per query. (Warning ${recentViolations.length}/3 — 3 violations within 5 minutes will result in a 1-hour cooldown.)`,
+        }]);
+      }
+      return;
+    }
+
     // Check for content creation requests
     if (isContentCreationRequest(content)) {
-      const userMessage: Message = {
-        id: generateId(),
-        role: 'user',
-        content,
-        timestamp: new Date(),
-      };
-      
+      const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
       const blockedMessage: Message = {
-        id: generateId(),
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
-        isBlocked: true,
-        blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from verified sources.',
+        id: generateId(), role: 'assistant', content: '', timestamp: new Date(),
+        isBlocked: true, blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from verified sources.',
       };
-      
       setMessages(prev => [...prev, userMessage, blockedMessage]);
       return;
     }
     
     // Add user message
-    const userMessage: Message = {
-      id: generateId(),
-      role: 'user',
-      content,
-      timestamp: new Date(),
-    };
-    
+    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
     
@@ -117,13 +146,9 @@ export function useChat(tier: UserTier) {
       let assistantContent = '';
       let textBuffer = '';
       
-      // Create assistant message placeholder
       const assistantId = generateId();
       setMessages(prev => [...prev, {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        timestamp: new Date(),
+        id: assistantId, role: 'assistant', content: '', timestamp: new Date(),
       }]);
       
       while (true) {
@@ -132,7 +157,6 @@ export function useChat(tier: UserTier) {
         
         textBuffer += decoder.decode(value, { stream: true });
         
-        // Process SSE lines
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
@@ -151,7 +175,6 @@ export function useChat(tier: UserTier) {
             if (deltaContent) {
               assistantContent += deltaContent;
               
-              // Enforce character limit
               let displayContent = assistantContent;
               if (displayContent.length > limits.maxCharacters) {
                 displayContent = displayContent.substring(0, limits.maxCharacters);
@@ -171,7 +194,6 @@ export function useChat(tier: UserTier) {
         }
       }
       
-      // Final truncation to ensure limit
       let finalContent = assistantContent;
       if (finalContent.length > limits.maxCharacters) {
         finalContent = finalContent.substring(0, limits.maxCharacters);
@@ -189,18 +211,15 @@ export function useChat(tier: UserTier) {
       
     } catch (error) {
       console.error('Chat error:', error);
-      
-      // Add error message
       setMessages(prev => [...prev, {
-        id: generateId(),
-        role: 'assistant',
+        id: generateId(), role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.',
         timestamp: new Date(),
       }]);
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -213,5 +232,7 @@ export function useChat(tier: UserTier) {
     queriesRemaining,
     sendMessage,
     clearMessages,
+    cooldownUntil,
+    isOnCooldown,
   };
 }

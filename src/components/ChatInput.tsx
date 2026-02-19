@@ -10,13 +10,25 @@ interface ChatInputProps {
   tier: UserTier;
   queriesRemaining: number;
   className?: string;
+  prefillValue?: string;
+  onPrefillConsumed?: () => void;
+  cooldownUntil?: number | null;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const limits = TIER_LIMITS[tier];
+
+  // Handle prefill from "Try asking" buttons
+  useEffect(() => {
+    if (prefillValue) {
+      setValue(prefillValue);
+      onPrefillConsumed?.();
+      textareaRef.current?.focus();
+    }
+  }, [prefillValue, onPrefillConsumed]);
 
   // Check for blocked content keywords
   useEffect(() => {
@@ -35,8 +47,10 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className 
     }
   }, [value]);
 
+  const isOnCooldown = cooldownUntil != null && Date.now() < cooldownUntil;
+
   const handleSubmit = () => {
-    if (!value.trim() || disabled || isBlocked || queriesRemaining <= 0) return;
+    if (!value.trim() || disabled || isBlocked || queriesRemaining <= 0 || isOnCooldown) return;
     onSend(value.trim());
     setValue("");
   };
@@ -48,7 +62,9 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className 
     }
   };
 
-  const isDisabled = disabled || queriesRemaining <= 0;
+  const isDisabled = disabled || queriesRemaining <= 0 || isOnCooldown;
+
+  const cooldownMinutes = isOnCooldown ? Math.ceil((cooldownUntil! - Date.now()) / 60000) : 0;
 
   return (
     <div className={cn("relative", className)}>
@@ -59,11 +75,19 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className 
           <span>🚫 quackGPT does not create content. It verifies reality.</span>
         </div>
       )}
+
+      {/* Cooldown warning */}
+      {isOnCooldown && (
+        <div className="absolute -top-16 left-0 right-0 flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>⏳ Cooldown active — {cooldownMinutes} min remaining</span>
+        </div>
+      )}
       
       {/* Input container */}
       <div className={cn(
         "relative flex items-end gap-2 p-2 rounded-2xl border transition-all duration-300",
-        isBlocked 
+        isBlocked || isOnCooldown
           ? "border-destructive/50 bg-destructive/5" 
           : "border-border/50 bg-secondary/30 focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)]"
       )}>
@@ -73,9 +97,11 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className 
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            queriesRemaining <= 0 
-              ? "Daily query limit reached..." 
-              : "Ask about Wallchain, InfoFi, or Quack Heads..."
+            isOnCooldown
+              ? `Cooldown active — ${cooldownMinutes} min remaining...`
+              : queriesRemaining <= 0 
+                ? "Daily query limit reached..." 
+                : "Ask about Wallchain, InfoFi, or Quack Heads..."
           }
           disabled={isDisabled}
           rows={1}
@@ -107,7 +133,7 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className 
         <span className={cn(
           queriesRemaining === 0 && "text-destructive"
         )}>
-          {queriesRemaining}/{limits.maxQueries} queries today
+          {queriesRemaining}/{limits.maxQueries} queries remaining today
         </span>
       </div>
     </div>

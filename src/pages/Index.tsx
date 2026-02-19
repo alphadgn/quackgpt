@@ -1,3 +1,4 @@
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
@@ -7,14 +8,26 @@ import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const { authenticated, login, logout, tier, walletAddress, email } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet } = useAuth();
+  const [prefillMessage, setPrefillMessage] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
   
   const { 
     messages, 
     isTyping, 
     queriesRemaining, 
-    sendMessage 
+    sendMessage,
+    cooldownUntil,
   } = useChat(tier);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const handlePrefillConsumed = useCallback(() => {
+    setPrefillMessage("");
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -25,19 +38,23 @@ const Index = () => {
         email={email}
         onLogin={login}
         onLogout={logout}
+        nftCheckLoading={nftCheckLoading}
+        linkedWallets={linkedWallets}
+        onLinkWallet={linkWallet}
       />
       
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto">
           {messages.length === 0 ? (
-            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} />
+            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} />
           ) : (
             <div className="divide-y divide-border/30">
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
               {isTyping && <TypingIndicator />}
+              <div ref={chatEndRef} />
             </div>
           )}
         </div>
@@ -50,6 +67,9 @@ const Index = () => {
             tier={tier}
             queriesRemaining={queriesRemaining}
             className="max-w-3xl mx-auto"
+            prefillValue={prefillMessage}
+            onPrefillConsumed={handlePrefillConsumed}
+            cooldownUntil={cooldownUntil}
           />
           
           {/* Disclaimer */}
