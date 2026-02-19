@@ -84,7 +84,7 @@ export default function Settings() {
       });
       const data = await resp.json();
       if (data.url) {
-        window.open(data.url, "_blank");
+        window.location.href = data.url;
       } else {
         toast.error(data.error || "Failed to create checkout session");
       }
@@ -242,34 +242,28 @@ export default function Settings() {
             {/* Linked Wallets */}
             <section className="rounded-xl border border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Linked Wallets</h2>
-              {linkedWallets.length === 0 && !walletAddress && !solanaAddress && !embeddedWallet ? (
+            {linkedWallets.length === 0 && !walletAddress && !solanaAddress ? (
                 <p className="text-sm text-muted-foreground">No wallets linked yet.</p>
               ) : (
                 <div className="space-y-2 mb-4">
-                  {/* Show Privy embedded wallet */}
-                  {embeddedWallet?.address && (
-                    <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
+                  {/* Show all Privy-linked wallets */}
+                  {linkedWallets.map((w, i) => (
+                    <div key={i} className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
-                      <span className="truncate">{shortenAddress(embeddedWallet.address)}</span>
-                      <span className="text-muted-foreground ml-auto text-xs">Privy Wallet</span>
+                      <span className="truncate">{shortenAddress(w.address)}</span>
+                      <span className="text-muted-foreground ml-auto capitalize text-xs">
+                        {(w as any).walletClientType === 'privy' ? 'Privy Wallet' : w.chainType}
+                      </span>
                     </div>
-                  )}
-                  {/* Show connected EVM wallet (if different from embedded) */}
-                  {walletAddress && walletAddress.toLowerCase() !== embeddedWallet?.address?.toLowerCase() && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
+                  ))}
+                  {/* Show connected EVM wallet if not already in linkedWallets */}
+                  {walletAddress && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
                     <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
                       <span className="truncate">{shortenAddress(walletAddress)}</span>
                       <span className="text-muted-foreground ml-auto text-xs">EVM (connected)</span>
                     </div>
                   )}
-                  {/* Show all Privy-linked wallets (excluding embedded to avoid dupes) */}
-                  {linkedWallets.filter(w => w.address.toLowerCase() !== embeddedWallet?.address?.toLowerCase()).map((w, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
-                      <Wallet className="w-4 h-4 text-primary shrink-0" />
-                      <span className="truncate">{shortenAddress(w.address)}</span>
-                      <span className="text-muted-foreground ml-auto capitalize text-xs">{w.chainType}</span>
-                    </div>
-                  ))}
                 </div>
               )}
               {linkedWallets.length < 3 && (
