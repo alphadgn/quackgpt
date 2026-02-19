@@ -22,14 +22,14 @@ export const TIER_LIMITS: Record<UserTier, TierLimits> = {
     maxImages: 0,
   },
   nft_holder: {
-    maxQueries: 3,
-    maxCharacters: 500,
-    maxImages: 3,
+    maxQueries: 5,
+    maxCharacters: 1000,
+    maxImages: 5,
   },
   paid: {
-    maxQueries: 2,
+    maxQueries: 3,
     maxCharacters: 300,
-    maxImages: 2,
+    maxImages: 3,
   },
 };
 
