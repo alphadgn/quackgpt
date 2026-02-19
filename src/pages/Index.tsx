@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
@@ -72,14 +71,7 @@ const Index = () => {
               onPrefillConsumed={handlePrefillConsumed}
               cooldownUntil={cooldownUntil}
             />
-          ) : (
-            <div className="max-w-3xl mx-auto text-center py-4">
-              <p className="text-muted-foreground mb-3">Sign in to start asking questions</p>
-              <button onClick={login} className="px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity">
-                Sign In
-              </button>
-            </div>
-          )}
+          ) : null}
           
           {/* Disclaimer */}
           <p className="text-center text-xs text-muted-foreground mt-4 max-w-xl mx-auto">
@@ -89,7 +81,7 @@ const Index = () => {
         </div>
       </main>
       
-      <Footer />
+      {/* Footer removed */}
     </div>
   );
 };
