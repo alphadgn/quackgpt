@@ -11,6 +11,7 @@ export function useAuth() {
   const [nftCheckLoading, setNftCheckLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Get all linked wallets from Privy user
   const linkedWallets = useMemo(() => {
@@ -104,6 +105,34 @@ export function useAuth() {
     return () => { cancelled = true; };
   }, [authenticated, solanaAddress]);
 
+  // Check super admin status
+  useEffect(() => {
+    if (!authenticated || !user?.id) {
+      setIsSuperAdmin(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-admin`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'x-privy-user-id': user.id,
+          },
+        });
+        const data = await resp.json();
+        if (!cancelled) setIsSuperAdmin(data?.isSuperAdmin === true);
+      } catch {
+        if (!cancelled) setIsSuperAdmin(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [authenticated, user?.id]);
+
   const tier: UserTier = useMemo(() => {
     if (!authenticated) return 'free';
     if (isNftHolder) return 'nft_holder';
@@ -129,6 +158,7 @@ export function useAuth() {
     tier,
     nftCheckLoading,
     isSubscribed,
+    isSuperAdmin,
     email: user?.email?.address,
     linkedWallets,
     linkWallet: handleLinkWallet,

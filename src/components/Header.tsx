@@ -4,7 +4,7 @@ import { TierBadge } from "./TierBadge";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { UserTier } from "@/types";
-import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings } from "lucide-react";
+import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface LinkedWallet {
@@ -22,13 +22,15 @@ interface HeaderProps {
   nftCheckLoading?: boolean;
   linkedWallets?: LinkedWallet[];
   onLinkWallet?: () => void;
+  isSuperAdmin?: boolean;
+  embeddedWallet?: { address: string } | null;
 }
 
 function shortenAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet }: HeaderProps) {
+export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet, isSuperAdmin, embeddedWallet }: HeaderProps) {
   const [showNotification, setShowNotification] = useState(false);
 
   return (
@@ -69,14 +71,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               {/* Wallet popover */}
               <Popover>
                 <PopoverTrigger asChild>
-                  {walletAddress || linkedWallets.length > 0 ? (
+                  {walletAddress || linkedWallets.length > 0 || embeddedWallet?.address ? (
                     <Button
                       variant="glass"
                       size="sm"
                       className="hidden sm:flex font-mono text-xs"
                     >
                       <Wallet className="w-4 h-4 mr-2" />
-                      {walletAddress ? shortenAddress(walletAddress) : `${linkedWallets.length} wallet${linkedWallets.length > 1 ? 's' : ''}`}
+                      {walletAddress ? shortenAddress(walletAddress) : embeddedWallet?.address ? shortenAddress(embeddedWallet.address) : `${linkedWallets.length} wallet${linkedWallets.length > 1 ? 's' : ''}`}
                     </Button>
                   ) : (
                     <Button 
@@ -93,10 +95,17 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                   <div className="space-y-3">
                     <h4 className="font-medium text-sm text-foreground">Connected Wallets</h4>
                     
-                    {linkedWallets.length === 0 ? (
+                    {linkedWallets.length === 0 && !embeddedWallet?.address ? (
                       <p className="text-xs text-muted-foreground">No wallets linked yet.</p>
                     ) : (
                       <div className="space-y-2">
+                        {embeddedWallet?.address && !linkedWallets.some(w => w.address.toLowerCase() === embeddedWallet.address.toLowerCase()) && (
+                          <div className="flex items-center gap-2 text-xs font-mono bg-secondary/50 px-3 py-2 rounded-lg">
+                            <Wallet className="w-3 h-3 text-primary shrink-0" />
+                            <span className="truncate">{shortenAddress(embeddedWallet.address)}</span>
+                            <span className="text-muted-foreground ml-auto text-[10px]">Privy</span>
+                          </div>
+                        )}
                         {linkedWallets.map((w, i) => (
                           <div key={i} className="flex items-center gap-2 text-xs font-mono bg-secondary/50 px-3 py-2 rounded-lg">
                             <Wallet className="w-3 h-3 text-primary shrink-0" />
@@ -125,6 +134,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                 </span>
               )}
               
+              {isSuperAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className="text-primary">
+                    <ShieldCheck className="w-4 h-4" />
+                  </Button>
+                </Link>
+              )}
+
               <Link to="/settings">
                 <Button variant="ghost" size="icon-sm" title="Settings">
                   <Settings className="w-4 h-4" />
