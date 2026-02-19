@@ -7,7 +7,7 @@ import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -40,6 +40,8 @@ const Index = () => {
         nftCheckLoading={nftCheckLoading}
         linkedWallets={linkedWallets}
         onLinkWallet={linkWallet}
+        isSuperAdmin={isSuperAdmin}
+        embeddedWallet={embeddedWallet}
       />
       
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">

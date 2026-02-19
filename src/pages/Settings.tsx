@@ -20,7 +20,7 @@ function shortenAddress(address: string) {
 }
 
 export default function Settings() {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, solanaAddress, embeddedWallet, isSubscribed } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, solanaAddress, embeddedWallet, isSubscribed, isSuperAdmin } = useAuth();
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -138,6 +138,8 @@ export default function Settings() {
         nftCheckLoading={nftCheckLoading}
         linkedWallets={linkedWallets}
         onLinkWallet={linkWallet}
+        isSuperAdmin={isSuperAdmin}
+        embeddedWallet={embeddedWallet}
       />
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
@@ -246,15 +248,23 @@ export default function Settings() {
             {/* Linked Wallets */}
             <section className="rounded-xl border border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Linked Wallets</h2>
-              {/* Show connected authentication method */}
-              {email && linkedWallets.length === 0 && !walletAddress && !solanaAddress && (
+              {/* Show embedded wallet if available */}
+              {embeddedWallet?.address && linkedWallets.length === 0 && !walletAddress && !solanaAddress && (
+                <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg mb-2">
+                  <Wallet className="w-4 h-4 text-primary shrink-0" />
+                  <span className="truncate">{shortenAddress(embeddedWallet.address)}</span>
+                  <span className="text-muted-foreground ml-auto text-xs">Privy Wallet</span>
+                </div>
+              )}
+              {/* Show email as auth method */}
+              {email && linkedWallets.length === 0 && !walletAddress && !solanaAddress && !embeddedWallet?.address && (
                 <div className="flex items-center gap-2 text-sm bg-secondary/50 px-4 py-3 rounded-lg mb-2">
                   <Shield className="w-4 h-4 text-primary shrink-0" />
                   <span className="truncate">{email}</span>
                   <span className="text-muted-foreground ml-auto text-xs">Email (primary)</span>
                 </div>
               )}
-              {linkedWallets.length === 0 && !walletAddress && !solanaAddress && (
+              {linkedWallets.length === 0 && !walletAddress && !solanaAddress && !embeddedWallet?.address && (
                 <p className="text-sm text-muted-foreground mb-2">No wallets linked yet. Link a wallet to enable NFT verification.</p>
               )}
               {(linkedWallets.length > 0 || walletAddress || solanaAddress) && (

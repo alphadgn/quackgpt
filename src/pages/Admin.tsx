@@ -27,7 +27,7 @@ function shortenId(id: string) {
 }
 
 export default function Admin() {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -137,6 +137,8 @@ export default function Admin() {
         nftCheckLoading={nftCheckLoading}
         linkedWallets={linkedWallets}
         onLinkWallet={linkWallet}
+        isSuperAdmin={isSuperAdmin}
+        embeddedWallet={embeddedWallet}
       />
       <main className="flex-1 max-w-4xl mx-auto w-full px-4 py-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
