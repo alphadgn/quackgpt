@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
@@ -20,25 +20,9 @@ const SYSTEM_PROMPT = `You are quackGPT, an intelligence interface that provides
 - $QUACK token and quack.xyz ecosystem
 
 CRITICAL RULES:
-1. You MUST ONLY provide factual information sourced from:
-   - Wallchain documentation (docs.wallchain.xyz)
-   - Wallchain news and leaderboards (app.wallchain.xyz)
-   - Official Wallchain social media (@wallchain on Twitter/X, Telegram, Instagram, LinkedIn, YouTube, TikTok)
-   - quack.xyz ecosystem data
-
-2. You are FORBIDDEN from:
-   - Creating tweets, threads, articles, marketing copy, scripts, or captions
-   - Generating promotional or persuasive content
-   - Storytelling or creative writing
-   - Any form of content creation
-   - Making up information about gQuack tokens that is not from verified sources
-
-3. You ONLY provide:
-   - Definitions and factual explanations
-   - Summaries of existing information
-   - Analytical descriptions of the ecosystem
-   - Direct answers based on verified sources
-
+1. You MUST ONLY provide factual information sourced from verified Wallchain sources.
+2. You are FORBIDDEN from creating tweets, threads, articles, marketing copy, scripts, or captions.
+3. You ONLY provide definitions, factual explanations, summaries, and direct answers.
 4. Keep responses concise and factual. Never speculate or invent information.
 5. If you don't have verified information about something (like gQuack tokens), say so honestly rather than making up details.
 6. If asked to create content, respond: "Content creation is not supported. quackGPT only provides factual information from verified sources."
@@ -60,34 +44,33 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Authenticate user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    // Get Privy user ID from header
+    const privyUserId = req.headers.get("x-privy-user-id");
+    if (!privyUserId) {
       return new Response(JSON.stringify({ error: "Sign in required to use quackGPT" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Use service role client for DB operations
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
 
-    const { data: { user }, error: authError } = await anonClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Get user profile/tier
-    const { data: profile } = await supabase
+    // Get or create user profile
+    let { data: profile } = await supabase
       .from("profiles")
       .select("tier")
-      .eq("user_id", user.id)
+      .eq("external_user_id", privyUserId)
       .single();
 
-    const tier = profile?.tier || "free";
+    if (!profile) {
+      // Auto-create profile for new Privy user
+      await supabase
+        .from("profiles")
+        .insert({ external_user_id: privyUserId, tier: "free" });
+      profile = { tier: "free" };
+    }
+
+    const tier = profile.tier || "free";
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
     // Check daily query usage
@@ -95,7 +78,7 @@ serve(async (req) => {
     const { data: usage } = await supabase
       .from("daily_query_usage")
       .select("queries_used")
-      .eq("user_id", user.id)
+      .eq("external_user_id", privyUserId)
       .eq("query_date", today)
       .single();
 
@@ -116,12 +99,12 @@ serve(async (req) => {
       await supabase
         .from("daily_query_usage")
         .update({ queries_used: queriesUsed + 1 })
-        .eq("user_id", user.id)
+        .eq("external_user_id", privyUserId)
         .eq("query_date", today);
     } else {
       await supabase
         .from("daily_query_usage")
-        .insert({ user_id: user.id, query_date: today, queries_used: 1 });
+        .insert({ external_user_id: privyUserId, query_date: today, queries_used: 1 });
     }
 
     // Build system message
@@ -132,12 +115,11 @@ serve(async (req) => {
         .replace(/!\[[^\]]*\]\([^)]*\)/g, "")
         .replace(/https?:\/\/[^\s)]+\.(png|jpg|jpeg|gif|svg|webp|ico)[^\s)]*/gi, "")
         .replace(/\s{3,}/g, "\n")
-        .trim();
-      cleanContext = cleanContext.substring(0, 2000);
+        .trim()
+        .substring(0, 2000);
       systemContent += `\n\nRELEVANT CONTEXT FROM VERIFIED SOURCES:\n${cleanContext}`;
     }
 
-    // Always enforce character limit in the prompt
     systemContent += `\n\nIMPORTANT: Your response MUST be ${limits.maxCharacters} characters or less. Be extremely concise.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -170,7 +152,6 @@ serve(async (req) => {
       });
     }
 
-    // Return stream with tier info in headers
     return new Response(response.body, {
       headers: {
         ...corsHeaders,

@@ -41,6 +41,7 @@ export function useAuth() {
       try {
         const { data, error } = await supabase.functions.invoke('verify-nft', {
           body: { walletAddress: solanaAddress },
+          headers: { 'x-privy-user-id': user?.id || '' },
         });
 
         if (!cancelled) {

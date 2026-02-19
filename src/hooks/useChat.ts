@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from '@/types';
-import { supabase } from '@/integrations/supabase/client';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
@@ -23,7 +22,13 @@ const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sou
 const VIOLATION_WINDOW_MS = 5 * 60 * 1000;
 const COOLDOWN_DURATION_MS = 60 * 60 * 1000;
 
-export function useChat(tier: UserTier, isAuthenticated: boolean) {
+interface UseChatOptions {
+  tier: UserTier;
+  isAuthenticated: boolean;
+  privyUserId?: string;
+}
+
+export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
@@ -35,7 +40,7 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
   const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !privyUserId) {
       setMessages(prev => [...prev, 
         { id: generateId(), role: 'user', content, timestamp: new Date() },
         { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
@@ -50,7 +55,7 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
       setMessages(prev => [...prev, 
         { id: generateId(), role: 'user', content, timestamp: new Date() },
         { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: `You are on a ${minutesLeft}-minute cooldown due to repeated multi-question violations. Please wait before asking again.` }
+          blockReason: `You are on a ${minutesLeft}-minute cooldown due to repeated multi-question violations.` }
       ]);
       return;
     }
@@ -74,7 +79,7 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
       } else {
         setMessages(prev => [...prev, userMessage, {
           id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: `Please ask only one question per query. (Warning ${recentViolations.length}/3 — 3 violations within 5 minutes will result in a 1-hour cooldown.)`,
+          blockReason: `Please ask only one question per query. (Warning ${recentViolations.length}/3)`,
         }]);
       }
       return;
@@ -95,14 +100,6 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
     setIsTyping(true);
     
     try {
-      // Get auth token
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token;
-
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
-
       // Scrape context
       let context = '';
       try {
@@ -125,19 +122,18 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
         console.log('Scraping skipped:', scrapeError);
       }
       
-      // Chat history
       const chatHistory = messages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
       }));
       
-      // Call chat edge function with auth
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'x-privy-user-id': privyUserId,
         },
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
@@ -156,15 +152,12 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
         throw new Error(errorData.error || 'Failed to get response');
       }
       
-      if (!response.body) {
-        throw new Error('No response body');
-      }
+      if (!response.body) throw new Error('No response body');
 
-      // Get server-enforced limits from headers
       const serverMaxChars = parseInt(response.headers.get('X-Max-Characters') || String(limits.maxCharacters));
       const serverQueriesUsed = parseInt(response.headers.get('X-Queries-Used') || '0');
+      const serverTier = response.headers.get('X-User-Tier') || tier;
       
-      // Stream response
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
@@ -199,7 +192,6 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
             if (deltaContent) {
               assistantContent += deltaContent;
               
-              // Truncate at server limit
               let displayContent = assistantContent;
               if (displayContent.length > serverMaxChars) {
                 displayContent = displayContent.substring(0, serverMaxChars);
@@ -219,7 +211,7 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
         }
       }
       
-      // Final truncation with free-user indicator
+      // Final truncation with tier indicator
       let finalContent = assistantContent;
       const wasTruncated = finalContent.length > serverMaxChars;
       if (wasTruncated) {
@@ -233,7 +225,7 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
                 ...msg, 
                 content: finalContent,
                 isTruncated: wasTruncated,
-                userTier: tier,
+                userTier: serverTier as UserTier,
                 maxCharacters: serverMaxChars,
               }
             : msg
@@ -256,7 +248,7 @@ export function useChat(tier: UserTier, isAuthenticated: boolean) {
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
