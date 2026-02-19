@@ -25,7 +25,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
         supportedChains: [apeChain],
         embeddedWallets: {
           ethereum: {
-            createOnLogin: 'users-without-wallets',
+            createOnLogin: 'off',
           },
         },
       }}
