@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Send, AlertCircle, ArrowUpRight } from "lucide-react";
+import { Send, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
+import { toast } from "sonner";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -14,12 +15,14 @@ interface ChatInputProps {
   prefillValue?: string;
   onPrefillConsumed?: () => void;
   cooldownUntil?: number | null;
+  privyUserId?: string | null;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
   const limits = TIER_LIMITS[tier];
@@ -83,6 +86,36 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
     }
   };
 
+  const handleCheckout = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!privyUserId) {
+      navigate("/settings");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "x-privy-user-id": privyUserId,
+        },
+      });
+      const data = await resp.json();
+      if (data.url) {
+        const w = window.open(data.url, '_blank');
+        if (!w) window.location.href = data.url;
+      } else {
+        toast.error(data.error || "Failed to create checkout session");
+      }
+    } catch {
+      toast.error("Failed to start checkout");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   const cooldownMinutes = isOnCooldown ? Math.ceil((cooldownUntil! - Date.now()) / 60000) : 0;
 
   return (
@@ -124,13 +157,12 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
             <Button
               variant="outline"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate("/settings");
-              }}
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
               className="shrink-0 bg-destructive-foreground text-destructive hover:bg-destructive-foreground/90 border-none gap-1"
             >
-              Upgrade <ArrowUpRight className="w-3 h-3" />
+              {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+              Subscribe
             </Button>
           </div>
         )}
@@ -138,8 +170,9 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => setValue(e.target.value)}
+          onChange={(e) => !isDepleted && setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onFocus={isDepleted ? (e) => { e.target.blur(); handleDepletedClick(); } : undefined}
           onClick={isDepleted ? handleDepletedClick : undefined}
           placeholder={
             isLoadingUsage
@@ -150,11 +183,13 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
                   ? "Daily query limit reached..." 
                   : "Ask about Wallchain, InfoFi, or Quack Heads..."
           }
-          disabled={isDisabled}
+          disabled={isDisabled && !isDepleted}
+          readOnly={isDepleted}
           rows={1}
           className={cn(
             "flex-1 bg-transparent resize-none border-0 outline-none text-foreground placeholder:text-primary/50 placeholder:animate-search-text-pulse px-3 py-2 max-h-[200px] text-sm leading-relaxed",
-            isDisabled && "opacity-50 cursor-not-allowed"
+            isDepleted && "cursor-pointer opacity-50",
+            isDisabled && !isDepleted && "opacity-50 cursor-not-allowed"
           )}
         />
         
