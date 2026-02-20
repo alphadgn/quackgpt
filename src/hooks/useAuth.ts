@@ -13,22 +13,24 @@ export function useAuth() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
-  // Get all linked wallets from Privy user (ALL wallet types, fully deduplicated)
+  // Get ALL linked wallets from Privy user — any account with an address field, fully deduplicated.
+  // This intentionally casts a wide net so wallets stored in Privy but not being displayed
+  // are still surfaced and can be unlinked.
   const linkedWallets = useMemo(() => {
     if (!user) return [];
     const seen = new Set<string>();
     const wallets: Array<{ address: string; chainType: string; walletClientType?: string }> = [];
     for (const account of (user.linkedAccounts || []) as any[]) {
-      if (account.type === 'wallet' && account.address) {
-        const key = account.address.toLowerCase();
-        if (!seen.has(key)) {
-          seen.add(key);
-          wallets.push({
-            address: account.address,
-            chainType: account.chainType || 'ethereum',
-            walletClientType: account.walletClientType,
-          });
-        }
+      const addr = account.address;
+      if (!addr) continue;
+      const key = addr.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        wallets.push({
+          address: addr,
+          chainType: account.chainType || 'ethereum',
+          walletClientType: account.walletClientType,
+        });
       }
     }
     return wallets;
@@ -167,19 +169,32 @@ export function useAuth() {
     }
   }, [unlinkWallet]);
 
-  // Unlink all external (non-Privy-embedded) wallets
+  // Unlink ALL external (non-Privy-embedded) wallets.
+  // Reads directly from user.linkedAccounts (raw source) to catch every stored wallet —
+  // including any that might be hidden from the display list — so no ghost wallets remain.
   const handleUnlinkAllWeb3Wallets = useCallback(async () => {
-    const externalWallets = linkedWallets.filter(
-      w => w.walletClientType !== 'privy'
-    );
-    for (const w of externalWallets) {
-      try {
-        await unlinkWallet(w.address);
-      } catch (err) {
-        console.error('Failed to unlink wallet:', w.address, err);
+    const allAccounts = (user?.linkedAccounts || []) as any[];
+    const seen = new Set<string>();
+    const toUnlink: string[] = [];
+    for (const account of allAccounts) {
+      const addr = account.address;
+      if (!addr) continue;
+      const key = addr.toLowerCase();
+      // Skip the privy-embedded wallet
+      if (account.walletClientType === 'privy') continue;
+      if (!seen.has(key)) {
+        seen.add(key);
+        toUnlink.push(addr);
       }
     }
-  }, [linkedWallets, unlinkWallet]);
+    for (const addr of toUnlink) {
+      try {
+        await unlinkWallet(addr);
+      } catch (err) {
+        console.error('Failed to unlink wallet:', addr, err);
+      }
+    }
+  }, [user?.linkedAccounts, unlinkWallet]);
 
   return {
     ready,
