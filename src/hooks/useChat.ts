@@ -18,6 +18,7 @@ function hasMultipleQuestions(text: string): boolean {
 }
 
 const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
+const CHECK_USAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-usage`;
 
 const VIOLATION_WINDOW_MS = 5 * 60 * 1000;
 const COOLDOWN_DURATION_MS = 60 * 60 * 1000;
@@ -35,8 +36,45 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [violations, setViolations] = useState<number[]>([]);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
-  // Per-user reset time: null until first query sets it from server
   const [resetTime, setResetTime] = useState<number | null>(null);
+  const [usageLoaded, setUsageLoaded] = useState(false);
+
+  // Fetch current usage from server on mount and when user changes
+  useEffect(() => {
+    if (!isAuthenticated || !privyUserId) {
+      setQueriesUsedToday(0);
+      setResetTime(null);
+      setUsageLoaded(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const resp = await fetch(CHECK_USAGE_URL, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'x-privy-user-id': privyUserId,
+          },
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (!cancelled) {
+            setQueriesUsedToday(data.queriesUsed ?? 0);
+            setResetTime(data.resetTime ?? null);
+            setUsageLoaded(true);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch usage:', err);
+        if (!cancelled) setUsageLoaded(true);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [isAuthenticated, privyUserId]);
 
   // Auto-reset queries when user's personal 24h countdown reaches zero
   useEffect(() => {
@@ -44,7 +82,7 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
     const interval = setInterval(() => {
       if (Date.now() >= resetTime) {
         setQueriesUsedToday(0);
-        setResetTime(null); // Will be set again on next query
+        setResetTime(null);
       }
     }, 5000);
     return () => clearInterval(interval);
@@ -162,7 +200,6 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
           throw new Error('Please sign in to use quackGPT');
         }
         if (response.status === 429) {
-          // Server returns resetTime when limit is reached
           if (errorData.resetTime) {
             setResetTime(errorData.resetTime);
           }
@@ -292,5 +329,6 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
     cooldownUntil,
     isOnCooldown,
     resetTime,
+    usageLoaded,
   };
 }

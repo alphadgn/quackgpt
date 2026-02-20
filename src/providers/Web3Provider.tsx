@@ -18,7 +18,7 @@ export function Web3Provider({ children }: Web3ProviderProps) {
           theme: 'dark',
           accentColor: '#D4A017',
           logo: undefined,
-          walletChainType: 'ethereum-and-solana',
+          walletChainType: 'ethereum-only',
         },
         loginMethods: ['email', 'wallet'],
         defaultChain: apeChain,

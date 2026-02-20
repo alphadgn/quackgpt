@@ -6,7 +6,6 @@ import { TIER_LIMITS, UserTier } from "@/types";
 import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const tierInfo: Record<UserTier, { label: string; icon: typeof Crown; price: string }> = {
@@ -34,20 +33,29 @@ export default function Settings() {
     }
   }, [searchParams]);
 
-  // Fetch daily usage
+  // Fetch daily usage from server (respects 24h rolling cycle)
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || !authenticated) return;
+    let cancelled = false;
     (async () => {
-      const today = new Date().toISOString().slice(0, 10);
-      const { data } = await supabase
-        .from("daily_query_usage")
-        .select("queries_used")
-        .eq("external_user_id", user.id)
-        .eq("query_date", today)
-        .maybeSingle();
-      setQueriesUsedToday(data?.queries_used ?? 0);
+      try {
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-usage`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            "x-privy-user-id": user.id,
+          },
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          if (!cancelled) setQueriesUsedToday(data.queriesUsed ?? 0);
+        }
+      } catch (err) {
+        console.error("Failed to fetch usage:", err);
+      }
     })();
-  }, [user?.id]);
+    return () => { cancelled = true; };
+  }, [user?.id, authenticated]);
 
   // Fetch subscription end date for display
   useEffect(() => {
