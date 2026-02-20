@@ -126,7 +126,7 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative z-10">
       <Header
         tier={tier}
         isLoggedIn={authenticated}

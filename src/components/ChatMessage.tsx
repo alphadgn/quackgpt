@@ -1,16 +1,25 @@
 import { cn } from "@/lib/utils";
 import { Message } from "@/types";
 import { QuackLogo } from "./QuackLogo";
-import { User, AlertTriangle } from "lucide-react";
+import { User, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { useState } from "react";
 
 interface ChatMessageProps {
   message: Message;
   className?: string;
+  onFeedback?: (messageContent: string, type: 'positive' | 'negative') => void;
 }
 
-export function ChatMessage({ message, className }: ChatMessageProps) {
+export function ChatMessage({ message, className, onFeedback }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isBlocked = message.isBlocked;
+  const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
+
+  const handleFeedback = (type: 'positive' | 'negative') => {
+    if (feedback) return; // already submitted
+    setFeedback(type);
+    onFeedback?.(message.content, type);
+  };
 
   return (
     <div className={cn(
@@ -67,19 +76,62 @@ export function ChatMessage({ message, className }: ChatMessageProps) {
             )}
           </div>
         ) : (
-          <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
-            {message.content}
-            {message.isTruncated && message.userTier === 'free' && (
-              <span className="text-muted-foreground italic">
-                …………{message.maxCharacters} character free user limit
-              </span>
+          <>
+            <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+              {message.content}
+              {message.isTruncated && message.userTier === 'free' && (
+                <span className="text-muted-foreground italic">
+                  …………{message.maxCharacters} character free user limit
+                </span>
+              )}
+              {message.isTruncated && message.userTier && message.userTier !== 'free' && (
+                <span className="text-muted-foreground italic text-xs ml-1">
+                  [Response truncated at {message.maxCharacters} characters]
+                </span>
+              )}
+            </div>
+            
+            {/* Feedback buttons - only on assistant messages */}
+            {!isUser && message.content && (
+              <div className="flex items-center gap-3 mt-3">
+                <button
+                  onClick={() => handleFeedback('positive')}
+                  disabled={feedback !== null}
+                  className={cn(
+                    "flex items-center gap-1 text-xs transition-colors",
+                    feedback === 'positive'
+                      ? "text-primary"
+                      : feedback === null
+                        ? "text-muted-foreground hover:text-primary"
+                        : "text-muted-foreground/40 cursor-default"
+                  )}
+                  title="👍 Stored to strengthen our databases"
+                >
+                  <ThumbsUp className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => handleFeedback('negative')}
+                  disabled={feedback !== null}
+                  className={cn(
+                    "flex items-center gap-1 text-xs transition-colors",
+                    feedback === 'negative'
+                      ? "text-destructive"
+                      : feedback === null
+                        ? "text-muted-foreground hover:text-destructive"
+                        : "text-muted-foreground/40 cursor-default"
+                  )}
+                  title="👎 Used to refine our answers"
+                >
+                  <ThumbsDown className="w-3.5 h-3.5" />
+                </button>
+                {feedback && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {feedback === 'positive' ? 'Thanks! Stored to strengthen our databases.' : 'Thanks! Used to refine our answers.'}
+                  </span>
+                )}
+              </div>
             )}
-            {message.isTruncated && message.userTier && message.userTier !== 'free' && (
-              <span className="text-muted-foreground italic text-xs ml-1">
-                [Response truncated at {message.maxCharacters} characters]
-              </span>
-            )}
-          </div>
+          </>
         )}
       </div>
     </div>

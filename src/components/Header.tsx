@@ -3,6 +3,7 @@ import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { UserTier } from "@/types";
 import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings, ShieldCheck, Unlink } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -33,6 +34,7 @@ function shortenAddress(address: string) {
 
 export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet, onUnlinkWallet, isSuperAdmin, embeddedWallet }: HeaderProps) {
   const [showNotification, setShowNotification] = useState(false);
+  const [unlinkTarget, setUnlinkTarget] = useState<string | null>(null);
 
   // Build deduplicated list of all wallets to display
   const allWallets = (() => {
@@ -59,8 +61,39 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
 
   const walletCount = allWallets.length;
 
+  // Count external wallets (non-privy) for the limit: 1 privy + 2 external = 3 max
+  const externalWalletCount = allWallets.filter(w => w.label !== 'Privy').length;
+  const canLinkMore = externalWalletCount < 2;
+
+  const handleConfirmUnlink = () => {
+    if (unlinkTarget && onUnlinkWallet) {
+      onUnlinkWallet(unlinkTarget);
+    }
+    setUnlinkTarget(null);
+  };
+
   return (
     <>
+      {/* Unlink confirmation dialog */}
+      <AlertDialog open={unlinkTarget !== null} onOpenChange={(open) => !open && setUnlinkTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Disconnect Wallet</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to disconnect wallet{' '}
+              <span className="font-mono text-foreground">{unlinkTarget ? shortenAddress(unlinkTarget) : ''}</span>
+              ? You can re-link it later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmUnlink} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Disconnect
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Dismissible notification */}
       {showNotification && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-sm p-4" onClick={() => setShowNotification(false)}>
@@ -121,6 +154,7 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                 <PopoverContent className="w-72" align="end">
                   <div className="space-y-3">
                     <h4 className="font-medium text-sm text-foreground">Connected Wallets</h4>
+                    <p className="text-[10px] text-muted-foreground">1 Privy wallet + up to 2 external wallets</p>
                     
                     {walletCount === 0 ? (
                       <p className="text-xs text-muted-foreground">No wallets linked yet.</p>
@@ -131,9 +165,9 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                             <Wallet className="w-3 h-3 text-primary shrink-0" />
                             <span className="truncate">{shortenAddress(w.address)}</span>
                             <span className="text-muted-foreground ml-auto capitalize text-[10px]">{w.label || w.chainType}</span>
-                            {onUnlinkWallet && (
+                            {onUnlinkWallet && w.label !== 'Privy' && (
                               <button
-                                onClick={() => onUnlinkWallet(w.address)}
+                                onClick={() => setUnlinkTarget(w.address)}
                                 className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
                                 title="Disconnect wallet"
                               >
@@ -145,13 +179,13 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                       </div>
                     )}
                     
-                    {walletCount < 3 ? (
+                    {canLinkMore ? (
                       <Button variant="outline" size="sm" className="w-full" onClick={onLinkWallet}>
                         <Plus className="w-3 h-3 mr-2" />
                         Link {walletCount === 0 ? 'a' : 'Another'} Wallet
                       </Button>
                     ) : (
-                      <p className="text-xs text-muted-foreground text-center">Maximum 3 wallets linked</p>
+                      <p className="text-xs text-muted-foreground text-center">Maximum wallets linked (1 Privy + 2 external)</p>
                     )}
                   </div>
                 </PopoverContent>

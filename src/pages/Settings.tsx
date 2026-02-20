@@ -135,7 +135,7 @@ export default function Settings() {
   const limits = TIER_LIMITS[tier];
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative z-10">
       <Header
         tier={tier}
         isLoggedIn={authenticated}

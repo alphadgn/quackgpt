@@ -7,7 +7,6 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
-import heroBgDuck from "@/assets/hero-bg-duck.jpeg";
 
 const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
@@ -35,10 +34,25 @@ const Index = () => {
     setPrefillMessage("");
   }, []);
 
+  const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative') => {
+    if (!user?.id) return;
+    try {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'x-privy-user-id': user.id,
+        },
+        body: JSON.stringify({ messageContent, feedbackType: type }),
+      });
+    } catch (err) {
+      console.error('Feedback submission failed:', err);
+    }
+  }, [user?.id]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-y-auto">
-      {/* Background image layer */}
-      <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: '150%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.15 }} />
       <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
@@ -63,7 +77,7 @@ const Index = () => {
           ) : (
             <div className="divide-y divide-border/30">
               {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+                <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} />
               ))}
               {isTyping && <TypingIndicator />}
               <div ref={chatEndRef} />
@@ -97,8 +111,6 @@ const Index = () => {
       </div>
       
       {authenticated && <CountdownTimer resetTime={resetTime} />}
-      
-      {/* Footer removed */}
     </div>
   );
 };
