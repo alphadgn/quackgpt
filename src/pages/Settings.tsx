@@ -344,17 +344,16 @@ export default function Settings() {
                     Link {linkedWallets.length === 0 ? "a" : "Another"} Wallet
                   </Button>
                 )}
-                {externalWalletCount > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                    onClick={() => setShowResetWalletsDialog(true)}
-                  >
-                    <Unlink className="w-3.5 h-3.5 mr-2" />
-                    Reset All Web3 Wallets
-                  </Button>
-                )}
+                {/* Always show Reset — even if ghost wallets exist but aren't displayed */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => setShowResetWalletsDialog(true)}
+                >
+                  <Unlink className="w-3.5 h-3.5 mr-2" />
+                  Reset All Web3 Wallets
+                </Button>
               </div>
             </section>
 
