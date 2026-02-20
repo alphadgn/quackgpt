@@ -10,7 +10,7 @@ import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import heroBgDuck from "@/assets/hero-bg-duck.jpeg";
 
 const Index = () => {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +50,7 @@ const Index = () => {
         nftCheckLoading={nftCheckLoading}
         linkedWallets={linkedWallets}
         onLinkWallet={linkWallet}
+        onUnlinkWallet={unlinkWallet}
         isSuperAdmin={isSuperAdmin}
         embeddedWallet={embeddedWallet}
       />

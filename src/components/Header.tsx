@@ -4,7 +4,7 @@ import { TierBadge } from "./TierBadge";
 import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { UserTier } from "@/types";
-import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings, ShieldCheck } from "lucide-react";
+import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings, ShieldCheck, Unlink } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface LinkedWallet {
@@ -22,6 +22,7 @@ interface HeaderProps {
   nftCheckLoading?: boolean;
   linkedWallets?: LinkedWallet[];
   onLinkWallet?: () => void;
+  onUnlinkWallet?: (address: string) => void;
   isSuperAdmin?: boolean;
   embeddedWallet?: { address: string } | null;
 }
@@ -30,7 +31,7 @@ function shortenAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
-export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet, isSuperAdmin, embeddedWallet }: HeaderProps) {
+export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet, onUnlinkWallet, isSuperAdmin, embeddedWallet }: HeaderProps) {
   const [showNotification, setShowNotification] = useState(false);
 
   // Build deduplicated list of all wallets to display
@@ -130,6 +131,15 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                             <Wallet className="w-3 h-3 text-primary shrink-0" />
                             <span className="truncate">{shortenAddress(w.address)}</span>
                             <span className="text-muted-foreground ml-auto capitalize text-[10px]">{w.label || w.chainType}</span>
+                            {onUnlinkWallet && (
+                              <button
+                                onClick={() => onUnlinkWallet(w.address)}
+                                className="text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                                title="Disconnect wallet"
+                              >
+                                <Unlink className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         ))}
                       </div>

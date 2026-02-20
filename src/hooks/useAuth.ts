@@ -5,7 +5,7 @@ import { UserTier } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useAuth() {
-  const { ready, authenticated, user, login, logout, linkWallet } = usePrivy();
+  const { ready, authenticated, user, login, logout, linkWallet, unlinkWallet } = usePrivy();
   const { address, isConnected } = useAccount();
   const [isNftHolder, setIsNftHolder] = useState(false);
   const [nftCheckLoading, setNftCheckLoading] = useState(false);
@@ -145,6 +145,14 @@ export function useAuth() {
     linkWallet?.();
   }, [linkedWallets.length, linkWallet]);
 
+  const handleUnlinkWallet = useCallback(async (address: string) => {
+    try {
+      await unlinkWallet(address);
+    } catch (err) {
+      console.error('Failed to unlink wallet:', err);
+    }
+  }, [unlinkWallet]);
+
   return {
     ready,
     authenticated,
@@ -162,5 +170,6 @@ export function useAuth() {
     email: user?.email?.address,
     linkedWallets,
     linkWallet: handleLinkWallet,
+    unlinkWallet: handleUnlinkWallet,
   };
 }
