@@ -156,9 +156,13 @@ export function useAuth() {
   }, [authenticated, isNftHolder, isSubscribed]);
 
   const handleLinkWallet = useCallback(() => {
-    if (linkedWallets.length >= 3) return;
+    // Count only actual wallet-type accounts (not emails or other linked accounts)
+    const walletCount = (user?.linkedAccounts || []).filter(
+      (a: any) => a.type === 'wallet'
+    ).length;
+    if (walletCount >= 3) return;
     linkWallet?.();
-  }, [linkedWallets.length, linkWallet]);
+  }, [user?.linkedAccounts, linkWallet]);
 
   const handleUnlinkWallet = useCallback(async (address: string) => {
     try {
