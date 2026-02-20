@@ -1,6 +1,7 @@
 import { PrivyProvider } from '@privy-io/react-auth';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { mainnet } from 'viem/chains';
 import { PRIVY_APP_ID, apeChain, wagmiConfig } from '@/config/web3';
 
 const queryClient = new QueryClient();
@@ -21,8 +22,8 @@ export function Web3Provider({ children }: Web3ProviderProps) {
           walletChainType: 'ethereum-only',
         },
         loginMethods: ['email', 'wallet'],
-        defaultChain: apeChain,
-        supportedChains: [apeChain],
+        defaultChain: mainnet,
+        supportedChains: [mainnet, apeChain],
         embeddedWallets: {
           ethereum: {
             createOnLogin: 'users-without-wallets',

@@ -137,7 +137,7 @@ serve(async (req) => {
     } else {
       await supabase
         .from("daily_query_usage")
-        .insert({ external_user_id: privyUserId, query_date: new Date().toISOString().split("T")[0], queries_used: 1, cycle_started_at: cycleStartedAt });
+        .insert({ user_id: privyUserId, external_user_id: privyUserId, query_date: new Date().toISOString().split("T")[0], queries_used: 1, cycle_started_at: cycleStartedAt });
     }
 
     // Build system message
