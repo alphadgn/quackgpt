@@ -13,12 +13,25 @@ export function useAuth() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
-  // Get all linked wallets from Privy user
+  // Get all linked wallets from Privy user (ALL wallet types, fully deduplicated)
   const linkedWallets = useMemo(() => {
     if (!user) return [];
-    return (user.linkedAccounts?.filter(
-      (account: any) => account.type === 'wallet'
-    ) || []) as Array<{ address: string; chainType: string }>;
+    const seen = new Set<string>();
+    const wallets: Array<{ address: string; chainType: string; walletClientType?: string }> = [];
+    for (const account of (user.linkedAccounts || []) as any[]) {
+      if (account.type === 'wallet' && account.address) {
+        const key = account.address.toLowerCase();
+        if (!seen.has(key)) {
+          seen.add(key);
+          wallets.push({
+            address: account.address,
+            chainType: account.chainType || 'ethereum',
+            walletClientType: account.walletClientType,
+          });
+        }
+      }
+    }
+    return wallets;
   }, [user]);
 
   // Get embedded wallet from Privy user
@@ -150,8 +163,23 @@ export function useAuth() {
       await unlinkWallet(address);
     } catch (err) {
       console.error('Failed to unlink wallet:', err);
+      throw err;
     }
   }, [unlinkWallet]);
+
+  // Unlink all external (non-Privy-embedded) wallets
+  const handleUnlinkAllWeb3Wallets = useCallback(async () => {
+    const externalWallets = linkedWallets.filter(
+      w => w.walletClientType !== 'privy'
+    );
+    for (const w of externalWallets) {
+      try {
+        await unlinkWallet(w.address);
+      } catch (err) {
+        console.error('Failed to unlink wallet:', w.address, err);
+      }
+    }
+  }, [linkedWallets, unlinkWallet]);
 
   return {
     ready,
@@ -171,5 +199,7 @@ export function useAuth() {
     linkedWallets,
     linkWallet: handleLinkWallet,
     unlinkWallet: handleUnlinkWallet,
+    unlinkAllWeb3Wallets: handleUnlinkAllWeb3Wallets,
   };
 }
+

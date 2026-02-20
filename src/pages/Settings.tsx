@@ -2,8 +2,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { TierBadge } from "@/components/TierBadge";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TIER_LIMITS, UserTier } from "@/types";
-import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink } from "lucide-react";
+import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink, Unlink } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -19,12 +20,14 @@ function shortenAddress(address: string) {
 }
 
 export default function Settings() {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, solanaAddress, embeddedWallet, isSubscribed, isSuperAdmin } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, unlinkAllWeb3Wallets, user, solanaAddress, embeddedWallet, isSubscribed, isSuperAdmin } = useAuth();
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const [showResetWalletsDialog, setShowResetWalletsDialog] = useState(false);
+  const [resetWalletsLoading, setResetWalletsLoading] = useState(false);
 
   // Check for checkout success
   useEffect(() => {
@@ -132,9 +135,49 @@ export default function Settings() {
     }
   };
 
+  const handleResetWeb3Wallets = async () => {
+    setResetWalletsLoading(true);
+    try {
+      await unlinkAllWeb3Wallets?.();
+      toast.success("All external Web3 wallets have been unlinked. You can now connect new ones.");
+    } catch (err) {
+      toast.error("Failed to unlink some wallets. Please try again.");
+    } finally {
+      setResetWalletsLoading(false);
+      setShowResetWalletsDialog(false);
+    }
+  };
+
   const limits = TIER_LIMITS[tier];
 
+  // Build the wallet display list from linkedWallets (all wallets, deduped in useAuth)
+  const privyWallet = linkedWallets.find(w => w.walletClientType === 'privy');
+  const externalWallets = linkedWallets.filter(w => w.walletClientType !== 'privy');
+  const externalWalletCount = externalWallets.length;
+
   return (
+    <>
+    <AlertDialog open={showResetWalletsDialog} onOpenChange={setShowResetWalletsDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Reset Web3 Wallets</AlertDialogTitle>
+          <AlertDialogDescription>
+            This will disconnect all external Web3 wallets ({externalWalletCount}) from your account. Your Privy embedded wallet will be preserved. You can reconnect wallets afterwards.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleResetWeb3Wallets}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={resetWalletsLoading}
+          >
+            {resetWalletsLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Disconnect All Web3 Wallets
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     <div className="min-h-screen flex flex-col relative z-10">
       <Header
         tier={tier}
@@ -255,51 +298,64 @@ export default function Settings() {
 
             {/* Linked Wallets */}
             <section className="rounded-xl border border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Linked Wallets</h2>
-              {/* Show embedded wallet if available */}
-              {embeddedWallet?.address && linkedWallets.length === 0 && !walletAddress && !solanaAddress && (
-                <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg mb-2">
-                  <Wallet className="w-4 h-4 text-primary shrink-0" />
-                  <span className="truncate">{shortenAddress(embeddedWallet.address)}</span>
-                  <span className="text-muted-foreground ml-auto text-xs">Privy Wallet</span>
-                </div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-display font-semibold text-foreground">Linked Wallets</h2>
+                <span className="text-xs text-muted-foreground">1 Privy + up to 2 external</span>
+              </div>
+
+              {linkedWallets.length === 0 && (
+                <p className="text-sm text-muted-foreground mb-4">No wallets linked yet. Link a wallet to enable NFT verification.</p>
               )}
-              {/* Show email as auth method */}
-              {email && linkedWallets.length === 0 && !walletAddress && !solanaAddress && !embeddedWallet?.address && (
-                <div className="flex items-center gap-2 text-sm bg-secondary/50 px-4 py-3 rounded-lg mb-2">
-                  <Shield className="w-4 h-4 text-primary shrink-0" />
-                  <span className="truncate">{email}</span>
-                  <span className="text-muted-foreground ml-auto text-xs">Email (primary)</span>
-                </div>
-              )}
-              {linkedWallets.length === 0 && !walletAddress && !solanaAddress && !embeddedWallet?.address && (
-                <p className="text-sm text-muted-foreground mb-2">No wallets linked yet. Link a wallet to enable NFT verification.</p>
-              )}
-              {(linkedWallets.length > 0 || walletAddress || solanaAddress) && (
+
+              {linkedWallets.length > 0 && (
                 <div className="space-y-2 mb-4">
-                  {linkedWallets.map((w, i) => (
+                  {/* Privy embedded wallet */}
+                  {privyWallet && (
+                    <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg border border-primary/20">
+                      <Wallet className="w-4 h-4 text-primary shrink-0" />
+                      <span className="truncate">{shortenAddress(privyWallet.address)}</span>
+                      <span className="text-muted-foreground ml-auto text-xs">Privy (embedded)</span>
+                    </div>
+                  )}
+                  {/* External wallets */}
+                  {externalWallets.map((w, i) => (
                     <div key={i} className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
                       <Wallet className="w-4 h-4 text-primary shrink-0" />
                       <span className="truncate">{shortenAddress(w.address)}</span>
-                      <span className="text-muted-foreground ml-auto capitalize text-xs">
-                        {(w as any).walletClientType === 'privy' ? 'Privy Wallet' : w.chainType}
-                      </span>
+                      <span className="text-muted-foreground ml-auto capitalize text-xs">{w.chainType}</span>
+                      {unlinkWallet && (
+                        <button
+                          onClick={() => unlinkWallet(w.address)}
+                          className="text-muted-foreground hover:text-destructive transition-colors shrink-0 ml-1"
+                          title="Disconnect wallet"
+                        >
+                          <Unlink className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
-                  {walletAddress && !linkedWallets.some(w => w.address.toLowerCase() === walletAddress.toLowerCase()) && (
-                    <div className="flex items-center gap-2 text-sm font-mono bg-secondary/50 px-4 py-3 rounded-lg">
-                      <Wallet className="w-4 h-4 text-primary shrink-0" />
-                      <span className="truncate">{shortenAddress(walletAddress)}</span>
-                      <span className="text-muted-foreground ml-auto text-xs">EVM (connected)</span>
-                    </div>
-                  )}
                 </div>
               )}
-              {linkedWallets.length < 3 && (
-                <Button variant="outline" size="sm" onClick={linkWallet}>
-                  Link {linkedWallets.length === 0 && !walletAddress ? "a" : "Another"} Wallet
-                </Button>
-              )}
+
+              <div className="flex flex-wrap gap-2">
+                {externalWalletCount < 2 && (
+                  <Button variant="outline" size="sm" onClick={linkWallet}>
+                    <Wallet className="w-3.5 h-3.5 mr-2" />
+                    Link {linkedWallets.length === 0 ? "a" : "Another"} Wallet
+                  </Button>
+                )}
+                {externalWalletCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => setShowResetWalletsDialog(true)}
+                  >
+                    <Unlink className="w-3.5 h-3.5 mr-2" />
+                    Reset All Web3 Wallets
+                  </Button>
+                )}
+              </div>
             </section>
 
             {/* Account Info */}
@@ -316,5 +372,6 @@ export default function Settings() {
         )}
       </main>
     </div>
+    </>
   );
 }

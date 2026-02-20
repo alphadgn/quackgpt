@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 
 function formatTime(ms: number): string {
-  if (ms <= 0) return '00h 00m';
+  if (ms <= 0) return '00h 00m 00s';
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
-  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`;
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
 }
 
 interface CountdownTimerProps {
@@ -25,7 +26,7 @@ export function CountdownTimer({ resetTime }: CountdownTimerProps) {
     const interval = setInterval(() => {
       const diff = resetTime - Date.now();
       setRemaining(diff <= 0 ? 0 : diff);
-    }, 30000);
+    }, 1000);
     return () => clearInterval(interval);
   }, [resetTime]);
 
