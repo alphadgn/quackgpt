@@ -33,6 +33,31 @@ function shortenAddress(address: string) {
 export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet, isSuperAdmin, embeddedWallet }: HeaderProps) {
   const [showNotification, setShowNotification] = useState(false);
 
+  // Build deduplicated list of all wallets to display
+  const allWallets = (() => {
+    const wallets: { address: string; chainType: string; label?: string }[] = [];
+    const seen = new Set<string>();
+
+    // Add embedded wallet first
+    if (embeddedWallet?.address) {
+      seen.add(embeddedWallet.address.toLowerCase());
+      wallets.push({ address: embeddedWallet.address, chainType: 'ethereum', label: 'Privy' });
+    }
+
+    // Add linked wallets (dedup against embedded)
+    for (const w of linkedWallets) {
+      const key = w.address.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        wallets.push({ address: w.address, chainType: w.chainType });
+      }
+    }
+
+    return wallets;
+  })();
+
+  const walletCount = allWallets.length;
+
   return (
     <>
       {/* Dismissible notification */}
@@ -72,14 +97,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               {/* Wallet popover */}
               <Popover>
                 <PopoverTrigger asChild>
-                  {walletAddress || linkedWallets.length > 0 || embeddedWallet?.address ? (
+                  {walletAddress || walletCount > 0 ? (
                     <Button
                       variant="glass"
                       size="sm"
                       className="hidden sm:flex font-mono text-xs"
                     >
                       <Wallet className="w-4 h-4 mr-2" />
-                      {walletAddress ? shortenAddress(walletAddress) : embeddedWallet?.address ? shortenAddress(embeddedWallet.address) : `${linkedWallets.length} wallet${linkedWallets.length > 1 ? 's' : ''}`}
+                      {walletAddress ? shortenAddress(walletAddress) : `${walletCount} wallet${walletCount > 1 ? 's' : ''}`}
                     </Button>
                   ) : (
                     <Button 
@@ -96,31 +121,24 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                   <div className="space-y-3">
                     <h4 className="font-medium text-sm text-foreground">Connected Wallets</h4>
                     
-                    {linkedWallets.length === 0 && !embeddedWallet?.address ? (
+                    {walletCount === 0 ? (
                       <p className="text-xs text-muted-foreground">No wallets linked yet.</p>
                     ) : (
                       <div className="space-y-2">
-                        {embeddedWallet?.address && !linkedWallets.some(w => w.address.toLowerCase() === embeddedWallet.address.toLowerCase()) && (
-                          <div className="flex items-center gap-2 text-xs font-mono bg-secondary/50 px-3 py-2 rounded-lg">
-                            <Wallet className="w-3 h-3 text-primary shrink-0" />
-                            <span className="truncate">{shortenAddress(embeddedWallet.address)}</span>
-                            <span className="text-muted-foreground ml-auto text-[10px]">Privy</span>
-                          </div>
-                        )}
-                        {linkedWallets.map((w, i) => (
+                        {allWallets.map((w, i) => (
                           <div key={i} className="flex items-center gap-2 text-xs font-mono bg-secondary/50 px-3 py-2 rounded-lg">
                             <Wallet className="w-3 h-3 text-primary shrink-0" />
                             <span className="truncate">{shortenAddress(w.address)}</span>
-                            <span className="text-muted-foreground ml-auto capitalize text-[10px]">{w.chainType}</span>
+                            <span className="text-muted-foreground ml-auto capitalize text-[10px]">{w.label || w.chainType}</span>
                           </div>
                         ))}
                       </div>
                     )}
                     
-                    {linkedWallets.length < 3 ? (
+                    {walletCount < 3 ? (
                       <Button variant="outline" size="sm" className="w-full" onClick={onLinkWallet}>
                         <Plus className="w-3 h-3 mr-2" />
-                        Link {linkedWallets.length === 0 ? 'a' : 'Another'} Wallet
+                        Link {walletCount === 0 ? 'a' : 'Another'} Wallet
                       </Button>
                     ) : (
                       <p className="text-xs text-muted-foreground text-center">Maximum 3 wallets linked</p>
