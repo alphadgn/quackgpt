@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const privyUserId = req.headers.get("x-privy-user-id");
-    if (!privyUserId) {
+    if (!privyUserId || !/^did:privy:[a-zA-Z0-9]{1,50}$/.test(privyUserId)) {
       return new Response(JSON.stringify({ subscribed: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -69,7 +69,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Check subscription error:", error);
-    return new Response(JSON.stringify({ subscribed: false, error: error instanceof Error ? error.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ subscribed: false, error: "An unexpected error occurred" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

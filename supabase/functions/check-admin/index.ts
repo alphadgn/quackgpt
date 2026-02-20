@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const privyUserId = req.headers.get("x-privy-user-id");
-    if (!privyUserId) {
+    if (!privyUserId || !/^did:privy:[a-zA-Z0-9]{1,50}$/.test(privyUserId)) {
       return new Response(JSON.stringify({ isSuperAdmin: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -15,7 +15,8 @@ serve(async (req) => {
 
   try {
     const { walletAddress } = await req.json();
-    const privyUserId = req.headers.get('x-privy-user-id');
+    const rawPrivyUserId = req.headers.get('x-privy-user-id');
+    const privyUserId = rawPrivyUserId && /^did:privy:[a-zA-Z0-9]{1,50}$/.test(rawPrivyUserId) ? rawPrivyUserId : null;
 
     if (!walletAddress) {
       return new Response(

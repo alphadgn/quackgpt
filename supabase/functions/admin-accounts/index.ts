@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const privyUserId = req.headers.get("x-privy-user-id");
-    if (!privyUserId) {
+    if (!privyUserId || !/^did:privy:[a-zA-Z0-9]{1,50}$/.test(privyUserId)) {
       return new Response(JSON.stringify({ error: "Authentication required" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -161,7 +161,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Admin error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Internal error" }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
