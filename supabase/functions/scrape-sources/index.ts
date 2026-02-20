@@ -23,7 +23,7 @@ serve(async (req) => {
   try {
     // Authentication check
     const privyUserId = req.headers.get("x-privy-user-id");
-    if (!privyUserId) {
+    if (!privyUserId || !/^did:privy:[a-zA-Z0-9]{1,50}$/.test(privyUserId)) {
       return new Response(
         JSON.stringify({ success: false, error: "Authentication required", context: "" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -100,7 +100,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Scrape error:", error);
     return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : "Unknown error", context: "" }),
+      JSON.stringify({ success: false, error: "An unexpected error occurred", context: "" }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -53,7 +53,7 @@ serve(async (req) => {
 
     // Get Privy user ID from header
     const privyUserId = req.headers.get("x-privy-user-id");
-    if (!privyUserId) {
+    if (!privyUserId || !/^did:privy:[a-zA-Z0-9]{1,50}$/.test(privyUserId)) {
       return new Response(JSON.stringify({ error: "Sign in required to use quackGPT" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -210,7 +210,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("Chat error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
