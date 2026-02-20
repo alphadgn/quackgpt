@@ -18,9 +18,9 @@ serve(async (req) => {
     const rawPrivyUserId = req.headers.get('x-privy-user-id');
     const privyUserId = rawPrivyUserId && /^did:privy:[a-zA-Z0-9]{1,50}$/.test(rawPrivyUserId) ? rawPrivyUserId : null;
 
-    if (!walletAddress) {
+    if (!walletAddress || typeof walletAddress !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(walletAddress)) {
       return new Response(
-        JSON.stringify({ error: 'walletAddress is required' }),
+        JSON.stringify({ error: 'Valid walletAddress is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
