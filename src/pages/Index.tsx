@@ -23,6 +23,7 @@ const Index = () => {
     sendMessage,
     cooldownUntil,
     resetTime,
+    usageLoaded,
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id });
 
   // Auto-scroll to bottom when new messages arrive
@@ -74,9 +75,9 @@ const Index = () => {
           {authenticated ? (
             <ChatInput
               onSend={sendMessage}
-              disabled={isTyping}
+              disabled={isTyping || !usageLoaded}
               tier={tier}
-              queriesRemaining={queriesRemaining}
+              queriesRemaining={usageLoaded ? queriesRemaining : -1}
               className="max-w-3xl mx-auto"
               prefillValue={prefillMessage}
               onPrefillConsumed={handlePrefillConsumed}

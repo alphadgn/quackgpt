@@ -48,9 +48,10 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
   }, [value]);
 
   const isOnCooldown = cooldownUntil != null && Date.now() < cooldownUntil;
+  const isLoadingUsage = queriesRemaining < 0;
 
   const handleSubmit = () => {
-    if (!value.trim() || disabled || isBlocked || queriesRemaining <= 0 || isOnCooldown) return;
+    if (!value.trim() || disabled || isBlocked || queriesRemaining <= 0 || isOnCooldown || isLoadingUsage) return;
     onSend(value.trim());
     setValue("");
   };
@@ -62,7 +63,7 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
     }
   };
 
-  const isDisabled = disabled || queriesRemaining <= 0 || isOnCooldown;
+  const isDisabled = disabled || queriesRemaining <= 0 || isOnCooldown || isLoadingUsage;
 
   const cooldownMinutes = isOnCooldown ? Math.ceil((cooldownUntil! - Date.now()) / 60000) : 0;
 
@@ -97,11 +98,13 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={
-            isOnCooldown
-              ? `Cooldown active — ${cooldownMinutes} min remaining...`
-              : queriesRemaining <= 0 
-                ? "Daily query limit reached..." 
-                : "Ask about Wallchain, InfoFi, or Quack Heads..."
+            isLoadingUsage
+              ? "Loading usage data..."
+              : isOnCooldown
+                ? `Cooldown active — ${cooldownMinutes} min remaining...`
+                : queriesRemaining <= 0 
+                  ? "Daily query limit reached..." 
+                  : "Ask about Wallchain, InfoFi, or Quack Heads..."
           }
           disabled={isDisabled}
           rows={1}
@@ -131,9 +134,9 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           Response limit: {limits.maxCharacters} characters
         </span>
         <span className={cn(
-          queriesRemaining === 0 && "text-destructive"
+          queriesRemaining === 0 && !isLoadingUsage && "text-destructive"
         )}>
-          {queriesRemaining}/{limits.maxQueries} queries remaining today
+          {isLoadingUsage ? "Loading…" : `${queriesRemaining}/${limits.maxQueries} queries remaining today`}
         </span>
       </div>
     </div>
