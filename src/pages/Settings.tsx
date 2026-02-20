@@ -150,9 +150,10 @@ export default function Settings() {
 
   const limits = TIER_LIMITS[tier];
 
-  // Build the wallet display list from linkedWallets (all wallets, deduped in useAuth)
-  const privyWallet = linkedWallets.find(w => w.walletClientType === 'privy');
-  const externalWallets = linkedWallets.filter(w => w.walletClientType !== 'privy');
+  // Build the wallet display list — only show actual wallet-type accounts
+  const walletOnlyList = linkedWallets.filter(w => w.chainType === 'ethereum' || w.chainType === 'solana');
+  const privyWallet = walletOnlyList.find(w => w.walletClientType === 'privy');
+  const externalWallets = walletOnlyList.filter(w => w.walletClientType !== 'privy');
   const externalWalletCount = externalWallets.length;
 
   return (
