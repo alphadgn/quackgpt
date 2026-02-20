@@ -12,6 +12,8 @@ const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }>
   paid: { maxQueries: 3, maxCharacters: 300 },
 };
 
+const CYCLE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 const SYSTEM_PROMPT = `You are quackGPT — a sharp, no-nonsense InfoFi intelligence engine built for the Wallchain ecosystem. Think Grok meets financial terminal: direct, witty when appropriate, and ruthlessly factual.
 
 Your domain expertise covers:
@@ -68,7 +70,6 @@ serve(async (req) => {
       .single();
 
     if (!profile) {
-      // Auto-create profile for new Privy user
       await supabase
         .from("profiles")
         .insert({ external_user_id: privyUserId, tier: "free" });
@@ -78,38 +79,65 @@ serve(async (req) => {
     const tier = profile.tier || "free";
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-    // Check daily query usage
-    const today = new Date().toISOString().split("T")[0];
+    // Check user's current cycle usage
     const { data: usage } = await supabase
       .from("daily_query_usage")
-      .select("queries_used")
+      .select("queries_used, cycle_started_at")
       .eq("external_user_id", privyUserId)
-      .eq("query_date", today)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .single();
 
-    const queriesUsed = usage?.queries_used || 0;
+    const now = Date.now();
+    let queriesUsed = 0;
+    let cycleStartedAt: string;
+
+    if (usage) {
+      const cycleStart = new Date(usage.cycle_started_at).getTime();
+      const cycleEnd = cycleStart + CYCLE_DURATION_MS;
+
+      if (now >= cycleEnd) {
+        // Cycle expired — reset: update existing row with new cycle
+        cycleStartedAt = new Date(now).toISOString();
+        queriesUsed = 0;
+        await supabase
+          .from("daily_query_usage")
+          .update({ queries_used: 0, cycle_started_at: cycleStartedAt, query_date: new Date().toISOString().split("T")[0] })
+          .eq("external_user_id", privyUserId);
+      } else {
+        // Still within cycle
+        queriesUsed = usage.queries_used || 0;
+        cycleStartedAt = usage.cycle_started_at;
+      }
+    } else {
+      // First ever query — create new usage row, cycle starts now
+      cycleStartedAt = new Date(now).toISOString();
+    }
 
     if (queriesUsed >= limits.maxQueries) {
+      const cycleStart = new Date(cycleStartedAt).getTime();
+      const resetTime = cycleStart + CYCLE_DURATION_MS;
       return new Response(JSON.stringify({ 
         error: "Daily query limit reached",
         queriesUsed,
         maxQueries: limits.maxQueries,
+        cycleStartedAt,
+        resetTime,
       }), {
         status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Increment query count
-    if (usage) {
+    if (usage && queriesUsed > 0 || (usage && queriesUsed === 0)) {
       await supabase
         .from("daily_query_usage")
-        .update({ queries_used: queriesUsed + 1 })
-        .eq("external_user_id", privyUserId)
-        .eq("query_date", today);
+        .update({ queries_used: queriesUsed + 1, cycle_started_at: cycleStartedAt })
+        .eq("external_user_id", privyUserId);
     } else {
       await supabase
         .from("daily_query_usage")
-        .insert({ external_user_id: privyUserId, query_date: today, queries_used: 1 });
+        .insert({ external_user_id: privyUserId, query_date: new Date().toISOString().split("T")[0], queries_used: 1, cycle_started_at: cycleStartedAt });
     }
 
     // Build system message
@@ -157,6 +185,9 @@ serve(async (req) => {
       });
     }
 
+    const cycleStart = new Date(cycleStartedAt).getTime();
+    const resetTime = cycleStart + CYCLE_DURATION_MS;
+
     return new Response(response.body, {
       headers: {
         ...corsHeaders,
@@ -165,6 +196,8 @@ serve(async (req) => {
         "X-Max-Characters": String(limits.maxCharacters),
         "X-Queries-Used": String(queriesUsed + 1),
         "X-Max-Queries": String(limits.maxQueries),
+        "X-Cycle-Started-At": cycleStartedAt,
+        "X-Reset-Time": String(resetTime),
       },
     });
   } catch (e) {

@@ -17,6 +17,7 @@ export type Database = {
       daily_query_usage: {
         Row: {
           created_at: string
+          cycle_started_at: string
           external_user_id: string | null
           id: string
           queries_used: number
@@ -26,6 +27,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cycle_started_at?: string
           external_user_id?: string | null
           id?: string
           queries_used?: number
@@ -35,6 +37,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cycle_started_at?: string
           external_user_id?: string | null
           id?: string
           queries_used?: number

@@ -7,6 +7,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
+import heroBgDuck from "@/assets/hero-bg-duck.jpeg";
 
 const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
@@ -21,6 +22,7 @@ const Index = () => {
     queriesRemaining, 
     sendMessage,
     cooldownUntil,
+    resetTime,
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id });
 
   // Auto-scroll to bottom when new messages arrive
@@ -33,7 +35,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <Header 
         tier={tier}
         isLoggedIn={authenticated}
@@ -87,7 +89,7 @@ const Index = () => {
         </div>
       </main>
       
-      {authenticated && <CountdownTimer />}
+      {authenticated && <CountdownTimer resetTime={resetTime} />}
       
       {/* Footer removed */}
     </div>
