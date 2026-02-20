@@ -70,10 +70,9 @@ serve(async (req) => {
       .single();
 
     if (!profile) {
-      const profileId = crypto.randomUUID();
       const { error: profileErr } = await supabase
         .from("profiles")
-        .insert({ id: profileId, user_id: profileId, external_user_id: privyUserId, tier: "free" });
+        .insert({ external_user_id: privyUserId, tier: "free" });
       if (profileErr) console.error("Profile insert error:", profileErr);
       profile = { tier: "free" };
     }
@@ -138,12 +137,9 @@ serve(async (req) => {
         .eq("external_user_id", privyUserId);
       if (updateErr) console.error("Usage update error:", updateErr);
     } else {
-      const newId = crypto.randomUUID();
       const { error: insertErr } = await supabase
         .from("daily_query_usage")
         .insert({
-          id: newId,
-          user_id: newId,
           external_user_id: privyUserId,
           query_date: new Date().toISOString().split("T")[0],
           queries_used: 1,
