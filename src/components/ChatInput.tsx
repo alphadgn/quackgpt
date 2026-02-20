@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Send, AlertCircle } from "lucide-react";
+import { Send, AlertCircle, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
-import { toast } from "@/hooks/use-toast";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -19,7 +19,9 @@ interface ChatInputProps {
 export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
+  const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const navigate = useNavigate();
   const limits = TIER_LIMITS[tier];
 
   // Handle prefill from "Try asking" buttons
@@ -48,6 +50,14 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
     }
   }, [value]);
 
+  // Auto-hide depleted overlay after 4 seconds
+  useEffect(() => {
+    if (showDepletedOverlay) {
+      const timer = setTimeout(() => setShowDepletedOverlay(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showDepletedOverlay]);
+
   const isOnCooldown = cooldownUntil != null && Date.now() < cooldownUntil;
   const isLoadingUsage = queriesRemaining < 0;
 
@@ -69,11 +79,7 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
 
   const handleDepletedClick = () => {
     if (isDepleted) {
-      toast({
-        title: "Daily queries depleted",
-        description: "Upgrade your plan or purchase additional queries to continue asking questions.",
-        variant: "destructive",
-      });
+      setShowDepletedOverlay(true);
     }
   };
 
@@ -108,11 +114,33 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
             ? "border-destructive/50 bg-destructive/5" 
             : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
       )}>
+        {/* Depleted overlay notification */}
+        {showDepletedOverlay && isDepleted && (
+          <div className="absolute inset-0 z-10 flex items-center justify-between px-4 rounded-2xl bg-destructive/95 backdrop-blur-sm animate-fade-in">
+            <div className="flex items-center gap-2 text-destructive-foreground text-sm">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Daily queries depleted — upgrade to continue</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/settings");
+              }}
+              className="shrink-0 bg-destructive-foreground text-destructive hover:bg-destructive-foreground/90 border-none gap-1"
+            >
+              Upgrade <ArrowUpRight className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
+
         <textarea
           ref={textareaRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onClick={isDepleted ? handleDepletedClick : undefined}
           placeholder={
             isLoadingUsage
               ? "Loading usage data..."
@@ -133,11 +161,11 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
         <Button
           variant="send"
           size="icon"
-          onClick={handleSubmit}
-          disabled={isDisabled || !value.trim() || isBlocked}
+          onClick={isDepleted ? handleDepletedClick : handleSubmit}
+          disabled={!isDepleted && (isDisabled || !value.trim() || isBlocked)}
           className={cn(
             "shrink-0 transition-all duration-200",
-            (!value.trim() || isBlocked) && "opacity-50"
+            !isDepleted && (!value.trim() || isBlocked) && "opacity-50"
           )}
         >
           <Send className="w-4 h-4" />
