@@ -36,9 +36,9 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background relative">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-y-auto">
       {/* Background image layer */}
-      <div className="fixed inset-0 z-0" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: '150%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.15 }} />
+      <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: '150%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.15 }} />
       <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
@@ -54,9 +54,9 @@ const Index = () => {
         embeddedWallet={embeddedWallet}
       />
       
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-visible">
         {/* Chat area */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1">
           {messages.length === 0 ? (
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} />
           ) : (
