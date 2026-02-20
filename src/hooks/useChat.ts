@@ -21,18 +21,12 @@ const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sou
 
 const VIOLATION_WINDOW_MS = 5 * 60 * 1000;
 const COOLDOWN_DURATION_MS = 60 * 60 * 1000;
+const CYCLE_DURATION_MS = 24 * 60 * 60 * 1000;
 
 interface UseChatOptions {
   tier: UserTier;
   isAuthenticated: boolean;
   privyUserId?: string;
-}
-
-function getNextResetTime(): number {
-  const now = new Date();
-  const next = new Date(now);
-  next.setUTCHours(24, 0, 0, 0);
-  return next.getTime();
 }
 
 export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) {
@@ -41,18 +35,20 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [violations, setViolations] = useState<number[]>([]);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
-  const resetTimeRef = useRef(getNextResetTime());
-  
-  // Auto-reset queries when 24-hour countdown reaches zero
+  // Per-user reset time: null until first query sets it from server
+  const [resetTime, setResetTime] = useState<number | null>(null);
+
+  // Auto-reset queries when user's personal 24h countdown reaches zero
   useEffect(() => {
+    if (!resetTime) return;
     const interval = setInterval(() => {
-      if (Date.now() >= resetTimeRef.current) {
+      if (Date.now() >= resetTime) {
         setQueriesUsedToday(0);
-        resetTimeRef.current = getNextResetTime();
+        setResetTime(null); // Will be set again on next query
       }
-    }, 10000); // check every 10s
+    }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [resetTime]);
 
   const limits = TIER_LIMITS[tier];
   const queriesRemaining = limits.maxQueries - queriesUsedToday;
@@ -166,6 +162,13 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
           throw new Error('Please sign in to use quackGPT');
         }
         if (response.status === 429) {
+          // Server returns resetTime when limit is reached
+          if (errorData.resetTime) {
+            setResetTime(errorData.resetTime);
+          }
+          if (errorData.queriesUsed) {
+            setQueriesUsedToday(errorData.queriesUsed);
+          }
           throw new Error(errorData.error || 'Daily query limit reached');
         }
         throw new Error(errorData.error || 'Failed to get response');
@@ -176,6 +179,12 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
       const serverMaxChars = parseInt(response.headers.get('X-Max-Characters') || String(limits.maxCharacters));
       const serverQueriesUsed = parseInt(response.headers.get('X-Queries-Used') || '0');
       const serverTier = response.headers.get('X-User-Tier') || tier;
+      const serverResetTime = response.headers.get('X-Reset-Time');
+      
+      // Sync reset time from server
+      if (serverResetTime) {
+        setResetTime(parseInt(serverResetTime));
+      }
       
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -282,5 +291,6 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
     clearMessages,
     cooldownUntil,
     isOnCooldown,
+    resetTime,
   };
 }
