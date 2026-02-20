@@ -3,13 +3,17 @@ import { Header } from "@/components/Header";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
+import { CountdownTimer } from "@/components/CountdownTimer";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
+import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 
 const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useInactivityLogout(authenticated, logout);
   
   const { 
     messages, 
@@ -82,6 +86,8 @@ const Index = () => {
           </p>
         </div>
       </main>
+      
+      {authenticated && <CountdownTimer />}
       
       {/* Footer removed */}
     </div>

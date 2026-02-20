@@ -42,7 +42,8 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
             <button onClick={() => setShowNotification(false)} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
               <X className="w-5 h-5" />
             </button>
-            <p className="text-sm text-foreground leading-relaxed pr-6">
+            <h3 className="text-center font-semibold text-foreground mb-3">About Us</h3>
+            <p className="text-sm text-foreground leading-relaxed text-center">
               We are the deep Quack State anti slop crime fighters. We hope you'll help us to continue our mission of proof of humanity and protecting the integrity of information dissemination from becoming a slop wasteland.
             </p>
           </div>
@@ -148,14 +149,6 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
                 </Button>
               </Link>
               
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={onLogout}
-                title="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
             </>
           ) : (
             <Button 
@@ -172,6 +165,18 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
           <Button variant="ghost" size="icon-sm" onClick={() => setShowNotification(true)}>
             <Menu className="w-5 h-5" />
           </Button>
+
+          {/* Logout - right of menu */}
+          {isLoggedIn && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={onLogout}
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
+          )}
         </div>
       </div>
     </header>
