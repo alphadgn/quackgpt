@@ -21,6 +21,15 @@ serve(async (req) => {
   }
 
   try {
+    // Authentication check
+    const privyUserId = req.headers.get("x-privy-user-id");
+    if (!privyUserId) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Authentication required", context: "" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { query } = await req.json();
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
