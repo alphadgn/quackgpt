@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_users: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          external_user_id: string
+          id: string
+          is_banned: boolean
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          external_user_id: string
+          id?: string
+          is_banned?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          external_user_id?: string
+          id?: string
+          is_banned?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_feedback: {
+        Row: {
+          created_at: string
+          external_user_id: string
+          feedback_type: string
+          id: string
+          message_content: string
+        }
+        Insert: {
+          created_at?: string
+          external_user_id: string
+          feedback_type: string
+          id?: string
+          message_content: string
+        }
+        Update: {
+          created_at?: string
+          external_user_id?: string
+          feedback_type?: string
+          id?: string
+          message_content?: string
+        }
+        Relationships: []
+      }
       daily_query_usage: {
         Row: {
           created_at: string
