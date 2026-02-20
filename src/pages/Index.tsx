@@ -82,6 +82,7 @@ const Index = () => {
               prefillValue={prefillMessage}
               onPrefillConsumed={handlePrefillConsumed}
               cooldownUntil={cooldownUntil}
+              privyUserId={user?.id ?? null}
             />
           ) : null}
           
