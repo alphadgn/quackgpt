@@ -35,7 +35,10 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
+    <div className="min-h-screen flex flex-col bg-background relative">
+      {/* Background image layer */}
+      <div className="fixed inset-0 z-0" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: '150%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.15 }} />
+      <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
         isLoggedIn={authenticated}
@@ -88,6 +91,7 @@ const Index = () => {
           </p>
         </div>
       </main>
+      </div>
       
       {authenticated && <CountdownTimer resetTime={resetTime} />}
       
