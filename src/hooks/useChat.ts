@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from '@/types';
 
 function generateId(): string {
@@ -28,13 +28,32 @@ interface UseChatOptions {
   privyUserId?: string;
 }
 
+function getNextResetTime(): number {
+  const now = new Date();
+  const next = new Date(now);
+  next.setUTCHours(24, 0, 0, 0);
+  return next.getTime();
+}
+
 export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [violations, setViolations] = useState<number[]>([]);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const resetTimeRef = useRef(getNextResetTime());
   
+  // Auto-reset queries when 24-hour countdown reaches zero
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Date.now() >= resetTimeRef.current) {
+        setQueriesUsedToday(0);
+        resetTimeRef.current = getNextResetTime();
+      }
+    }, 10000); // check every 10s
+    return () => clearInterval(interval);
+  }, []);
+
   const limits = TIER_LIMITS[tier];
   const queriesRemaining = limits.maxQueries - queriesUsedToday;
   const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
