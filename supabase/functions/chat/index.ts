@@ -70,9 +70,11 @@ serve(async (req) => {
       .single();
 
     if (!profile) {
-      await supabase
+      const profileId = crypto.randomUUID();
+      const { error: profileErr } = await supabase
         .from("profiles")
-        .insert({ external_user_id: privyUserId, tier: "free" });
+        .insert({ id: profileId, user_id: profileId, external_user_id: privyUserId, tier: "free" });
+      if (profileErr) console.error("Profile insert error:", profileErr);
       profile = { tier: "free" };
     }
 
@@ -129,15 +131,25 @@ serve(async (req) => {
     }
 
     // Increment query count
-    if (usage && queriesUsed > 0 || (usage && queriesUsed === 0)) {
-      await supabase
+    if (usage) {
+      const { error: updateErr } = await supabase
         .from("daily_query_usage")
         .update({ queries_used: queriesUsed + 1, cycle_started_at: cycleStartedAt })
         .eq("external_user_id", privyUserId);
+      if (updateErr) console.error("Usage update error:", updateErr);
     } else {
-      await supabase
+      const newId = crypto.randomUUID();
+      const { error: insertErr } = await supabase
         .from("daily_query_usage")
-        .insert({ user_id: crypto.randomUUID(), external_user_id: privyUserId, query_date: new Date().toISOString().split("T")[0], queries_used: 1, cycle_started_at: cycleStartedAt });
+        .insert({
+          id: newId,
+          user_id: newId,
+          external_user_id: privyUserId,
+          query_date: new Date().toISOString().split("T")[0],
+          queries_used: 1,
+          cycle_started_at: cycleStartedAt,
+        });
+      if (insertErr) console.error("Usage insert error:", insertErr);
     }
 
     // Build system message
