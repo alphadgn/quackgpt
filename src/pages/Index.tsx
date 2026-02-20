@@ -52,7 +52,7 @@ const Index = () => {
   }, [user?.id]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background relative overflow-y-auto">
+    <div className="min-h-screen flex flex-col relative overflow-y-auto">
       <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
