@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Send, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
+import { toast } from "@/hooks/use-toast";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -63,7 +64,18 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
     }
   };
 
+  const isDepleted = queriesRemaining <= 0 && !isLoadingUsage;
   const isDisabled = disabled || queriesRemaining <= 0 || isOnCooldown || isLoadingUsage;
+
+  const handleDepletedClick = () => {
+    if (isDepleted) {
+      toast({
+        title: "Daily queries depleted",
+        description: "Upgrade your plan or purchase additional queries to continue asking questions.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const cooldownMinutes = isOnCooldown ? Math.ceil((cooldownUntil! - Date.now()) / 60000) : 0;
 
@@ -86,11 +98,15 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
       )}
       
       {/* Input container */}
-      <div className={cn(
+      <div
+        onClick={isDepleted ? handleDepletedClick : undefined}
+        className={cn(
         "relative flex items-end gap-2 p-2 rounded-2xl border transition-all duration-300",
-        isBlocked || isOnCooldown
-          ? "border-destructive/50 bg-destructive/5" 
-          : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
+        isDepleted
+          ? "border-destructive/50 bg-destructive/5 cursor-pointer"
+          : isBlocked || isOnCooldown
+            ? "border-destructive/50 bg-destructive/5" 
+            : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
       )}>
         <textarea
           ref={textareaRef}
