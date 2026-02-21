@@ -40,7 +40,7 @@ const Index = () => {
     setPrefillMessage("");
   }, []);
 
-  const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative') => {
+  const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
     try {
       const token = await getAccessToken();
@@ -51,7 +51,7 @@ const Index = () => {
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           ...(token ? { 'x-privy-token': token } : {}),
         },
-        body: JSON.stringify({ messageContent, feedbackType: type }),
+        body: JSON.stringify({ messageContent, feedbackType: type, userQuery }),
       });
     } catch (err) {
       console.error('Feedback submission failed:', err);
@@ -113,9 +113,21 @@ const Index = () => {
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} />
           ) : (
             <div className="divide-y divide-border/30">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} />
-              ))}
+              {messages.map((message, index) => {
+                // Find the previous user message for feedback context
+                let previousUserMessage: string | undefined;
+                if (message.role === 'assistant') {
+                  for (let i = index - 1; i >= 0; i--) {
+                    if (messages[i].role === 'user') {
+                      previousUserMessage = messages[i].content;
+                      break;
+                    }
+                  }
+                }
+                return (
+                  <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMessage} />
+                );
+              })}
               {isTyping && <TypingIndicator />}
               <div ref={chatEndRef} />
             </div>
@@ -125,7 +137,7 @@ const Index = () => {
         {/* Input area */}
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
-            tier === 'free' && !isSuperAdmin ? (
+            tier === 'free' && (!isSuperAdmin || tierOverride === 'free') ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5">
                   <AlertCircle className="w-5 h-5 text-destructive shrink-0" />

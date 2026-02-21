@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { messageContent, feedbackType } = await req.json();
+    const { messageContent, feedbackType, userQuery } = await req.json();
 
     if (!messageContent || !["positive", "negative"].includes(feedbackType)) {
       return new Response(JSON.stringify({ error: "Invalid input" }), {
@@ -91,6 +91,7 @@ Deno.serve(async (req) => {
       external_user_id: privyUserId,
       message_content: messageContent.substring(0, 5000),
       feedback_type: feedbackType,
+      user_query: userQuery?.substring(0, 2000) || null,
     });
 
     if (error) {

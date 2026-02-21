@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/index.ts";
 
 function isAllowedOrigin(origin: string): boolean {
@@ -51,14 +52,6 @@ function checkIpRateLimit(req: Request): boolean {
   return entry.count <= IP_RATE_LIMIT;
 }
 
-const SCRAPE_URLS = [
-  "https://docs.wallchain.xyz/intro",
-  "https://news.wallchain.xyz/",
-  "https://app.wallchain.xyz/leaderboards",
-  "https://app.wallchain.xyz/",
-  "https://wallchain.notion.site",
-];
-
 serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
@@ -92,9 +85,30 @@ serve(async (req) => {
       );
     }
 
-    console.log("Scraping Wallchain sources for query:", query);
+    // Load active sources from database
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const scrapePromises = SCRAPE_URLS.map(async (url) => {
+    const { data: sources, error: sourcesErr } = await supabase
+      .from("scrape_sources")
+      .select("url, label")
+      .eq("is_active", true);
+
+    if (sourcesErr) {
+      console.error("Failed to load scrape sources:", sourcesErr);
+    }
+
+    const SCRAPE_URLS = sources?.map((s: any) => s.url) || [
+      "https://docs.wallchain.xyz/intro",
+      "https://news.wallchain.xyz/",
+      "https://app.wallchain.xyz/leaderboards",
+      "https://app.wallchain.xyz/",
+    ];
+
+    console.log("Scraping sources for query:", query, "URLs:", SCRAPE_URLS.length);
+
+    const scrapePromises = SCRAPE_URLS.map(async (url: string) => {
       try {
         const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",

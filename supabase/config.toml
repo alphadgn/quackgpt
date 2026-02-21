@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.submit-feedback]
 verify_jwt = false
+
+[functions.admin-sources]
+verify_jwt = false

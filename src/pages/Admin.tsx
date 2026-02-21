@@ -1,8 +1,9 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, Check, X, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -14,6 +15,25 @@ interface AdminAccount {
   tier: string;
   created_at: string;
   todayUsage: number;
+}
+
+interface ScrapeSource {
+  id: string;
+  url: string;
+  label: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+interface FeedbackItem {
+  id: string;
+  external_user_id: string;
+  message_content: string;
+  user_query: string | null;
+  feedback_type: string;
+  admin_reviewed: boolean;
+  admin_override: string | null;
+  created_at: string;
 }
 
 const tierIcons: Record<string, typeof Shield> = {
@@ -34,6 +54,18 @@ export default function Admin() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Sources state
+  const [sources, setSources] = useState<ScrapeSource[]>([]);
+  const [sourcesLoading, setSourcesLoading] = useState(false);
+  const [newSourceUrl, setNewSourceUrl] = useState("");
+  const [newSourceLabel, setNewSourceLabel] = useState("");
+  const [addingSource, setAddingSource] = useState(false);
+
+  // Feedback state
+  const [negativeFeedback, setNegativeFeedback] = useState<FeedbackItem[]>([]);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [overrideText, setOverrideText] = useState<Record<string, string>>({});
+
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
     return {
@@ -49,11 +81,7 @@ export default function Admin() {
     setLoading(true);
     try {
       const token = await getAccessToken();
-      if (!token) {
-        setIsAdmin(false);
-        setLoading(false);
-        return;
-      }
+      if (!token) { setIsAdmin(false); setLoading(false); return; }
       const headers = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
@@ -70,9 +98,7 @@ export default function Admin() {
         setIsAdmin(true);
       } else {
         setIsAdmin(false);
-        if (resp.status === 403) {
-          toast.error("Access denied: super admin only");
-        }
+        if (resp.status === 403) toast.error("Access denied: super admin only");
       }
     } catch {
       toast.error("Failed to load accounts");
@@ -81,9 +107,50 @@ export default function Admin() {
     }
   }, [user?.id, getAccessToken]);
 
+  const fetchSources = useCallback(async () => {
+    setSourcesLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.sources) setSources(data.sources);
+    } catch {
+      toast.error("Failed to load sources");
+    } finally {
+      setSourcesLoading(false);
+    }
+  }, [getAuthHeaders]);
+
+  const fetchFeedback = useCallback(async () => {
+    setFeedbackLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list-feedback&type=negative&reviewed=false`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.feedback) setNegativeFeedback(data.feedback);
+    } catch {
+      toast.error("Failed to load feedback");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }, [getAuthHeaders]);
+
   useEffect(() => {
     if (authenticated && user?.id) fetchAccounts();
   }, [authenticated, user?.id, fetchAccounts]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchSources();
+      fetchFeedback();
+    }
+  }, [isAdmin, fetchSources, fetchFeedback]);
 
   const handleUpdateTier = async (targetUserId: string, newTier: string) => {
     if (!user?.id) return;
@@ -92,23 +159,12 @@ export default function Admin() {
       const headers = await getAuthHeaders();
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-accounts?action=update-tier`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ targetUserId, newTier }),
-        }
+        { method: "POST", headers, body: JSON.stringify({ targetUserId, newTier }) }
       );
-      if (resp.ok) {
-        toast.success(`Tier updated to ${newTier}`);
-        fetchAccounts();
-      } else {
-        toast.error("Failed to update tier");
-      }
-    } catch {
-      toast.error("Failed to update tier");
-    } finally {
-      setActionLoading(null);
-    }
+      if (resp.ok) { toast.success(`Tier updated to ${newTier}`); fetchAccounts(); }
+      else toast.error("Failed to update tier");
+    } catch { toast.error("Failed to update tier"); }
+    finally { setActionLoading(null); }
   };
 
   const handleResetUsage = async (targetUserId: string) => {
@@ -118,34 +174,79 @@ export default function Admin() {
       const headers = await getAuthHeaders();
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-accounts?action=reset-usage`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ targetUserId }),
-        }
+        { method: "POST", headers, body: JSON.stringify({ targetUserId }) }
       );
-      if (resp.ok) {
-        toast.success("Usage reset");
-        fetchAccounts();
-      } else {
-        toast.error("Failed to reset usage");
-      }
-    } catch {
-      toast.error("Failed to reset usage");
-    } finally {
-      setActionLoading(null);
-    }
+      if (resp.ok) { toast.success("Usage reset"); fetchAccounts(); }
+      else toast.error("Failed to reset usage");
+    } catch { toast.error("Failed to reset usage"); }
+    finally { setActionLoading(null); }
   };
 
-  // Initialize tierOverride to 'free' if not set (one must always be on)
+  // Source management
+  const handleAddSource = async () => {
+    if (!newSourceUrl.trim() || !newSourceLabel.trim()) return;
+    setAddingSource(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=add`,
+        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim() }) }
+      );
+      if (resp.ok) {
+        toast.success("Source added");
+        setNewSourceUrl("");
+        setNewSourceLabel("");
+        fetchSources();
+      } else {
+        const data = await resp.json();
+        toast.error(data.error || "Failed to add source");
+      }
+    } catch { toast.error("Failed to add source"); }
+    finally { setAddingSource(false); }
+  };
+
+  const handleToggleSource = async (id: string, is_active: boolean) => {
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=toggle`,
+        { method: "POST", headers, body: JSON.stringify({ id, is_active }) }
+      );
+      setSources(prev => prev.map(s => s.id === id ? { ...s, is_active } : s));
+    } catch { toast.error("Failed to toggle source"); }
+  };
+
+  const handleDeleteSource = async (id: string) => {
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=delete`,
+        { method: "POST", headers, body: JSON.stringify({ id }) }
+      );
+      setSources(prev => prev.filter(s => s.id !== id));
+      toast.success("Source removed");
+    } catch { toast.error("Failed to delete source"); }
+  };
+
+  // Feedback review
+  const handleReviewFeedback = async (id: string, override?: string) => {
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=review-feedback`,
+        { method: "POST", headers, body: JSON.stringify({ id, admin_override: override || null }) }
+      );
+      setNegativeFeedback(prev => prev.filter(f => f.id !== id));
+      toast.success(override ? "Override saved" : "Feedback confirmed");
+    } catch { toast.error("Failed to review feedback"); }
+  };
+
+  // Initialize tierOverride
   useEffect(() => {
-    if (isSuperAdmin && !tierOverride) {
-      setTierOverride('free');
-    }
+    if (isSuperAdmin && !tierOverride) setTierOverride('free');
   }, [isSuperAdmin, tierOverride, setTierOverride]);
 
   const handleTierSwitch = (selectedTier: UserTier) => {
-    // Can't turn off the active one — one must always remain on
     if (tierOverride === selectedTier) return;
     setTierOverride(selectedTier);
     toast.success(`Testing as ${selectedTier === 'nft_holder' ? 'NFT Holder' : selectedTier === 'paid' ? 'Paid' : 'Free'} user`);
@@ -180,7 +281,7 @@ export default function Admin() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-display font-bold text-foreground">Admin Dashboard</h1>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={fetchAccounts} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={() => { fetchAccounts(); fetchSources(); fetchFeedback(); }} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
             </Button>
           )}
@@ -202,7 +303,7 @@ export default function Admin() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Super Admin Profile Testing Section */}
+            {/* Profile Testing Mode */}
             {isSuperAdmin && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-center gap-3 mb-4">
@@ -224,30 +325,141 @@ export default function Admin() {
                       <div
                         key={key}
                         className={`flex items-center justify-between rounded-lg border p-4 transition-all ${
-                          isActive
-                            ? 'border-primary bg-primary/10 shadow-sm'
-                            : 'border-border/50 bg-card/50 hover:border-border'
+                          isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-border/50 bg-card/50 hover:border-border'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
                           <div>
-                            <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
-                              {label}
-                            </p>
+                            <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{label}</p>
                             <p className="text-xs text-muted-foreground">{description}</p>
                           </div>
                         </div>
-                        <Switch
-                          checked={isActive}
-                          onCheckedChange={() => handleTierSwitch(key)}
-                        />
+                        <Switch checked={isActive} onCheckedChange={() => handleTierSwitch(key)} />
                       </div>
                     );
                   })}
                 </div>
               </div>
             )}
+
+            {/* Data Sources Management */}
+            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Globe className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Official Data Sources</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  {sources.filter(s => s.is_active).length} active
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                These URLs are scraped by Firecrawl to build quackGPT's knowledge base. Toggle to enable/disable.
+              </p>
+
+              {sourcesLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+              ) : (
+                <div className="space-y-2 mb-4">
+                  {sources.map(source => (
+                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50 bg-card/50' : 'border-border/30 bg-muted/20 opacity-60'}`}>
+                      <Switch checked={source.is_active} onCheckedChange={(checked) => handleToggleSource(source.id, checked)} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{source.label}</p>
+                        <p className="text-xs text-muted-foreground truncate">{source.url}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteSource(source.id)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new source */}
+              <div className="flex gap-2 mt-4">
+                <Input
+                  placeholder="https://example.com"
+                  value={newSourceUrl}
+                  onChange={(e) => setNewSourceUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Input
+                  placeholder="Label"
+                  value={newSourceLabel}
+                  onChange={(e) => setNewSourceLabel(e.target.value)}
+                  className="w-40"
+                />
+                <Button onClick={handleAddSource} disabled={addingSource || !newSourceUrl.trim() || !newSourceLabel.trim()} size="sm" className="shrink-0 gap-1">
+                  {addingSource ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            {/* Negative Feedback Review */}
+            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <ThumbsDown className="w-5 h-5 text-destructive" />
+                <h2 className="text-lg font-semibold text-foreground">Feedback Review</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive">
+                  {negativeFeedback.length} unreviewed
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                Negatively rated responses for review. Confirm to acknowledge or override with a corrected answer to tune the LLM.
+              </p>
+
+              {feedbackLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+              ) : negativeFeedback.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No unreviewed negative feedback 🎉</p>
+              ) : (
+                <div className="space-y-4">
+                  {negativeFeedback.map(item => (
+                    <div key={item.id} className="rounded-lg border border-destructive/20 bg-destructive/5 p-4">
+                      {item.user_query && (
+                        <div className="mb-2">
+                          <p className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                            <MessageSquare className="w-3 h-3" /> User asked:
+                          </p>
+                          <p className="text-sm text-foreground/80 bg-muted/30 rounded px-2 py-1">{item.user_query}</p>
+                        </div>
+                      )}
+                      <p className="text-xs text-muted-foreground mb-1">quackGPT responded:</p>
+                      <p className="text-sm text-foreground/80 mb-3 line-clamp-4">{item.message_content}</p>
+                      <p className="text-[10px] text-muted-foreground mb-3">
+                        {new Date(item.created_at).toLocaleString()} • {shortenId(item.external_user_id)}
+                      </p>
+
+                      <div className="flex gap-2 items-end">
+                        <Input
+                          placeholder="Override with corrected answer (optional)..."
+                          value={overrideText[item.id] || ""}
+                          onChange={(e) => setOverrideText(prev => ({ ...prev, [item.id]: e.target.value }))}
+                          className="flex-1 text-xs h-8"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-1 text-xs"
+                          onClick={() => handleReviewFeedback(item.id, overrideText[item.id])}
+                        >
+                          {overrideText[item.id] ? <><Check className="w-3 h-3" /> Override</> : <><Check className="w-3 h-3" /> Confirm</>}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 text-xs text-muted-foreground"
+                          onClick={() => handleReviewFeedback(item.id)}
+                        >
+                          <X className="w-3 h-3" /> Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Accounts Table */}
             <div className="space-y-4">
