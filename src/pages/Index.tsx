@@ -5,8 +5,9 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { ChatHistoryPanel } from "@/components/ChatHistoryPanel";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, History } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -16,6 +17,7 @@ const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -39,6 +41,15 @@ const Index = () => {
   const handlePrefillConsumed = useCallback(() => {
     setPrefillMessage("");
   }, []);
+
+  const getAuthHeaders = useCallback(async () => {
+    const token = getAccessToken ? await getAccessToken() : null;
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      ...(token ? { 'x-privy-token': token } : {}),
+    };
+  }, [getAccessToken]);
 
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
@@ -90,6 +101,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-y-auto">
+      {authenticated && (
+        <ChatHistoryPanel
+          getAuthHeaders={getAuthHeaders}
+          isOpen={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+        />
+      )}
       <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
@@ -107,6 +125,14 @@ const Index = () => {
       />
       
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-visible">
+        {/* History toggle */}
+        {authenticated && messages.length === 0 && (
+          <div className="flex justify-end px-4 pt-2">
+            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => setHistoryOpen(true)}>
+              <History className="w-4 h-4" /> History
+            </Button>
+          </div>
+        )}
         {/* Chat area */}
         <div className="flex-1">
           {messages.length === 0 ? (

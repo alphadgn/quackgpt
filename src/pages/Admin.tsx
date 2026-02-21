@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, Check, X, MessageSquare } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, Check, X, MessageSquare, History, ChevronRight, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -36,6 +36,14 @@ interface FeedbackItem {
   created_at: string;
 }
 
+interface HistorySession {
+  session_id: string;
+  created_at: string;
+  preview: string;
+  messages: { role: string; content: string; created_at: string }[];
+  user_deleted: boolean;
+}
+
 const tierIcons: Record<string, typeof Shield> = {
   free: Shield,
   paid: Zap,
@@ -66,6 +74,13 @@ export default function Admin() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [overrideText, setOverrideText] = useState<Record<string, string>>({});
 
+  // Chat history state
+  const [historyUsers, setHistoryUsers] = useState<string[]>([]);
+  const [historySessions, setHistorySessions] = useState<HistorySession[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedHistoryUser, setSelectedHistoryUser] = useState<string | null>(null);
+  const [expandedHistorySession, setExpandedHistorySession] = useState<string | null>(null);
+  const [deletingHistorySession, setDeletingHistorySession] = useState<string | null>(null);
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
     return {
@@ -246,6 +261,52 @@ export default function Admin() {
     if (isSuperAdmin && !tierOverride) setTierOverride('free');
   }, [isSuperAdmin, tierOverride, setTierOverride]);
 
+  // Chat history functions
+  const fetchHistoryUsers = useCallback(async () => {
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-list-users`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.users) setHistoryUsers(data.users);
+    } catch { console.error("Failed to fetch history users"); }
+  }, [getAuthHeaders]);
+
+  const fetchUserHistory = useCallback(async (userId: string) => {
+    setHistoryLoading(true);
+    setSelectedHistoryUser(userId);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions&userId=${encodeURIComponent(userId)}`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.sessions) setHistorySessions(data.sessions);
+    } catch { console.error("Failed to fetch user history"); }
+    finally { setHistoryLoading(false); }
+  }, [getAuthHeaders]);
+
+  const handleAdminDeleteSession = async (sessionId: string) => {
+    setDeletingHistorySession(sessionId);
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-delete`,
+        { method: "POST", headers, body: JSON.stringify({ sessionId }) }
+      );
+      setHistorySessions(prev => prev.filter(s => s.session_id !== sessionId));
+      toast.success("Session permanently deleted");
+    } catch { toast.error("Failed to delete session"); }
+    finally { setDeletingHistorySession(null); }
+  };
+
+  useEffect(() => {
+    if (isAdmin) fetchHistoryUsers();
+  }, [isAdmin, fetchHistoryUsers]);
+
   const handleTierSwitch = (selectedTier: UserTier) => {
     if (tierOverride === selectedTier) return;
     setTierOverride(selectedTier);
@@ -281,7 +342,7 @@ export default function Admin() {
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-display font-bold text-foreground">Admin Dashboard</h1>
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => { fetchAccounts(); fetchSources(); fetchFeedback(); }} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={() => { fetchAccounts(); fetchSources(); fetchFeedback(); fetchHistoryUsers(); }} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
             </Button>
           )}
@@ -458,6 +519,93 @@ export default function Admin() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Chat History Viewer */}
+            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <History className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">Chat History</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  {historyUsers.length} users
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                View all user chat sessions. User-deleted sessions are flagged but preserved here until you permanently delete them.
+              </p>
+
+              {/* User selector */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {historyUsers.map(uid => (
+                  <Button
+                    key={uid}
+                    variant={selectedHistoryUser === uid ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs gap-1"
+                    onClick={() => fetchUserHistory(uid)}
+                  >
+                    <User className="w-3 h-3" />
+                    {uid.length > 16 ? `${uid.slice(0, 10)}…${uid.slice(-4)}` : uid}
+                  </Button>
+                ))}
+                {historyUsers.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No chat history recorded yet.</p>
+                )}
+              </div>
+
+              {/* Sessions list */}
+              {selectedHistoryUser && (
+                historyLoading ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                ) : historySessions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No sessions for this user.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {historySessions.map(session => (
+                      <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30 bg-destructive/5' : 'border-border/50 bg-card/50'}`}>
+                        <div className="flex items-center gap-2 p-3">
+                          <button
+                            className="flex-1 flex items-center gap-2 text-left"
+                            onClick={() => setExpandedHistorySession(expandedHistorySession === session.session_id ? null : session.session_id)}
+                          >
+                            <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${expandedHistorySession === session.session_id ? 'rotate-90' : ''}`} />
+                            <div className="min-w-0">
+                              <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {new Date(session.created_at).toLocaleString()} • {session.messages.length} msgs
+                                {session.user_deleted && <span className="text-destructive ml-1">(user deleted)</span>}
+                              </p>
+                            </div>
+                          </button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleAdminDeleteSession(session.session_id)}
+                            disabled={deletingHistorySession === session.session_id}
+                          >
+                            {deletingHistorySession === session.session_id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </div>
+                        {expandedHistorySession === session.session_id && (
+                          <div className="border-t border-border/30 p-3 space-y-2 bg-muted/10 max-h-60 overflow-y-auto">
+                            {session.messages.map((msg, i) => (
+                              <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-primary' : 'text-foreground/80'}`}>
+                                <span className="font-medium">{msg.role === 'user' ? 'User' : 'quackGPT'}:</span>{' '}
+                                <span>{msg.content}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )
               )}
             </div>
 

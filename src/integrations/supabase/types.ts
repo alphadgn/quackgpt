@@ -80,6 +80,36 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_history: {
+        Row: {
+          content: string
+          created_at: string
+          external_user_id: string
+          id: string
+          role: string
+          session_id: string
+          user_deleted: boolean
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          external_user_id: string
+          id?: string
+          role: string
+          session_id?: string
+          user_deleted?: boolean
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          external_user_id?: string
+          id?: string
+          role?: string
+          session_id?: string
+          user_deleted?: boolean
+        }
+        Relationships: []
+      }
       daily_query_usage: {
         Row: {
           created_at: string

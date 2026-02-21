@@ -5,6 +5,10 @@ function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
 
+function generateSessionId(): string {
+  return crypto.randomUUID ? crypto.randomUUID() : `${generateId()}-${generateId()}-${Date.now()}`;
+}
+
 function isContentCreationRequest(text: string): boolean {
   const lowerText = text.toLowerCase();
   return BLOCKED_CONTENT_KEYWORDS.some(keyword => 
@@ -41,6 +45,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [resetTime, setResetTime] = useState<number | null>(null);
   const [usageLoaded, setUsageLoaded] = useState(false);
+  const sessionIdRef = useRef<string>(generateSessionId());
 
   // Helper to build auth headers (JWT only, no header fallback)
   const getAuthHeaders = useCallback(async () => {
@@ -306,6 +311,22 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       } else {
         setQueriesUsedToday(prev => prev + 1);
       }
+
+      // Persist to chat history
+      try {
+        const saveHeaders = await getAuthHeaders();
+        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=save`, {
+          method: 'POST',
+          headers: saveHeaders,
+          body: JSON.stringify({
+            sessionId: sessionIdRef.current,
+            userContent: content,
+            assistantContent: finalContent,
+          }),
+        });
+      } catch (saveErr) {
+        console.error('Failed to save chat history:', saveErr);
+      }
       
     } catch (error) {
       console.error('Chat error:', error);
@@ -321,6 +342,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    sessionIdRef.current = generateSessionId();
   }, []);
 
   return {
