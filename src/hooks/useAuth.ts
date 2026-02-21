@@ -1,21 +1,17 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
-import { useMemo, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { UserTier } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
-// Shared global store for tierOverride so it persists across all useAuth() instances
-let _tierOverride: UserTier | null = null;
-const _listeners = new Set<() => void>();
-function _setTierOverride(val: UserTier | null) {
-  _tierOverride = val;
-  _listeners.forEach((l) => l());
+// Shared global state for tierOverride so it persists across all useAuth() instances
+let _globalTierOverride: UserTier | null = null;
+const _tierListeners = new Set<(val: UserTier | null) => void>();
+
+function _setGlobalTierOverride(val: UserTier | null) {
+  _globalTierOverride = val;
+  _tierListeners.forEach((cb) => cb(val));
 }
-function _subscribe(cb: () => void) {
-  _listeners.add(cb);
-  return () => { _listeners.delete(cb); };
-}
-function _getSnapshot() { return _tierOverride; }
 
 export function useAuth() {
   const { ready, authenticated, user, login, logout, linkWallet, unlinkWallet, getAccessToken } = usePrivy();
@@ -25,8 +21,20 @@ export function useAuth() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const tierOverride = useSyncExternalStore(_subscribe, _getSnapshot);
-  const setTierOverride = _setTierOverride;
+  const [tierOverride, _setLocalTierOverride] = useState<UserTier | null>(_globalTierOverride);
+
+  // Sync local state from global broadcasts
+  useEffect(() => {
+    const handler = (val: UserTier | null) => _setLocalTierOverride(val);
+    _tierListeners.add(handler);
+    // Sync on mount in case global changed while unmounted
+    _setLocalTierOverride(_globalTierOverride);
+    return () => { _tierListeners.delete(handler); };
+  }, []);
+
+  const setTierOverride = useCallback((val: UserTier | null) => {
+    _setGlobalTierOverride(val);
+  }, []);
 
   // Get ALL linked wallets from Privy user
   const linkedWallets = useMemo(() => {
