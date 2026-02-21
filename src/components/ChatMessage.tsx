@@ -7,18 +7,19 @@ import { useState } from "react";
 interface ChatMessageProps {
   message: Message;
   className?: string;
-  onFeedback?: (messageContent: string, type: 'positive' | 'negative') => void;
+  onFeedback?: (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => void;
+  previousUserMessage?: string;
 }
 
-export function ChatMessage({ message, className, onFeedback }: ChatMessageProps) {
+export function ChatMessage({ message, className, onFeedback, previousUserMessage }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isBlocked = message.isBlocked;
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
 
   const handleFeedback = (type: 'positive' | 'negative') => {
-    if (feedback) return; // already submitted
+    if (feedback) return;
     setFeedback(type);
-    onFeedback?.(message.content, type);
+    onFeedback?.(message.content, type, previousUserMessage);
   };
 
   return (

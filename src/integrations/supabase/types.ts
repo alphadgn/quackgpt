@@ -49,25 +49,34 @@ export type Database = {
       }
       chat_feedback: {
         Row: {
+          admin_override: string | null
+          admin_reviewed: boolean
           created_at: string
           external_user_id: string
           feedback_type: string
           id: string
           message_content: string
+          user_query: string | null
         }
         Insert: {
+          admin_override?: string | null
+          admin_reviewed?: boolean
           created_at?: string
           external_user_id: string
           feedback_type: string
           id?: string
           message_content: string
+          user_query?: string | null
         }
         Update: {
+          admin_override?: string | null
+          admin_reviewed?: boolean
           created_at?: string
           external_user_id?: string
           feedback_type?: string
           id?: string
           message_content?: string
+          user_query?: string | null
         }
         Relationships: []
       }
@@ -155,6 +164,36 @@ export type Database = {
           tier?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      scrape_sources: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          updated_at?: string
+          url?: string
         }
         Relationships: []
       }
