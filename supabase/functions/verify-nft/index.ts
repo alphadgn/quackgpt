@@ -11,7 +11,7 @@ function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-privy-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   };
 }
 
@@ -33,6 +33,23 @@ async function verifyPrivyToken(req: Request): Promise<string | null> {
   }
 }
 
+const ipRequestCounts = new Map<string, { count: number; windowStart: number }>();
+const IP_RATE_LIMIT = 30;
+const IP_RATE_WINDOW_MS = 60 * 1000;
+
+function checkIpRateLimit(req: Request): boolean {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("cf-connecting-ip") || "unknown";
+  const now = Date.now();
+  const entry = ipRequestCounts.get(ip);
+  if (!entry || now - entry.windowStart > IP_RATE_WINDOW_MS) {
+    ipRequestCounts.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  entry.count++;
+  return entry.count <= IP_RATE_LIMIT;
+}
+
 const QUACK_HEADS_COLLECTION = 'HxSsfM9WxQWj79chAUNL6osZxQjJj5iMUwrjEfRBvYBR';
 
 serve(async (req) => {
@@ -41,18 +58,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  if (!checkIpRateLimit(req)) {
+    return new Response(JSON.stringify({ error: "Too many requests" }), {
+      status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { walletAddress } = await req.json();
     
-    const verifiedUserId = await verifyPrivyToken(req);
-    const rawPrivyUserId = req.headers.get('x-privy-user-id');
-    
-    let privyUserId: string | null = null;
-    if (verifiedUserId) {
-      privyUserId = verifiedUserId;
-    } else if (rawPrivyUserId && /^did:privy:[a-zA-Z0-9]{1,50}$/.test(rawPrivyUserId)) {
-      privyUserId = rawPrivyUserId;
-    }
+    const privyUserId = await verifyPrivyToken(req);
 
     if (!walletAddress || typeof walletAddress !== 'string' || !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(walletAddress)) {
       return new Response(

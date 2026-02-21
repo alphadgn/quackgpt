@@ -12,10 +12,9 @@ export function useAuth() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [tierOverride, setTierOverride] = useState<UserTier | null>(null);
 
-  // Get ALL linked wallets from Privy user — any account with an address field, fully deduplicated.
-  // This intentionally casts a wide net so wallets stored in Privy but not being displayed
-  // are still surfaced and can be unlinked.
+  // Get ALL linked wallets from Privy user
   const linkedWallets = useMemo(() => {
     if (!user) return [];
     const seen = new Set<string>();
@@ -36,7 +35,6 @@ export function useAuth() {
     return wallets;
   }, [user]);
 
-  // Get embedded wallet from Privy user
   const embeddedWallet = useMemo(() => {
     if (!user) return undefined;
     const embedded = user.linkedAccounts?.find(
@@ -45,7 +43,6 @@ export function useAuth() {
     return embedded as any;
   }, [user]);
 
-  // Get Solana wallet address from Privy user
   const solanaAddress = useMemo(() => {
     if (!user) return undefined;
     const solanaWallet = user.linkedAccounts?.find(
@@ -67,13 +64,13 @@ export function useAuth() {
     (async () => {
       try {
         const token = await getAccessToken();
+        if (!token) { if (!cancelled) setIsSubscribed(false); return; }
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'x-privy-user-id': user.id,
-            ...(token ? { 'x-privy-token': token } : {}),
+            'x-privy-token': token,
           },
         });
         const data = await resp.json();
@@ -107,7 +104,6 @@ export function useAuth() {
         const { data, error } = await supabase.functions.invoke('verify-nft', {
           body: { walletAddress: solanaAddress },
           headers: {
-            'x-privy-user-id': user?.id || '',
             ...(token ? { 'x-privy-token': token } : {}),
           },
         });
@@ -138,12 +134,12 @@ export function useAuth() {
     (async () => {
       try {
         const token = await getAccessToken();
+        if (!token) { if (!cancelled) setIsSuperAdmin(false); return; }
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-admin`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'x-privy-user-id': user.id,
-            ...(token ? { 'x-privy-token': token } : {}),
+            'x-privy-token': token,
           },
         });
         const data = await resp.json();
@@ -156,15 +152,23 @@ export function useAuth() {
     return () => { cancelled = true; };
   }, [authenticated, user?.id]);
 
+  // Clear tier override on logout
+  useEffect(() => {
+    if (!authenticated) {
+      setTierOverride(null);
+    }
+  }, [authenticated]);
+
   const tier: UserTier = useMemo(() => {
+    // Super admin tier override for testing
+    if (isSuperAdmin && tierOverride) return tierOverride;
     if (!authenticated) return 'free';
     if (isNftHolder) return 'nft_holder';
     if (isSubscribed) return 'paid';
     return 'free';
-  }, [authenticated, isNftHolder, isSubscribed]);
+  }, [authenticated, isNftHolder, isSubscribed, isSuperAdmin, tierOverride]);
 
   const handleLinkWallet = useCallback(() => {
-    // Count only actual wallet-type accounts (not emails or other linked accounts)
     const walletCount = (user?.linkedAccounts || []).filter(
       (a: any) => a.type === 'wallet'
     ).length;
@@ -181,9 +185,6 @@ export function useAuth() {
     }
   }, [unlinkWallet]);
 
-  // Unlink ALL external (non-Privy-embedded) wallets.
-  // Reads directly from user.linkedAccounts (raw source) to catch every stored wallet —
-  // including any that might be hidden from the display list — so no ghost wallets remain.
   const handleUnlinkAllWeb3Wallets = useCallback(async () => {
     const allAccounts = (user?.linkedAccounts || []) as any[];
     const seen = new Set<string>();
@@ -192,7 +193,6 @@ export function useAuth() {
       const addr = account.address;
       if (!addr) continue;
       const key = addr.toLowerCase();
-      // Skip the privy-embedded wallet
       if (account.walletClientType === 'privy') continue;
       if (!seen.has(key)) {
         seen.add(key);
@@ -228,6 +228,7 @@ export function useAuth() {
     linkWallet: handleLinkWallet,
     unlinkWallet: handleUnlinkWallet,
     unlinkAllWeb3Wallets: handleUnlinkAllWeb3Wallets,
+    tierOverride,
+    setTierOverride,
   };
 }
-

@@ -40,6 +40,16 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
   const [resetTime, setResetTime] = useState<number | null>(null);
   const [usageLoaded, setUsageLoaded] = useState(false);
 
+  // Helper to build auth headers (JWT only, no header fallback)
+  const getAuthHeaders = useCallback(async () => {
+    const token = getAccessToken ? await getAccessToken() : null;
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      ...(token ? { 'x-privy-token': token } : {}),
+    };
+  }, [getAccessToken]);
+
   // Fetch current usage from server on mount and when user changes
   useEffect(() => {
     if (!isAuthenticated || !privyUserId) {
@@ -53,15 +63,8 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
 
     (async () => {
       try {
-        const token = getAccessToken ? await getAccessToken() : null;
-        const resp = await fetch(CHECK_USAGE_URL, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'x-privy-user-id': privyUserId,
-            ...(token ? { 'x-privy-token': token } : {}),
-          },
-        });
+        const headers = await getAuthHeaders();
+        const resp = await fetch(CHECK_USAGE_URL, { headers });
         if (resp.ok) {
           const data = await resp.json();
           if (!cancelled) {
@@ -77,7 +80,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
     })();
 
     return () => { cancelled = true; };
-  }, [isAuthenticated, privyUserId]);
+  }, [isAuthenticated, privyUserId, getAuthHeaders]);
 
   // Auto-reset queries when user's personal 24h countdown reaches zero
   useEffect(() => {
@@ -105,7 +108,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
       return;
     }
 
-    // Check cooldown
     if (cooldownUntil && Date.now() < cooldownUntil) {
       const minutesLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
       setMessages(prev => [...prev, 
@@ -118,7 +120,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
 
     if (queriesRemaining <= 0) return;
     
-    // Check for multiple questions
     if (hasMultipleQuestions(content)) {
       const now = Date.now();
       const recentViolations = [...violations.filter(t => now - t < VIOLATION_WINDOW_MS), now];
@@ -141,7 +142,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
       return;
     }
 
-    // Check for content creation requests
     if (isContentCreationRequest(content)) {
       const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
       setMessages(prev => [...prev, userMessage, {
@@ -156,20 +156,14 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
     setIsTyping(true);
     
     try {
-      // Get access token for authenticated requests
-      const token = getAccessToken ? await getAccessToken() : null;
+      const headers = await getAuthHeaders();
       
       // Scrape context
       let context = '';
       try {
         const scrapeResponse = await fetch(SCRAPE_URL, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'x-privy-user-id': privyUserId,
-            ...(token ? { 'x-privy-token': token } : {}),
-          },
+          headers,
           body: JSON.stringify({ query: content }),
         });
         
@@ -191,12 +185,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const response = await fetch(CHAT_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'x-privy-user-id': privyUserId,
-          ...(token ? { 'x-privy-token': token } : {}),
-        },
+        headers,
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
           context,
@@ -227,7 +216,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
       const serverTier = response.headers.get('X-User-Tier') || tier;
       const serverResetTime = response.headers.get('X-Reset-Time');
       
-      // Sync reset time from server
       if (serverResetTime) {
         setResetTime(parseInt(serverResetTime));
       }
@@ -285,7 +273,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
         }
       }
       
-      // Final truncation with tier indicator
       let finalContent = assistantContent;
       const wasTruncated = finalContent.length > serverMaxChars;
       if (wasTruncated) {
@@ -322,7 +309,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

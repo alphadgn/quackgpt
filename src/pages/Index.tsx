@@ -49,7 +49,6 @@ const Index = () => {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'x-privy-user-id': user.id,
           ...(token ? { 'x-privy-token': token } : {}),
         },
         body: JSON.stringify({ messageContent, feedbackType: type }),
@@ -72,7 +71,6 @@ const Index = () => {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          "x-privy-user-id": user.id,
           ...(token ? { "x-privy-token": token } : {}),
         },
       });
