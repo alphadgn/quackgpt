@@ -125,7 +125,7 @@ const Index = () => {
         {/* Input area */}
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
-            tier === 'free' ? (
+            tier === 'free' && !isSuperAdmin ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5">
                   <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
