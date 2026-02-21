@@ -29,6 +29,8 @@ interface UseChatOptions {
   isAuthenticated: boolean;
   privyUserId?: string;
   getAccessToken?: () => Promise<string | null>;
+  tierOverride?: UserTier | null;
+  isSuperAdmin?: boolean;
 }
 
 export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: UseChatOptions) {
