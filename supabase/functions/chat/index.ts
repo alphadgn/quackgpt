@@ -1,10 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://quackgpt.lovable.app",
+  "https://id-preview--6fc1b829-5793-476b-88f7-61e61a7d825c.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
   free: { maxQueries: 1, maxCharacters: 100 },
@@ -51,6 +59,7 @@ HARD RULES:
 6. No response without indexed source match — if no sources are found, return UNVERIFIED.`;
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -112,7 +121,6 @@ serve(async (req) => {
       const cycleEnd = cycleStart + CYCLE_DURATION_MS;
 
       if (now >= cycleEnd) {
-        // Cycle expired — reset: update existing row with new cycle
         cycleStartedAt = new Date(now).toISOString();
         queriesUsed = 0;
         await supabase
@@ -120,12 +128,10 @@ serve(async (req) => {
           .update({ queries_used: 0, cycle_started_at: cycleStartedAt, query_date: new Date().toISOString().split("T")[0] })
           .eq("external_user_id", privyUserId);
       } else {
-        // Still within cycle
         queriesUsed = usage.queries_used || 0;
         cycleStartedAt = usage.cycle_started_at;
       }
     } else {
-      // First ever query — create new usage row, cycle starts now
       cycleStartedAt = new Date(now).toISOString();
     }
 
@@ -225,7 +231,7 @@ serve(async (req) => {
   } catch (e) {
     console.error("Chat error:", e);
     return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

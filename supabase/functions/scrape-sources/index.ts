@@ -1,9 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://quackgpt.lovable.app",
+  "https://id-preview--6fc1b829-5793-476b-88f7-61e61a7d825c.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 // Expanded whitelisted sources
 // Wallchain NFT collection = Quack Heads NFT collection
@@ -16,6 +24,7 @@ const SCRAPE_URLS = [
 ];
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -43,7 +52,6 @@ serve(async (req) => {
 
     console.log("Scraping Wallchain sources for query:", query);
 
-    // Scrape all sources in parallel
     const scrapePromises = SCRAPE_URLS.map(async (url) => {
       try {
         const response = await fetch("https://api.firecrawl.dev/v1/scrape", {
@@ -66,7 +74,6 @@ serve(async (req) => {
 
         const data = await response.json();
         const markdown = data.data?.markdown || data.markdown || "";
-        // Tag source and truncate per-source
         const maxPerSource = 1500;
         const truncated = markdown.length > maxPerSource
           ? markdown.substring(0, maxPerSource) + "..."
@@ -81,7 +88,6 @@ serve(async (req) => {
     const results = await Promise.all(scrapePromises);
     const combined = results.filter(Boolean).join("\n\n---\n\n");
 
-    // Truncate total context
     const maxContextLength = 6000;
     const context = combined.length > maxContextLength
       ? combined.substring(0, maxContextLength) + "..."
@@ -101,7 +107,7 @@ serve(async (req) => {
     console.error("Scrape error:", error);
     return new Response(
       JSON.stringify({ success: false, error: "An unexpected error occurred", context: "" }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 200, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
     );
   }
 });
