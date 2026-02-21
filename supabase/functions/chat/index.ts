@@ -112,7 +112,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, context } = await req.json();
+    const { messages, context, tierOverride } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -132,6 +132,18 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Check if user is super_admin and has a tier override
+    let isSuperAdmin = false;
+    if (tierOverride && ["free", "paid", "nft_holder"].includes(tierOverride)) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", privyUserId)
+        .eq("role", "super_admin")
+        .maybeSingle();
+      isSuperAdmin = !!roleData;
+    }
+
     let { data: profile } = await supabase
       .from("profiles")
       .select("tier")
@@ -146,7 +158,8 @@ serve(async (req) => {
       profile = { tier: "free" };
     }
 
-    const tier = profile.tier || "free";
+    // Super admin tier override takes precedence
+    const tier = (isSuperAdmin && tierOverride) ? tierOverride : (profile.tier || "free");
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
     const { data: usage } = await supabase

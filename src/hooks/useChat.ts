@@ -33,7 +33,7 @@ interface UseChatOptions {
   isSuperAdmin?: boolean;
 }
 
-export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: UseChatOptions) {
+export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, tierOverride, isSuperAdmin }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
@@ -66,7 +66,12 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
     (async () => {
       try {
         const headers = await getAuthHeaders();
-        const resp = await fetch(CHECK_USAGE_URL, { headers });
+        const body = (isSuperAdmin && tierOverride) ? JSON.stringify({ tierOverride }) : undefined;
+        const resp = await fetch(CHECK_USAGE_URL, {
+          method: body ? 'POST' : 'GET',
+          headers,
+          ...(body ? { body } : {}),
+        });
         if (resp.ok) {
           const data = await resp.json();
           if (!cancelled) {
@@ -82,7 +87,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
     })();
 
     return () => { cancelled = true; };
-  }, [isAuthenticated, privyUserId, getAuthHeaders]);
+  }, [isAuthenticated, privyUserId, getAuthHeaders, tierOverride, isSuperAdmin]);
 
   // Auto-reset queries when user's personal 24h countdown reaches zero
   useEffect(() => {
@@ -191,6 +196,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
           context,
+          ...(isSuperAdmin && tierOverride ? { tierOverride } : {}),
         }),
       });
       
@@ -311,7 +317,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: 
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders, tierOverride, isSuperAdmin]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
