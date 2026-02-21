@@ -50,6 +50,8 @@ export default function Settings() {
     let cancelled = false;
     (async () => {
       try {
+        const token = await getAccessToken();
+        if (!token) return;
         const headers = await getAuthHeaders();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-usage`, {
           headers,
