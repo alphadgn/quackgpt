@@ -82,9 +82,32 @@ serve(async (req) => {
       });
     }
 
+    // Parse optional tierOverride from POST body
+    let tierOverride: string | null = null;
+    if (req.method === "POST") {
+      try {
+        const body = await req.json();
+        if (body?.tierOverride && ["free", "paid", "nft_holder"].includes(body.tierOverride)) {
+          tierOverride = body.tierOverride;
+        }
+      } catch { /* GET request or no body */ }
+    }
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Verify super admin if tierOverride is requested
+    let isSuperAdmin = false;
+    if (tierOverride) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", privyUserId)
+        .eq("role", "super_admin")
+        .maybeSingle();
+      isSuperAdmin = !!roleData;
+    }
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -92,7 +115,8 @@ serve(async (req) => {
       .eq("external_user_id", privyUserId)
       .single();
 
-    const tier = profile?.tier || "free";
+    // Super admin tier override takes precedence
+    const tier = (isSuperAdmin && tierOverride) ? tierOverride : (profile?.tier || "free");
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
     const { data: usage } = await supabase

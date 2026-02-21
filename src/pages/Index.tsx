@@ -13,7 +13,7 @@ import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { toast } from "sonner";
 
 const Index = () => {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -29,7 +29,7 @@ const Index = () => {
     cooldownUntil,
     resetTime,
     usageLoaded,
-  } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken });
+  } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken, tierOverride, isSuperAdmin });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
