@@ -561,49 +561,75 @@ export default function Admin() {
                 ) : historySessions.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">No sessions for this user.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {historySessions.map(session => (
-                      <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30 bg-destructive/5' : 'border-border/50 bg-card/50'}`}>
-                        <div className="flex items-center gap-2 p-3">
-                          <button
-                            className="flex-1 flex items-center gap-2 text-left"
-                            onClick={() => setExpandedHistorySession(expandedHistorySession === session.session_id ? null : session.session_id)}
-                          >
-                            <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${expandedHistorySession === session.session_id ? 'rotate-90' : ''}`} />
-                            <div className="min-w-0">
-                              <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {new Date(session.created_at).toLocaleString()} • {session.messages.length} msgs
-                                {session.user_deleted && <span className="text-destructive ml-1">(user deleted)</span>}
-                              </p>
-                            </div>
-                          </button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-                            onClick={() => handleAdminDeleteSession(session.session_id)}
-                            disabled={deletingHistorySession === session.session_id}
-                          >
-                            {deletingHistorySession === session.session_id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-3 h-3" />
-                            )}
-                          </Button>
-                        </div>
-                        {expandedHistorySession === session.session_id && (
-                          <div className="border-t border-border/30 p-3 space-y-2 bg-muted/10 max-h-60 overflow-y-auto">
-                            {session.messages.map((msg, i) => (
-                              <div key={i} className={`text-xs ${msg.role === 'user' ? 'text-primary' : 'text-foreground/80'}`}>
-                                <span className="font-medium">{msg.role === 'user' ? 'User' : 'quackGPT'}:</span>{' '}
-                                <span>{msg.content}</span>
+                  <div className="max-h-[500px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
+                    {historySessions.map(session => {
+                      const isExpanded = expandedHistorySession === session.session_id;
+                      // Group messages into Q&A pairs
+                      const pairs: { user: typeof session.messages[0]; assistant: typeof session.messages[0] | null }[] = [];
+                      for (let i = 0; i < session.messages.length; i++) {
+                        if (session.messages[i].role === 'user') {
+                          const next = session.messages[i + 1];
+                          pairs.push({
+                            user: session.messages[i],
+                            assistant: next?.role === 'assistant' ? next : null,
+                          });
+                          if (next?.role === 'assistant') i++;
+                        }
+                      }
+                      return (
+                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30 bg-destructive/5' : 'border-border/50 bg-card/50'}`}>
+                          <div className="flex items-center gap-2 p-3">
+                            <button
+                              className="flex-1 flex items-center gap-2 text-left"
+                              onClick={() => setExpandedHistorySession(isExpanded ? null : session.session_id)}
+                            >
+                              <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              <div className="min-w-0">
+                                <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {new Date(session.created_at).toLocaleString()} • {pairs.length} {pairs.length === 1 ? 'exchange' : 'exchanges'}
+                                  {session.user_deleted && <span className="text-destructive ml-1">(user deleted)</span>}
+                                </p>
                               </div>
-                            ))}
+                            </button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                              onClick={() => handleAdminDeleteSession(session.session_id)}
+                              disabled={deletingHistorySession === session.session_id}
+                            >
+                              {deletingHistorySession === session.session_id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-3 h-3" />
+                              )}
+                            </Button>
                           </div>
-                        )}
-                      </div>
-                    ))}
+                          {isExpanded && (
+                            <div className="border-t border-border/30 bg-muted/10">
+                              <div className="max-h-80 overflow-y-auto p-3 space-y-3">
+                                {pairs.map((pair, i) => (
+                                  <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
+                                    <div className="text-xs">
+                                      <span className="font-semibold text-primary">User:</span>{' '}
+                                      <span className="text-foreground/90">{pair.user.content}</span>
+                                    </div>
+                                    {pair.assistant && (
+                                      <div className="text-xs">
+                                        <span className="font-semibold text-muted-foreground">quackGPT:</span>{' '}
+                                        <span className="text-foreground/70">{pair.assistant.content}</span>
+                                      </div>
+                                    )}
+                                    {/* TODO: feedback per message can be added when admin feedback data is loaded */}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )
               )}

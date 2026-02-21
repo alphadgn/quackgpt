@@ -33,7 +33,7 @@ const features = [
 const exampleQueries = [
   "What is Wallchain?",
   "Explain InfoFi",
-  "How do gQuack tokens work?",
+  "How do Quacks work?",
   "What are Quack Heads NFTs?",
 ];
 

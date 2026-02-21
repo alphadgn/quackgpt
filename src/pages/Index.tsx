@@ -155,14 +155,17 @@ const Index = () => {
         {/* Input area */}
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
-            tier === 'free' && (!isSuperAdmin || tierOverride === 'free') ? (
+            usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
-                <div className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5">
+                <div
+                  className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
+                  onClick={handleCheckout}
+                >
                   <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
                   <div className="flex-1 text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">24hr cooldown.</span>{' '}
+                    <span className="font-medium text-foreground">Daily queries depleted.</span>{' '}
                     Subscribe or connect a wallet with{' '}
-                    <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock.
+                    <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
                   </div>
                   <Button
                     variant="default"
