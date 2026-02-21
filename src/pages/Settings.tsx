@@ -6,7 +6,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { TIER_LIMITS, UserTier } from "@/types";
 import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink, Unlink } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
 
 const tierInfo: Record<UserTier, { label: string; icon: typeof Crown; price: string }> = {
@@ -20,7 +20,7 @@ function shortenAddress(address: string) {
 }
 
 export default function Settings() {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, unlinkAllWeb3Wallets, user, solanaAddress, embeddedWallet, isSubscribed, isSuperAdmin } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, unlinkAllWeb3Wallets, user, solanaAddress, embeddedWallet, isSubscribed, isSuperAdmin, getAccessToken } = useAuth();
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -29,6 +29,14 @@ export default function Settings() {
   const [showResetWalletsDialog, setShowResetWalletsDialog] = useState(false);
   const [resetWalletsLoading, setResetWalletsLoading] = useState(false);
 
+  const getAuthHeaders = useCallback(async () => {
+    const token = await getAccessToken();
+    return {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      ...(token ? { 'x-privy-token': token } : {}),
+    };
+  }, [getAccessToken]);
   // Check for checkout success
   useEffect(() => {
     if (searchParams.get("checkout") === "success") {
@@ -42,12 +50,9 @@ export default function Settings() {
     let cancelled = false;
     (async () => {
       try {
+        const headers = await getAuthHeaders();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-usage`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            "x-privy-user-id": user.id,
-          },
+          headers,
         });
         if (resp.ok) {
           const data = await resp.json();
@@ -65,13 +70,10 @@ export default function Settings() {
     if (!user?.id || !authenticated) return;
     (async () => {
       try {
+        const headers = await getAuthHeaders();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            "x-privy-user-id": user.id,
-          },
+          headers,
         });
         const data = await resp.json();
         setSubscriptionEnd(data.subscription_end || null);
@@ -85,13 +87,10 @@ export default function Settings() {
     if (!user?.id) return;
     setCheckoutLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          "x-privy-user-id": user.id,
-        },
+        headers,
       });
       const data = await resp.json();
       if (data.url) {
@@ -114,13 +113,10 @@ export default function Settings() {
     if (!user?.id) return;
     setPortalLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/customer-portal`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          "x-privy-user-id": user.id,
-        },
+        headers,
       });
       const data = await resp.json();
       if (data.url) {
