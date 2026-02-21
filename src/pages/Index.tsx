@@ -13,7 +13,7 @@ import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { toast } from "sonner";
 
 const Index = () => {
-  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
+  const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -29,7 +29,7 @@ const Index = () => {
     cooldownUntil,
     resetTime,
     usageLoaded,
-  } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id });
+  } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken });
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -43,19 +43,21 @@ const Index = () => {
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative') => {
     if (!user?.id) return;
     try {
+      const token = await getAccessToken();
       await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/submit-feedback`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           'x-privy-user-id': user.id,
+          ...(token ? { 'x-privy-token': token } : {}),
         },
         body: JSON.stringify({ messageContent, feedbackType: type }),
       });
     } catch (err) {
       console.error('Feedback submission failed:', err);
     }
-  }, [user?.id]);
+  }, [user?.id, getAccessToken]);
 
   const handleCheckout = useCallback(async () => {
     if (!user?.id) {
@@ -64,12 +66,14 @@ const Index = () => {
     }
     setCheckoutLoading(true);
     try {
+      const token = await getAccessToken();
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           "x-privy-user-id": user.id,
+          ...(token ? { "x-privy-token": token } : {}),
         },
       });
       const data = await resp.json();
@@ -84,7 +88,7 @@ const Index = () => {
     } finally {
       setCheckoutLoading(false);
     }
-  }, [user?.id, navigate]);
+  }, [user?.id, navigate, getAccessToken]);
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-y-auto">
@@ -128,9 +132,9 @@ const Index = () => {
                 <div className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5">
                   <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
                   <div className="flex-1 text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">Search bar locked.</span>{' '}
-                    Subscribe or connect a wallet with a{' '}
-                    <span className="text-primary font-semibold">Quack Heads NFT</span> to unlock.
+                    <span className="font-medium text-foreground">24hr cooldown.</span>{' '}
+                    Subscribe or connect a wallet with{' '}
+                    <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock.
                   </div>
                   <Button
                     variant="default"

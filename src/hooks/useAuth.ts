@@ -5,7 +5,7 @@ import { UserTier } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 export function useAuth() {
-  const { ready, authenticated, user, login, logout, linkWallet, unlinkWallet } = usePrivy();
+  const { ready, authenticated, user, login, logout, linkWallet, unlinkWallet, getAccessToken } = usePrivy();
   const { address, isConnected } = useAccount();
   const [isNftHolder, setIsNftHolder] = useState(false);
   const [nftCheckLoading, setNftCheckLoading] = useState(false);
@@ -66,12 +66,14 @@ export function useAuth() {
 
     (async () => {
       try {
+        const token = await getAccessToken();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-subscription`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'x-privy-user-id': user.id,
+            ...(token ? { 'x-privy-token': token } : {}),
           },
         });
         const data = await resp.json();
@@ -101,9 +103,13 @@ export function useAuth() {
 
     (async () => {
       try {
+        const token = await getAccessToken();
         const { data, error } = await supabase.functions.invoke('verify-nft', {
           body: { walletAddress: solanaAddress },
-          headers: { 'x-privy-user-id': user?.id || '' },
+          headers: {
+            'x-privy-user-id': user?.id || '',
+            ...(token ? { 'x-privy-token': token } : {}),
+          },
         });
 
         if (!cancelled) {
@@ -131,11 +137,13 @@ export function useAuth() {
 
     (async () => {
       try {
+        const token = await getAccessToken();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-admin`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'x-privy-user-id': user.id,
+            ...(token ? { 'x-privy-token': token } : {}),
           },
         });
         const data = await resp.json();
@@ -206,6 +214,7 @@ export function useAuth() {
     user,
     login,
     logout,
+    getAccessToken,
     walletAddress: address,
     solanaAddress,
     embeddedWallet,

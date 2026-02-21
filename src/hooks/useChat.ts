@@ -28,9 +28,10 @@ interface UseChatOptions {
   tier: UserTier;
   isAuthenticated: boolean;
   privyUserId?: string;
+  getAccessToken?: () => Promise<string | null>;
 }
 
-export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) {
+export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken }: UseChatOptions) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [queriesUsedToday, setQueriesUsedToday] = useState(0);
@@ -52,11 +53,13 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
 
     (async () => {
       try {
+        const token = getAccessToken ? await getAccessToken() : null;
         const resp = await fetch(CHECK_USAGE_URL, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
             'x-privy-user-id': privyUserId,
+            ...(token ? { 'x-privy-token': token } : {}),
           },
         });
         if (resp.ok) {
@@ -153,6 +156,9 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
     setIsTyping(true);
     
     try {
+      // Get access token for authenticated requests
+      const token = getAccessToken ? await getAccessToken() : null;
+      
       // Scrape context
       let context = '';
       try {
@@ -161,6 +167,8 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'x-privy-user-id': privyUserId,
+            ...(token ? { 'x-privy-token': token } : {}),
           },
           body: JSON.stringify({ query: content }),
         });
@@ -187,6 +195,7 @@ export function useChat({ tier, isAuthenticated, privyUserId }: UseChatOptions) 
           'Content-Type': 'application/json',
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           'x-privy-user-id': privyUserId,
+          ...(token ? { 'x-privy-token': token } : {}),
         },
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
