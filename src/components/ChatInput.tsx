@@ -99,7 +99,6 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          "x-privy-user-id": privyUserId,
         },
       });
       const data = await resp.json();
