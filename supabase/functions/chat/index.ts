@@ -11,7 +11,7 @@ function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-privy-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   };
 }
 
@@ -33,13 +33,32 @@ async function verifyPrivyToken(req: Request): Promise<string | null> {
   }
 }
 
+// IP-based rate limiting
+const ipRequestCounts = new Map<string, { count: number; windowStart: number }>();
+const IP_RATE_LIMIT = 30; // requests per window
+const IP_RATE_WINDOW_MS = 60 * 1000; // 1 minute
+
+function checkIpRateLimit(req: Request): boolean {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("cf-connecting-ip") || "unknown";
+  const now = Date.now();
+  const entry = ipRequestCounts.get(ip);
+  if (!entry || now - entry.windowStart > IP_RATE_WINDOW_MS) {
+    ipRequestCounts.set(ip, { count: 1, windowStart: now });
+    return true;
+  }
+  entry.count++;
+  if (entry.count > IP_RATE_LIMIT) return false;
+  return true;
+}
+
 const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
   free: { maxQueries: 1, maxCharacters: 100 },
   nft_holder: { maxQueries: 5, maxCharacters: 1000 },
   paid: { maxQueries: 3, maxCharacters: 300 },
 };
 
-const CYCLE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CYCLE_DURATION_MS = 24 * 60 * 60 * 1000;
 
 const SYSTEM_PROMPT = `You are QuackGPT — an ecosystem intelligence engine specialized in WallChain and QuackHeads NFT. Only use indexed and scraped ecosystem content. Do not hallucinate. If information is missing when quack (fact) checking, say 'SOME INFORMATION IS UNVERIFIED'. When searching for information, use indexed and scraped ecosystem content.
 
@@ -83,6 +102,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // IP rate limiting
+  if (!checkIpRateLimit(req)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Please slow down." }), {
+      status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { messages, context } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -93,24 +119,8 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Verify Privy JWT token
-    const verifiedUserId = await verifyPrivyToken(req);
-    const headerUserId = req.headers.get("x-privy-user-id");
-    
-    // Use verified token user ID, fall back to header with regex validation
-    let privyUserId: string | null = null;
-    if (verifiedUserId) {
-      privyUserId = verifiedUserId;
-      // If header is also provided, ensure it matches the verified token
-      if (headerUserId && headerUserId !== verifiedUserId) {
-        return new Response(JSON.stringify({ error: "User ID mismatch" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else if (headerUserId && /^did:privy:[a-zA-Z0-9]{1,50}$/.test(headerUserId)) {
-      // Fallback: accept header-only if no token provided (graceful degradation)
-      privyUserId = headerUserId;
-    }
+    // Require cryptographic JWT verification exclusively
+    const privyUserId = await verifyPrivyToken(req);
 
     if (!privyUserId) {
       return new Response(JSON.stringify({ error: "Sign in required to use quackGPT" }), {
@@ -118,10 +128,8 @@ serve(async (req) => {
       });
     }
 
-    // Use service role client for DB operations
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get or create user profile
     let { data: profile } = await supabase
       .from("profiles")
       .select("tier")
@@ -139,7 +147,6 @@ serve(async (req) => {
     const tier = profile.tier || "free";
     const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
 
-    // Check user's current cycle usage
     const { data: usage } = await supabase
       .from("daily_query_usage")
       .select("queries_used, cycle_started_at")
@@ -185,7 +192,6 @@ serve(async (req) => {
       });
     }
 
-    // Increment query count
     if (usage) {
       const { error: updateErr } = await supabase
         .from("daily_query_usage")
@@ -204,7 +210,6 @@ serve(async (req) => {
       if (insertErr) console.error("Usage insert error:", insertErr);
     }
 
-    // Build system message
     let systemContent = SYSTEM_PROMPT;
     if (context && context.length > 0) {
       let cleanContext = context
