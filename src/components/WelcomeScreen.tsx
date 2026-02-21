@@ -1,7 +1,7 @@
 import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
 import { UserTier, WHITELISTED_SOURCES } from "@/types";
-import { Database, Shield, Zap, ExternalLink } from "lucide-react";
+import { Database, Shield, Zap, ExternalLink, History } from "lucide-react";
 
 interface WelcomeScreenProps {
   tier: UserTier;
@@ -9,6 +9,7 @@ interface WelcomeScreenProps {
   onQuerySelect?: (query: string) => void;
   isAuthenticated?: boolean;
   onLogin?: () => void;
+  onOpenHistory?: () => void;
 }
 
 const features = [
@@ -36,7 +37,7 @@ const exampleQueries = [
   "What are Quack Heads NFTs?",
 ];
 
-export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin }: WelcomeScreenProps) {
+export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin, onOpenHistory }: WelcomeScreenProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
@@ -103,8 +104,17 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         </div>
       )}
       
-      {/* Sources reference */}
-      <div className="mt-12 text-center">
+      {/* Chat History + Sources reference */}
+      <div className="mt-12 flex flex-col items-center gap-3">
+        {onOpenHistory && (
+          <button
+            onClick={onOpenHistory}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm text-foreground/80 hover:bg-secondary hover:border-primary/30 hover:text-foreground transition-all"
+          >
+            <History className="w-4 h-4 text-primary" />
+            Chat History
+          </button>
+        )}
         <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
           <ExternalLink className="w-3 h-3" />
           Data sourced exclusively from official Wallchain channels
