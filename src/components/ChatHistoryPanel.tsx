@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { History, Trash2, X, Loader2, MessageSquare, ChevronRight, ThumbsUp, ThumbsDown } from "lucide-react";
 
 interface ChatMessage {
@@ -104,7 +104,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-80 bg-card border-r border-border shadow-xl flex flex-col animate-in slide-in-from-left-full duration-200">
+    <div className="fixed inset-y-0 left-0 z-50 w-96 bg-card border-r border-border shadow-xl flex flex-col animate-in slide-in-from-left-full duration-200">
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-primary" />
@@ -115,7 +115,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
         </Button>
       </div>
 
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto">
         {loading ? (
           <div className="flex justify-center py-8">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
@@ -126,23 +126,18 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
             <p className="text-sm text-muted-foreground">No chat history yet</p>
           </div>
         ) : (
-          <div className="p-2 space-y-1">
+          <div className="p-3 space-y-3">
             {sessions.map((session) => {
               const pairs = getQAPairs(session.messages);
+              const isExpanded = expandedSession === session.session_id;
               return (
                 <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
                   <button
                     className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
-                    onClick={() =>
-                      setExpandedSession(
-                        expandedSession === session.session_id ? null : session.session_id
-                      )
-                    }
+                    onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
                   >
                     <ChevronRight
-                      className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${
-                        expandedSession === session.session_id ? "rotate-90" : ""
-                      }`}
+                      className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
@@ -169,40 +164,42 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
                     </Button>
                   </button>
 
-                  {expandedSession === session.session_id && (
-                    <div className="border-t border-border/30 p-3 space-y-3 bg-muted/10 max-h-72 overflow-y-auto">
-                      {pairs.map((pair, i) => {
-                        const feedback = pair.assistant ? getFeedbackForMessage(pair.assistant.content) : null;
-                        return (
-                          <div key={i} className="space-y-1.5 pb-2 border-b border-border/20 last:border-0 last:pb-0">
-                            {/* User query */}
-                            <div className="text-xs">
-                              <span className="font-medium text-primary">You:</span>{" "}
-                              <span className="text-foreground/90">{pair.user.content}</span>
-                            </div>
-                            {/* Assistant response */}
-                            {pair.assistant && (
+                  {isExpanded && (
+                    <div className="border-t border-border/30 bg-muted/10">
+                      <div className="max-h-80 overflow-y-auto p-3 space-y-3">
+                        {pairs.map((pair, i) => {
+                          const feedback = pair.assistant ? getFeedbackForMessage(pair.assistant.content) : null;
+                          return (
+                            <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
+                              {/* User query */}
                               <div className="text-xs">
-                                <span className="font-medium text-muted-foreground">quackGPT:</span>{" "}
-                                <span className="text-foreground/70 line-clamp-4">{pair.assistant.content}</span>
+                                <span className="font-semibold text-primary">You:</span>{" "}
+                                <span className="text-foreground/90">{pair.user.content}</span>
                               </div>
-                            )}
-                            {/* Feedback indicator */}
-                            {feedback && (
-                              <div className="flex items-center gap-1 mt-0.5">
-                                {feedback.type === "positive" ? (
-                                  <ThumbsUp className="w-3 h-3 text-green-500" />
-                                ) : (
-                                  <ThumbsDown className="w-3 h-3 text-destructive" />
-                                )}
-                                <span className="text-[10px] text-muted-foreground">
-                                  {feedback.type === "positive" ? "Liked" : "Disliked"}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+                              {/* Assistant response */}
+                              {pair.assistant && (
+                                <div className="text-xs">
+                                  <span className="font-semibold text-muted-foreground">quackGPT:</span>{" "}
+                                  <span className="text-foreground/70">{pair.assistant.content}</span>
+                                </div>
+                              )}
+                              {/* Feedback indicator */}
+                              {feedback && (
+                                <div className="flex items-center gap-1 pt-1 border-t border-border/20">
+                                  {feedback.type === "positive" ? (
+                                    <ThumbsUp className="w-3 h-3 text-green-500" />
+                                  ) : (
+                                    <ThumbsDown className="w-3 h-3 text-destructive" />
+                                  )}
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {feedback.type === "positive" ? "Liked" : "Disliked"}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -210,7 +207,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
             })}
           </div>
         )}
-      </ScrollArea>
+      </div>
     </div>
   );
 }
