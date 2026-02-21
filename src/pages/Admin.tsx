@@ -39,6 +39,7 @@ export default function Admin() {
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       ...(token ? { 'x-privy-token': token } : {}),
     };
   }, [getAccessToken]);
@@ -47,7 +48,18 @@ export default function Admin() {
     if (!user?.id) return;
     setLoading(true);
     try {
-      const headers = await getAuthHeaders();
+      const token = await getAccessToken();
+      if (!token) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        'x-privy-token': token,
+      };
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-accounts?action=list`,
         { headers }
@@ -67,7 +79,7 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [user?.id, getAuthHeaders]);
+  }, [user?.id, getAccessToken]);
 
   useEffect(() => {
     if (authenticated && user?.id) fetchAccounts();
