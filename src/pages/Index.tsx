@@ -1,17 +1,23 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
+import { toast } from "sonner";
 
 const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useInactivityLogout(authenticated, logout);
   
@@ -51,6 +57,35 @@ const Index = () => {
     }
   }, [user?.id]);
 
+  const handleCheckout = useCallback(async () => {
+    if (!user?.id) {
+      navigate("/settings");
+      return;
+    }
+    setCheckoutLoading(true);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "x-privy-user-id": user.id,
+        },
+      });
+      const data = await resp.json();
+      if (data.url) {
+        const w = window.open(data.url, '_blank');
+        if (!w) window.location.href = data.url;
+      } else {
+        toast.error(data.error || "Failed to create checkout session");
+      }
+    } catch {
+      toast.error("Failed to start checkout");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  }, [user?.id, navigate]);
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-y-auto">
       <div className="relative z-10 flex flex-col flex-1">
@@ -88,17 +123,40 @@ const Index = () => {
         {/* Input area */}
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
-            <ChatInput
-              onSend={sendMessage}
-              disabled={isTyping || !usageLoaded}
-              tier={tier}
-              queriesRemaining={usageLoaded ? queriesRemaining : -1}
-              className="max-w-3xl mx-auto"
-              prefillValue={prefillMessage}
-              onPrefillConsumed={handlePrefillConsumed}
-              cooldownUntil={cooldownUntil}
-              privyUserId={user?.id ?? null}
-            />
+            tier === 'free' ? (
+              <div className="max-w-3xl mx-auto w-full">
+                <div className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5">
+                  <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
+                  <div className="flex-1 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Search bar locked.</span>{' '}
+                    Subscribe or connect a wallet with a{' '}
+                    <span className="text-primary font-semibold">Quack Heads NFT</span> to unlock.
+                  </div>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleCheckout}
+                    disabled={checkoutLoading}
+                    className="shrink-0 gap-1"
+                  >
+                    {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                    Subscribe
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <ChatInput
+                onSend={sendMessage}
+                disabled={isTyping || !usageLoaded}
+                tier={tier}
+                queriesRemaining={usageLoaded ? queriesRemaining : -1}
+                className="max-w-3xl mx-auto"
+                prefillValue={prefillMessage}
+                onPrefillConsumed={handlePrefillConsumed}
+                cooldownUntil={cooldownUntil}
+                privyUserId={user?.id ?? null}
+              />
+            )
           ) : null}
           
           {/* Disclaimer */}
