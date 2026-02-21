@@ -226,6 +226,39 @@ serve(async (req) => {
     }
 
     let systemContent = SYSTEM_PROMPT;
+
+    // Inject admin overrides: if a super admin has overridden a response for a similar query,
+    // use that override as authoritative context so the LLM doesn't repeat unverified answers.
+    try {
+      const lastUserMsg = messages?.[messages.length - 1]?.content || "";
+      if (lastUserMsg) {
+        const { data: overrides } = await supabase
+          .from("chat_feedback")
+          .select("user_query, admin_override")
+          .eq("admin_reviewed", true)
+          .not("admin_override", "is", null);
+
+        if (overrides && overrides.length > 0) {
+          const matchingOverrides = overrides.filter((o: any) => {
+            if (!o.user_query || !o.admin_override) return false;
+            // Case-insensitive substring match on the user query
+            const oq = o.user_query.toLowerCase().trim();
+            const uq = lastUserMsg.toLowerCase().trim();
+            return oq === uq || uq.includes(oq) || oq.includes(uq);
+          });
+
+          if (matchingOverrides.length > 0) {
+            const overrideBlock = matchingOverrides
+              .map((o: any) => `Q: ${o.user_query}\nVerified Answer: ${o.admin_override}`)
+              .join("\n\n");
+            systemContent += `\n\nADMIN-VERIFIED OVERRIDES (these are authoritative — use these answers instead of saying UNVERIFIED):\n${overrideBlock}`;
+          }
+        }
+      }
+    } catch (overrideErr) {
+      console.error("Override lookup failed:", overrideErr);
+    }
+
     if (context && context.length > 0) {
       let cleanContext = context
         .replace(/<Base64-Image-Removed>/g, "")

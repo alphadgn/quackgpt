@@ -196,6 +196,18 @@ Deno.serve(async (req) => {
       });
     }
 
+    // --- LIST FEEDBACK for current user (for history panel display) ---
+    if (action === "list-feedback") {
+      const { data, error } = await supabase
+        .from("chat_feedback")
+        .select("feedback_type, message_content, user_query")
+        .eq("external_user_id", privyUserId);
+      if (error) throw error;
+      return new Response(JSON.stringify({ feedback: data || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

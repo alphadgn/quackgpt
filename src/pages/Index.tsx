@@ -7,7 +7,7 @@ import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatHistoryPanel } from "@/components/ChatHistoryPanel";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Loader2, History } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -125,18 +125,10 @@ const Index = () => {
       />
       
       <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-visible">
-        {/* History toggle */}
-        {authenticated && messages.length === 0 && (
-          <div className="flex justify-end px-4 pt-2">
-            <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={() => setHistoryOpen(true)}>
-              <History className="w-4 h-4" /> History
-            </Button>
-          </div>
-        )}
         {/* Chat area */}
         <div className="flex-1">
           {messages.length === 0 ? (
-            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} />
+            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} onOpenHistory={authenticated ? () => setHistoryOpen(true) : undefined} />
           ) : (
             <div className="divide-y divide-border/30">
               {messages.map((message, index) => {
