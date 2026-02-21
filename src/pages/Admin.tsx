@@ -125,15 +125,18 @@ export default function Admin() {
     }
   };
 
-  const handleTierSwitch = (selectedTier: UserTier) => {
-    if (tierOverride === selectedTier) {
-      // Toggling off — return to real tier
-      setTierOverride(null);
-      toast.success("Testing mode disabled — using real account tier");
-    } else {
-      setTierOverride(selectedTier);
-      toast.success(`Testing as ${selectedTier === 'nft_holder' ? 'NFT Holder' : selectedTier === 'paid' ? 'Paid' : 'Free'} user`);
+  // Initialize tierOverride to 'free' if not set (one must always be on)
+  useEffect(() => {
+    if (isSuperAdmin && !tierOverride) {
+      setTierOverride('free');
     }
+  }, [isSuperAdmin, tierOverride, setTierOverride]);
+
+  const handleTierSwitch = (selectedTier: UserTier) => {
+    // Can't turn off the active one — one must always remain on
+    if (tierOverride === selectedTier) return;
+    setTierOverride(selectedTier);
+    toast.success(`Testing as ${selectedTier === 'nft_holder' ? 'NFT Holder' : selectedTier === 'paid' ? 'Paid' : 'Free'} user`);
   };
 
   const testingTiers: { key: UserTier; label: string; icon: typeof Shield; description: string }[] = [
