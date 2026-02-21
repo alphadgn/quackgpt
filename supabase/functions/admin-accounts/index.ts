@@ -2,12 +2,21 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://quackgpt.lovable.app",
+  "https://id-preview--6fc1b829-5793-476b-88f7-61e61a7d825c.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -58,7 +67,6 @@ serve(async (req) => {
 
       const usageMap = new Map((usage || []).map(u => [u.external_user_id, u]));
 
-      // Check NFT bindings for all users
       const { data: nftBindings } = await supabase
         .from("nft_token_bindings")
         .select("external_user_id")
@@ -66,7 +74,6 @@ serve(async (req) => {
 
       const nftHolderSet = new Set((nftBindings || []).map(b => b.external_user_id));
 
-      // Derive real tier from Stripe + NFT, not stale DB column
       const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
       let stripe: Stripe | null = null;
       if (stripeKey) {
@@ -99,7 +106,6 @@ serve(async (req) => {
           }
         }
 
-        // Sync the DB if stale
         if (p.tier !== realTier) {
           await supabase
             .from("profiles")
@@ -162,7 +168,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Admin error:", error);
     return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

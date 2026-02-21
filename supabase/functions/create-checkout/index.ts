@@ -2,14 +2,23 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://quackgpt.lovable.app",
+  "https://id-preview--6fc1b829-5793-476b-88f7-61e61a7d825c.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-user-id, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 const PRICE_ID = "price_1T2TPyCkLIkaxa5Mj6DSmjNU";
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -27,7 +36,6 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Get user profile to find email
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
@@ -38,7 +46,6 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Check if customer exists by metadata (privy user id)
     let customerId: string | undefined;
     const customers = await stripe.customers.search({
       query: `metadata["privy_user_id"]:"${privyUserId}"`,
@@ -47,7 +54,6 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
 
-      // Check for active subscription
       const subs = await stripe.subscriptions.list({
         customer: customerId,
         status: "active",
@@ -60,7 +66,7 @@ serve(async (req) => {
       }
     }
 
-    const origin = req.headers.get("origin") || "https://id-preview--6fc1b829-5793-476b-88f7-61e61a7d825c.lovable.app";
+    const origin = req.headers.get("origin") || ALLOWED_ORIGINS[0];
 
     const sessionParams: any = {
       line_items: [{ price: PRICE_ID, quantity: 1 }],
@@ -76,7 +82,6 @@ serve(async (req) => {
     if (customerId) {
       sessionParams.customer = customerId;
     } else {
-      // Create customer with privy metadata
       const customer = await stripe.customers.create({
         metadata: { privy_user_id: privyUserId },
       });
@@ -91,7 +96,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Checkout error:", error);
     return new Response(JSON.stringify({ error: "An unexpected error occurred" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });
