@@ -1,8 +1,21 @@
 import { usePrivy } from '@privy-io/react-auth';
 import { useAccount } from 'wagmi';
-import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useMemo, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { UserTier } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+
+// Shared global store for tierOverride so it persists across all useAuth() instances
+let _tierOverride: UserTier | null = null;
+const _listeners = new Set<() => void>();
+function _setTierOverride(val: UserTier | null) {
+  _tierOverride = val;
+  _listeners.forEach((l) => l());
+}
+function _subscribe(cb: () => void) {
+  _listeners.add(cb);
+  return () => { _listeners.delete(cb); };
+}
+function _getSnapshot() { return _tierOverride; }
 
 export function useAuth() {
   const { ready, authenticated, user, login, logout, linkWallet, unlinkWallet, getAccessToken } = usePrivy();
@@ -12,7 +25,8 @@ export function useAuth() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
-  const [tierOverride, setTierOverride] = useState<UserTier | null>(null);
+  const tierOverride = useSyncExternalStore(_subscribe, _getSnapshot);
+  const setTierOverride = _setTierOverride;
 
   // Get ALL linked wallets from Privy user
   const linkedWallets = useMemo(() => {
