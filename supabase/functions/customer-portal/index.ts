@@ -2,15 +2,17 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/index.ts";
 
-const ALLOWED_ORIGINS = [
-  "https://quackgpt.lovable.app",
-  "https://id-preview--6fc1b829-5793-476b-88f7-61e61a7d825c.lovable.app",
-];
+function isAllowedOrigin(origin: string): boolean {
+  if (origin === "https://quackgpt.lovable.app") return true;
+  if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
+  if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
+  return false;
+}
 
 function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin : "https://quackgpt.lovable.app",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   };
 }
@@ -85,7 +87,7 @@ serve(async (req) => {
       });
     }
 
-    const origin = req.headers.get("origin") || ALLOWED_ORIGINS[0];
+    const origin = req.headers.get("origin") || "https://quackgpt.lovable.app";
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customers.data[0].id,
