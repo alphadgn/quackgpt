@@ -1,10 +1,8 @@
 import { useRef, useEffect, useCallback } from "react";
 
 /**
- * Wraps content and applies a 3D bend effect based on viewport position:
- * items near the top of the viewport tilt backward,
- * items near the bottom tilt forward,
- * items in the center appear flat.
+ * Wraps content and applies a 3D bend effect based on viewport position.
+ * Uses GPU-only composite properties for smooth scrolling performance.
  */
 export function ScrollBendContainer({
   children,
@@ -14,8 +12,11 @@ export function ScrollBendContainer({
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rafId = useRef<number>(0);
+  const ticking = useRef(false);
 
   const applyBend = useCallback(() => {
+    ticking.current = false;
     const container = containerRef.current;
     if (!container) return;
 
@@ -24,9 +25,13 @@ export function ScrollBendContainer({
     const bottomZone = viewH * 0.67;
 
     const items = container.querySelectorAll<HTMLElement>("[data-bend]");
-    items.forEach((el) => {
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
       const elRect = el.getBoundingClientRect();
-      // Center of element relative to the viewport
+
+      // Skip off-screen elements entirely for performance
+      if (elRect.bottom < -200 || elRect.top > viewH + 200) continue;
+
       const elCenter = elRect.top + elRect.height / 2;
 
       let rotateX = 0;
@@ -34,13 +39,11 @@ export function ScrollBendContainer({
       let opacity = 1;
 
       if (elCenter < topZone) {
-        // Top third of viewport: bend backward
         const progress = Math.min(1, Math.max(0, 1 - elCenter / topZone));
         rotateX = progress * 40.5;
         scale = 1 - progress * 0.0945;
         opacity = 1 - progress * 1;
       } else if (elCenter > bottomZone) {
-        // Bottom third of viewport: bend forward
         const progress = Math.min(1, Math.max(0, (elCenter - bottomZone) / (viewH - bottomZone)));
         rotateX = -progress * 40.5;
         scale = 1 - progress * 0.0945;
@@ -49,8 +52,15 @@ export function ScrollBendContainer({
 
       el.style.transform = `perspective(800px) rotateX(${rotateX}deg) scale(${scale})`;
       el.style.opacity = String(opacity);
-    });
+    }
   }, []);
+
+  const scheduleUpdate = useCallback(() => {
+    if (!ticking.current) {
+      ticking.current = true;
+      rafId.current = requestAnimationFrame(applyBend);
+    }
+  }, [applyBend]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -60,9 +70,10 @@ export function ScrollBendContainer({
       Array.from(container.children).forEach((child) => {
         if (child instanceof HTMLElement && !child.hasAttribute("data-bend")) {
           child.setAttribute("data-bend", "");
-          child.style.transition = "transform 0.15s ease-out, opacity 0.15s ease-out";
+          child.style.transition = "transform 0.12s linear, opacity 0.12s linear";
           child.style.willChange = "transform, opacity";
           child.style.transformOrigin = "center center";
+          child.style.contain = "layout style";
         }
       });
     };
@@ -70,28 +81,27 @@ export function ScrollBendContainer({
     markChildren();
     applyBend();
 
-    const onScroll = () => requestAnimationFrame(applyBend);
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    container.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll, { passive: true });
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    container.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate, { passive: true });
 
     const observer = new MutationObserver(() => {
       markChildren();
-      applyBend();
+      scheduleUpdate();
     });
     observer.observe(container, { childList: true });
 
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      container.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      cancelAnimationFrame(rafId.current);
+      window.removeEventListener("scroll", scheduleUpdate);
+      container.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
       observer.disconnect();
     };
-  }, [applyBend]);
+  }, [applyBend, scheduleUpdate]);
 
   return (
-    <div ref={containerRef} className={className}>
+    <div ref={containerRef} className={className} style={{ contain: "content" }}>
       {children}
     </div>
   );
