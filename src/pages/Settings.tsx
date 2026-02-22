@@ -1,3 +1,4 @@
+import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { TierBadge } from "@/components/TierBadge";
@@ -196,7 +197,7 @@ export default function Settings() {
           <ArrowLeft className="w-4 h-4" /> Back to Chat
         </Link>
 
-        <h1 className="text-2xl font-display font-bold text-foreground mb-8">Account Settings</h1>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-8 text-center">Account Settings</h1>
 
         {!authenticated ? (
           <div className="text-center py-12">
@@ -204,7 +205,7 @@ export default function Settings() {
             <Button onClick={login} variant="hero">Sign In</Button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <ScrollBendContainer className="space-y-6">
             {/* Current Tier */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Current Plan</h2>
@@ -366,7 +367,7 @@ export default function Settings() {
                 </div>
               )}
             </section>
-          </div>
+          </ScrollBendContainer>
         )}
       </main>
     </div>

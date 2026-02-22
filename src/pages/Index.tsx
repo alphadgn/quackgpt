@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
@@ -121,7 +122,7 @@ const Index = () => {
           {messages.length === 0 ? (
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
           ) : (
-            <div className="divide-y divide-border/30">
+            <ScrollBendContainer className="divide-y divide-border/30">
               {messages.map((message, index) => {
                 let previousUserMessage: string | undefined;
                 if (message.role === 'assistant') {
@@ -138,7 +139,7 @@ const Index = () => {
               })}
               {isTyping && <TypingIndicator />}
               <div ref={chatEndRef} />
-            </div>
+            </ScrollBendContainer>
           )}
         </div>
         
