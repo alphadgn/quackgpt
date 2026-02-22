@@ -6,7 +6,7 @@ export function Footer() {
       <div className="container max-w-4xl mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            © 2026 quackGPT. Powered by Wallchain.
+            All rights reserved QuackGPT 2026
           </p>
           
           <nav className="flex items-center gap-6">
