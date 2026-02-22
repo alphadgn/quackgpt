@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { UserTier } from "@/types";
-import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings, ShieldCheck, Unlink } from "lucide-react";
+import { Wallet, LogIn, LogOut, Home, Loader2, Plus, X, Settings, ShieldCheck, Unlink } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
 interface LinkedWallet {
@@ -224,10 +224,12 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
             </Button>
           )}
           
-          {/* Menu button */}
-          <Button variant="ghost" size="icon-sm" onClick={() => setShowNotification(true)}>
-            <Menu className="w-5 h-5" />
-          </Button>
+          {/* Home button */}
+          <Link to="/">
+            <Button variant="ghost" size="icon-sm" title="Home" className={location.pathname === "/" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : ""}>
+              <Home className="w-5 h-5" />
+            </Button>
+          </Link>
 
           {/* Logout - right of menu */}
           {isLoggedIn && (
