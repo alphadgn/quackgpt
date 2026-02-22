@@ -227,6 +227,48 @@ export type Database = {
         }
         Relationships: []
       }
+      security_scans: {
+        Row: {
+          completed_at: string | null
+          findings: Json
+          id: string
+          ok_count: number
+          scan_type: string
+          started_at: string
+          status: string
+          summary: string | null
+          triggered_by: string | null
+          vulnerability_count: number
+          warning_count: number
+        }
+        Insert: {
+          completed_at?: string | null
+          findings?: Json
+          id?: string
+          ok_count?: number
+          scan_type?: string
+          started_at?: string
+          status?: string
+          summary?: string | null
+          triggered_by?: string | null
+          vulnerability_count?: number
+          warning_count?: number
+        }
+        Update: {
+          completed_at?: string | null
+          findings?: Json
+          id?: string
+          ok_count?: number
+          scan_type?: string
+          started_at?: string
+          status?: string
+          summary?: string | null
+          triggered_by?: string | null
+          vulnerability_count?: number
+          warning_count?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
