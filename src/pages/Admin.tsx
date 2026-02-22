@@ -1,3 +1,4 @@
+import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -482,7 +483,7 @@ export default function Admin() {
             <p className="text-muted-foreground">Access restricted to super administrators.</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <ScrollBendContainer className="space-y-8">
             {/* Profile Testing Mode */}
             {isSuperAdmin && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
@@ -962,7 +963,7 @@ export default function Admin() {
                 </table>
               </div>
             </div>
-          </div>
+          </ScrollBendContainer>
         )}
       </main>
       <Footer />
