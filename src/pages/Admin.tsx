@@ -392,7 +392,7 @@ export default function Admin() {
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <FlaskConical className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-foreground">Profile Testing Mode</h2>
+                  <h2 className="text-lg font-semibold text-foreground text-center flex-1">Profile Testing Mode</h2>
                   {tierOverride && (
                     <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
                       Active: {tierOverride === 'nft_holder' ? 'NFT Holder' : tierOverride === 'paid' ? 'Paid' : 'Free'}
@@ -431,7 +431,7 @@ export default function Admin() {
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Globe className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Official Data Sources</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Official Data Sources</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                   {sources.filter(s => s.is_active).length} active
                 </span>
@@ -484,7 +484,7 @@ export default function Admin() {
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <ThumbsDown className="w-5 h-5 text-destructive" />
-                <h2 className="text-lg font-semibold text-foreground">Feedback Review</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Feedback Review</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-destructive/20 text-destructive">
                   {negativeFeedback.length} unreviewed
                 </span>
@@ -549,7 +549,7 @@ export default function Admin() {
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <History className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">Chat History</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Chat History</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                   {historyUsers.length} users
                 </span>
@@ -682,7 +682,7 @@ export default function Admin() {
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <User className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground">User Accounts</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">User Accounts</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                   {accounts.length} total
                 </span>

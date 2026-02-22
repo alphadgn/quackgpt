@@ -208,7 +208,7 @@ export default function Settings() {
           <ScrollBendContainer className="space-y-6">
             {/* Current Tier */}
             <section className="border-y border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Current Plan</h2>
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Current Plan</h2>
               <div className="flex items-center gap-3 mb-4">
                 <TierBadge tier={tier} showLimits />
               </div>
@@ -231,13 +231,13 @@ export default function Settings() {
 
             {/* Subscription Actions */}
             <section className="border-y border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Subscription</h2>
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Subscription</h2>
               {tier === "free" ? (
                 <div>
                   <p className="text-sm text-muted-foreground mb-4">
                     Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week.
                   </p>
-                  <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
+                  <Button onClick={handleCheckout} disabled={checkoutLoading} className="bg-[hsl(120_100%_50%)] text-black font-semibold hover:bg-[hsl(120_100%_45%)] shadow-[0_0_20px_hsl(120_100%_50%_/_0.4)] hover:shadow-[0_0_30px_hsl(120_100%_50%_/_0.6)]">
                     {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
                     Subscribe — $1.49/week
                   </Button>
@@ -261,7 +261,7 @@ export default function Settings() {
 
             {/* Tier Comparison Table */}
             <section className="border-y border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Plans & Pricing</h2>
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Plans & Pricing</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -299,7 +299,7 @@ export default function Settings() {
             {/* Linked Wallets */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-display font-semibold text-foreground">Linked Wallets</h2>
+                <h2 className="text-lg font-display font-semibold text-foreground text-center flex-1">Linked Wallets</h2>
                 <span className="text-xs text-muted-foreground">1 Privy + up to 2 external</span>
               </div>
 
@@ -359,7 +359,7 @@ export default function Settings() {
 
             {/* Account Info */}
             <section className="border-y border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Connected Account</h2>
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Connected Account</h2>
               {email && (
                 <div className="text-sm">
                   <p className="text-muted-foreground">Email</p>
