@@ -5,9 +5,9 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, ThumbsUp, Check, X, MessageSquare, History, ChevronRight, User } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, ThumbsUp, Check, X, MessageSquare, History, ChevronRight, User, ShieldAlert, ShieldCheck, AlertTriangle, Bell, BellOff, ScanSearch } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { UserTier, TIER_LIMITS } from "@/types";
 
@@ -52,6 +52,20 @@ interface FeedbackEntry {
   user_query: string | null;
 }
 
+interface SecurityScan {
+  id: string;
+  scan_type: string;
+  status: string;
+  started_at: string;
+  completed_at: string | null;
+  findings: { severity: string; category: string; title: string; detail: string }[];
+  summary: string | null;
+  vulnerability_count: number;
+  warning_count: number;
+  ok_count: number;
+  triggered_by: string | null;
+}
+
 const tierIcons: Record<string, typeof Shield> = {
   free: Shield,
   paid: Zap,
@@ -90,6 +104,13 @@ export default function Admin() {
   const [expandedHistorySession, setExpandedHistorySession] = useState<string | null>(null);
   const [deletingHistorySession, setDeletingHistorySession] = useState<string | null>(null);
   const [historyFeedbackMap, setHistoryFeedbackMap] = useState<Record<string, { type: string; reviewed: boolean; hasOverride: boolean }>>({});
+
+  // Security scan state
+  const [securityScans, setSecurityScans] = useState<SecurityScan[]>([]);
+  const [securityLoading, setSecurityLoading] = useState(false);
+  const [scanRunning, setScanRunning] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
     if (!token) {
@@ -330,6 +351,73 @@ export default function Admin() {
     if (isAdmin) fetchHistoryUsers();
   }, [isAdmin, fetchHistoryUsers]);
 
+  // Security scan functions
+  const fetchSecurityScans = useCallback(async () => {
+    setSecurityLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/security-scan?action=list`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.scans) setSecurityScans(data.scans);
+    } catch { console.error("Failed to fetch security scans"); }
+    finally { setSecurityLoading(false); }
+  }, [getAuthHeaders]);
+
+  const runSecurityScan = useCallback(async () => {
+    setScanRunning(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/security-scan?action=run`,
+        { method: "POST", headers }
+      );
+      const data = await resp.json();
+      if (resp.ok) {
+        toast.success(data.scan?.summary || "Scan complete");
+        if (data.alert && notificationsEnabled) {
+          new Notification("🔴 QuackGPT Security Alert", {
+            body: `${data.scan.vulnerability_count} critical vulnerability(s) detected!`,
+            icon: "/favicon.ico",
+          });
+        }
+        fetchSecurityScans();
+      } else {
+        toast.error(data.error || "Scan failed");
+      }
+    } catch { toast.error("Failed to run security scan"); }
+    finally { setScanRunning(false); }
+  }, [getAuthHeaders, notificationsEnabled, fetchSecurityScans]);
+
+  // Request notification permission on admin login
+  useEffect(() => {
+    if (isAdmin && isSuperAdmin && "Notification" in window) {
+      if (Notification.permission === "granted") {
+        setNotificationsEnabled(true);
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(p => {
+          setNotificationsEnabled(p === "granted");
+        });
+      }
+    }
+  }, [isAdmin, isSuperAdmin]);
+
+  // Fetch scans and set up hourly auto-scan
+  useEffect(() => {
+    if (isAdmin) {
+      fetchSecurityScans();
+      // Auto-scan every hour
+      scanIntervalRef.current = setInterval(() => {
+        runSecurityScan();
+      }, 60 * 60 * 1000);
+      return () => {
+        if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+      };
+    }
+  }, [isAdmin, fetchSecurityScans, runSecurityScan]);
+
   const handleTierSwitch = (selectedTier: UserTier) => {
     if (tierOverride === selectedTier) return;
     setTierOverride(selectedTier);
@@ -424,6 +512,129 @@ export default function Admin() {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Security Scanner */}
+            {isSuperAdmin && (
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <ScanSearch className="w-5 h-5 text-primary" />
+                  <h2 className="text-lg font-semibold text-foreground text-center flex-1">Security Scanner</h2>
+                  <div className="flex items-center gap-2">
+                    {notificationsEnabled ? (
+                      <span title="Notifications enabled"><Bell className="w-4 h-4 text-primary" /></span>
+                    ) : (
+                      <span title="Notifications disabled"><BellOff className="w-4 h-4 text-muted-foreground" /></span>
+                    )}
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {securityScans.length} report{securityScans.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Comprehensive database & configuration security audit. Auto-scans every hour. Critical alerts push to device notifications.
+                </p>
+
+                <div className="flex justify-center mb-5">
+                  <Button
+                    variant="hero"
+                    size="sm"
+                    onClick={runSecurityScan}
+                    disabled={scanRunning}
+                    className="gap-2"
+                  >
+                    {scanRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
+                    {scanRunning ? "Scanning…" : "Run Scan"}
+                  </Button>
+                </div>
+
+                {securityLoading ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                ) : securityScans.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No scan reports yet. Run your first scan above.</p>
+                ) : (
+                  <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-3">
+                    {securityScans.map((scan, idx) => (
+                      <details
+                        key={scan.id}
+                        className={`rounded-lg border overflow-hidden ${
+                          scan.vulnerability_count > 0
+                            ? "border-destructive/30 bg-destructive/5"
+                            : scan.warning_count > 0
+                            ? "border-amber-500/30 bg-amber-500/5"
+                            : "border-border/50 bg-card/50"
+                        }`}
+                        open={idx === 0}
+                      >
+                        <summary className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/20 transition-colors">
+                          {scan.vulnerability_count > 0 ? (
+                            <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
+                          ) : scan.warning_count > 0 ? (
+                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                          ) : (
+                            <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground">
+                              {scan.scan_type === "scheduled" ? "Scheduled" : "Manual"} Scan
+                              <span className="text-muted-foreground font-normal ml-2">
+                                {new Date(scan.started_at).toLocaleString()}
+                              </span>
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {scan.vulnerability_count > 0 && <span className="text-destructive font-medium">{scan.vulnerability_count} critical</span>}
+                              {scan.vulnerability_count > 0 && scan.warning_count > 0 && " · "}
+                              {scan.warning_count > 0 && <span className="text-amber-500 font-medium">{scan.warning_count} warning{scan.warning_count !== 1 ? "s" : ""}</span>}
+                              {(scan.vulnerability_count > 0 || scan.warning_count > 0) && " · "}
+                              <span className="text-primary">{scan.ok_count} passed</span>
+                            </p>
+                          </div>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                            scan.status === "completed"
+                              ? scan.vulnerability_count > 0
+                                ? "bg-destructive/20 text-destructive"
+                                : "bg-primary/20 text-primary"
+                              : "bg-muted text-muted-foreground"
+                          }`}>
+                            {scan.status}
+                          </span>
+                        </summary>
+                        {scan.findings && scan.findings.length > 0 && (
+                          <div className="border-t border-border/30 p-3 space-y-2">
+                            {scan.summary && (
+                              <p className="text-xs font-medium text-foreground mb-2">{scan.summary}</p>
+                            )}
+                            {scan.findings.map((f, fi) => (
+                              <div key={fi} className={`text-xs rounded-md px-3 py-2 ${
+                                f.severity === "critical"
+                                  ? "bg-destructive/10 border border-destructive/20"
+                                  : f.severity === "warning"
+                                  ? "bg-amber-500/10 border border-amber-500/20"
+                                  : f.severity === "info"
+                                  ? "bg-blue-500/10 border border-blue-500/20"
+                                  : "bg-primary/5 border border-border/30"
+                              }`}>
+                                <div className="flex items-center gap-2 mb-0.5">
+                                  <span className={`font-semibold uppercase text-[10px] ${
+                                    f.severity === "critical" ? "text-destructive"
+                                      : f.severity === "warning" ? "text-amber-500"
+                                      : f.severity === "info" ? "text-blue-500"
+                                      : "text-primary"
+                                  }`}>{f.severity}</span>
+                                  <span className="text-muted-foreground">·</span>
+                                  <span className="text-muted-foreground">{f.category}</span>
+                                </div>
+                                <p className="text-foreground font-medium">{f.title}</p>
+                                <p className="text-muted-foreground mt-0.5">{f.detail}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </details>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
