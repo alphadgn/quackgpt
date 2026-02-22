@@ -267,7 +267,7 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       <div className="mt-10 w-full max-w-xl flex flex-col items-center gap-3">
         {isAuthenticated && getAuthHeaders && (
           <div className="w-full rounded-xl bg-card/50 border border-border/50 p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center justify-center gap-1.5">
               <MessageSquare className="w-4 h-4 text-primary" />
               Query History
             </h3>

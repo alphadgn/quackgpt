@@ -36,15 +36,15 @@ export function ScrollBendContainer({
       if (elCenter < topZone) {
         // Top third of viewport: bend backward
         const progress = Math.min(1, Math.max(0, 1 - elCenter / topZone));
-        rotateX = progress * 12;
-        scale = 1 - progress * 0.05;
-        opacity = 1 - progress * 0.4;
+        rotateX = progress * 16;
+        scale = 1 - progress * 0.07;
+        opacity = 1 - progress * 0.54;
       } else if (elCenter > bottomZone) {
         // Bottom third of viewport: bend forward
         const progress = Math.min(1, Math.max(0, (elCenter - bottomZone) / (viewH - bottomZone)));
-        rotateX = -progress * 12;
-        scale = 1 - progress * 0.05;
-        opacity = 1 - progress * 0.4;
+        rotateX = -progress * 16;
+        scale = 1 - progress * 0.07;
+        opacity = 1 - progress * 0.54;
       }
 
       el.style.transform = `perspective(800px) rotateX(${rotateX}deg) scale(${scale})`;
