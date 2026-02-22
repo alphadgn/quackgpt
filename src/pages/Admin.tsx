@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -87,7 +88,7 @@ export default function Admin() {
   const [selectedHistoryUser, setSelectedHistoryUser] = useState<string | null>(null);
   const [expandedHistorySession, setExpandedHistorySession] = useState<string | null>(null);
   const [deletingHistorySession, setDeletingHistorySession] = useState<string | null>(null);
-  const [historyFeedbackMap, setHistoryFeedbackMap] = useState<Record<string, string>>({});
+  const [historyFeedbackMap, setHistoryFeedbackMap] = useState<Record<string, { type: string; reviewed: boolean; hasOverride: boolean }>>({});
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
     return {
@@ -294,10 +295,10 @@ export default function Admin() {
       if (sessResp.ok && data.sessions) setHistorySessions(data.sessions);
       const fbData = await fbResp.json().catch(() => ({ feedback: [] }));
       if (fbData.feedback) {
-        const map: Record<string, string> = {};
+        const map: Record<string, { type: string; reviewed: boolean; hasOverride: boolean }> = {};
         for (const fb of fbData.feedback) {
-          const key = fb.message_content?.substring(0, 100) || "";
-          if (key) map[key] = fb.feedback_type;
+          const key = fb.user_query?.trim().toLowerCase() || "";
+          if (key) map[key] = { type: fb.feedback_type, reviewed: fb.admin_reviewed ?? false, hasOverride: !!fb.admin_override };
         }
         setHistoryFeedbackMap(map);
       }
@@ -626,8 +627,8 @@ export default function Admin() {
                             <div className="border-t border-border/30 bg-muted/10">
                               <div className="max-h-80 overflow-y-auto p-3 space-y-3">
                                 {pairs.map((pair, i) => {
-                                  const fbKey = pair.assistant?.content?.substring(0, 100) || "";
-                                  const fbType = fbKey ? historyFeedbackMap[fbKey] : null;
+                                  const fbKey = pair.user.content?.trim().toLowerCase() || "";
+                                  const fb = fbKey ? historyFeedbackMap[fbKey] : null;
                                   return (
                                     <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
                                       <div className="text-xs">
@@ -640,10 +641,15 @@ export default function Admin() {
                                           <span className="text-foreground/70">{pair.assistant.content}</span>
                                         </div>
                                       )}
-                                      {fbType && (
-                                        <div className="flex items-center gap-1 pt-1 border-t border-border/20">
-                                          {fbType === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
-                                          <span className="text-[10px] text-muted-foreground">{fbType === "positive" ? "Liked" : "Disliked"}</span>
+                                      {fb && (
+                                        <div className="flex items-center gap-2 pt-1 border-t border-border/20">
+                                          {fb.type === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
+                                          <span className="text-[10px] text-muted-foreground">{fb.type === "positive" ? "Liked" : "Disliked"}</span>
+                                          {fb.type === "negative" && (
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${fb.reviewed || fb.hasOverride ? 'bg-green-500/20 text-green-500' : 'bg-destructive/20 text-destructive'}`}>
+                                              {fb.reviewed || fb.hasOverride ? 'Responded' : 'Needs Response'}
+                                            </span>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -738,6 +744,7 @@ export default function Admin() {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 }

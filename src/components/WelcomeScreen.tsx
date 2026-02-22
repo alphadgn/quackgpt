@@ -58,7 +58,7 @@ function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<
   const [loading, setLoading] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [deletingSession, setDeletingSession] = useState<string | null>(null);
-  const [feedbackMap, setFeedbackMap] = useState<Record<string, { type: string; query: string }>>({});
+  const [feedbackByQuery, setFeedbackByQuery] = useState<Record<string, string>>({});
 
   const fetchSessions = useCallback(async () => {
     setLoading(true);
@@ -72,12 +72,12 @@ function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<
       if (sessResp.ok && sessData.sessions) setSessions(sessData.sessions);
       const fbData = await fbResp.json().catch(() => ({ feedback: [] }));
       if (fbData.feedback) {
-        const map: Record<string, { type: string; query: string }> = {};
+        const map: Record<string, string> = {};
         for (const fb of fbData.feedback) {
-          const key = fb.message_content?.substring(0, 100) || "";
-          if (key) map[key] = { type: fb.feedback_type, query: fb.user_query || "" };
+          const key = fb.user_query?.trim().toLowerCase() || "";
+          if (key) map[key] = fb.feedback_type;
         }
-        setFeedbackMap(map);
+        setFeedbackByQuery(map);
       }
     } catch (err) {
       console.error("Failed to fetch history:", err);
@@ -103,9 +103,9 @@ function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<
     }
   };
 
-  const getFeedbackForMessage = (content: string) => {
-    const key = content?.substring(0, 100) || "";
-    return feedbackMap[key] || null;
+  const getFeedbackForQuery = (userContent: string) => {
+    const key = userContent?.trim().toLowerCase() || "";
+    return feedbackByQuery[key] || null;
   };
 
   const getQAPairs = (messages: ChatMessage[]) => {
@@ -165,7 +165,7 @@ function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<
             {isExpanded && (
               <div className="border-t border-border/30 bg-muted/10 max-h-52 overflow-y-auto p-2.5 space-y-2">
                 {pairs.map((pair, i) => {
-                  const feedback = pair.assistant ? getFeedbackForMessage(pair.assistant.content) : null;
+                  const fbType = getFeedbackForQuery(pair.user.content);
                   return (
                     <div key={i} className="rounded-md bg-card/60 border border-border/30 p-2.5 space-y-1.5">
                       <div className="text-xs">
@@ -178,10 +178,10 @@ function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<
                           <span className="text-foreground/70">{pair.assistant.content}</span>
                         </div>
                       )}
-                      {feedback && (
+                      {fbType && (
                         <div className="flex items-center gap-1 pt-1 border-t border-border/20">
-                          {feedback.type === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
-                          <span className="text-[10px] text-muted-foreground">{feedback.type === "positive" ? "Liked" : "Disliked"}</span>
+                          {fbType === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
+                          <span className="text-[10px] text-muted-foreground">{fbType === "positive" ? "Liked" : "Disliked"}</span>
                         </div>
                       )}
                     </div>

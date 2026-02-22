@@ -196,12 +196,16 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- LIST FEEDBACK for current user (for history panel display) ---
+    // --- LIST FEEDBACK for current user (or admin querying another user) ---
     if (action === "list-feedback") {
+      const isAdminUser = await isSuperAdmin(supabase, privyUserId);
+      const targetUser = url.searchParams.get("userId");
+      const queryUserId = (isAdminUser && targetUser) ? targetUser : privyUserId;
+
       const { data, error } = await supabase
         .from("chat_feedback")
-        .select("feedback_type, message_content, user_query")
-        .eq("external_user_id", privyUserId);
+        .select("feedback_type, message_content, user_query, admin_reviewed, admin_override")
+        .eq("external_user_id", queryUserId);
       if (error) throw error;
       return new Response(JSON.stringify({ feedback: data || [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
