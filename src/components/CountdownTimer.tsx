@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 
 function formatTime(ms: number): string {
-  if (ms <= 0) return '00h 00m 00s';
+  if (ms <= 0) return '00:00:00';
   const h = Math.floor(ms / 3600000);
   const m = Math.floor((ms % 3600000) / 60000);
   const s = Math.floor((ms % 60000) / 1000);
-  return `${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m ${String(s).padStart(2, '0')}s`;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
 interface CountdownTimerProps {
@@ -33,9 +33,9 @@ export function CountdownTimer({ resetTime }: CountdownTimerProps) {
   if (!resetTime || remaining <= 0) return null;
 
   return (
-    <div className="px-3 py-1.5 rounded-lg bg-card/80 backdrop-blur border border-destructive/30 shadow-sm text-center">
-      <span className="text-[11px] text-destructive font-mono">
-        Reset in: {formatTime(remaining)}
+    <div className="w-full py-1 rounded-md bg-destructive/10 border border-destructive/20 text-center">
+      <span className="text-[10px] text-destructive font-mono tracking-wider">
+        {formatTime(remaining)}
       </span>
     </div>
   );
