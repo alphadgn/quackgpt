@@ -1,4 +1,3 @@
-import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -391,18 +390,27 @@ export default function Admin() {
     finally { setScanRunning(false); }
   }, [getAuthHeaders, notificationsEnabled, fetchSecurityScans]);
 
-  // Request notification permission on admin login
+  // Request notification permission on EVERY super admin sign-in
   useEffect(() => {
-    if (isAdmin && isSuperAdmin && "Notification" in window) {
-      if (Notification.permission === "granted") {
-        setNotificationsEnabled(true);
-      } else if (Notification.permission !== "denied") {
-        Notification.requestPermission().then(p => {
-          setNotificationsEnabled(p === "granted");
-        });
-      }
+    if (!authenticated || !isAdmin || !isSuperAdmin) return;
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "granted") {
+      setNotificationsEnabled(true);
+    } else if (Notification.permission !== "denied") {
+      // Always prompt on sign-in
+      Notification.requestPermission().then(p => {
+        setNotificationsEnabled(p === "granted");
+        if (p === "granted") {
+          toast.success("Notifications enabled for security alerts");
+        } else {
+          toast.info("Enable notifications to receive critical security alerts");
+        }
+      });
+    } else {
+      toast.info("Notifications are blocked. Enable in browser settings to receive security alerts.");
     }
-  }, [isAdmin, isSuperAdmin]);
+  }, [authenticated, isAdmin, isSuperAdmin]);
 
   // Fetch scans and set up hourly auto-scan
   useEffect(() => {
@@ -474,7 +482,7 @@ export default function Admin() {
             <p className="text-muted-foreground">Access restricted to super administrators.</p>
           </div>
         ) : (
-          <ScrollBendContainer className="space-y-8">
+          <div className="space-y-8">
             {/* Profile Testing Mode */}
             {isSuperAdmin && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
@@ -954,7 +962,7 @@ export default function Admin() {
                 </table>
               </div>
             </div>
-          </ScrollBendContainer>
+          </div>
         )}
       </main>
       <Footer />
