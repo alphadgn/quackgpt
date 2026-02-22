@@ -437,7 +437,7 @@ export default function Admin() {
               {sourcesLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
               ) : (
-                <div className="space-y-2 mb-4">
+                <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto rounded-lg border border-border/30 p-2">
                   {sources.map(source => (
                     <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50 bg-card/50' : 'border-border/30 bg-muted/20 opacity-60'}`}>
                       <Switch checked={source.is_active} onCheckedChange={(checked) => handleToggleSource(source.id, checked)} />
@@ -553,21 +553,27 @@ export default function Admin() {
               </p>
 
               {/* User selector */}
-              <div className="flex flex-wrap gap-2 mb-4">
+              <div className="max-h-[240px] overflow-y-auto rounded-lg border border-border/30 p-2 mb-4 space-y-1">
                 {historyUsers.map(uid => (
-                  <Button
+                  <button
                     key={uid}
-                    variant={selectedHistoryUser === uid ? "default" : "outline"}
-                    size="sm"
-                    className="text-xs gap-1"
-                    onClick={() => fetchUserHistory(uid)}
+                    className={`w-full flex items-center gap-2 text-left text-xs px-3 py-2.5 rounded-lg transition-colors ${selectedHistoryUser === uid ? 'bg-primary/20 text-primary border border-primary/30' : 'hover:bg-muted/50 text-foreground'}`}
+                    onClick={() => {
+                      if (selectedHistoryUser === uid) {
+                        setSelectedHistoryUser(null);
+                        setHistorySessions([]);
+                      } else {
+                        fetchUserHistory(uid);
+                      }
+                    }}
                   >
-                    <User className="w-3 h-3" />
-                    {uid.length > 16 ? `${uid.slice(0, 10)}…${uid.slice(-4)}` : uid}
-                  </Button>
+                    <User className="w-3 h-3 shrink-0" />
+                    <span className="truncate">{uid.length > 16 ? `${uid.slice(0, 10)}…${uid.slice(-4)}` : uid}</span>
+                    <ChevronRight className={`w-3 h-3 ml-auto shrink-0 transition-transform ${selectedHistoryUser === uid ? 'rotate-90' : ''}`} />
+                  </button>
                 ))}
                 {historyUsers.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No chat history recorded yet.</p>
+                  <p className="text-sm text-muted-foreground p-2">No chat history recorded yet.</p>
                 )}
               </div>
 
@@ -625,7 +631,7 @@ export default function Admin() {
                           </div>
                           {isExpanded && (
                             <div className="border-t border-border/30 bg-muted/10">
-                              <div className="max-h-80 overflow-y-auto p-3 space-y-3">
+                              <div className="max-h-[320px] overflow-y-auto p-3 space-y-3">
                                 {pairs.map((pair, i) => {
                                   const fbKey = pair.user.content?.trim().toLowerCase() || "";
                                   const fb = fbKey ? historyFeedbackMap[fbKey] : null;
@@ -666,12 +672,18 @@ export default function Admin() {
               )}
             </div>
 
-            {/* Accounts Table */}
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">{accounts.length} accounts total</p>
-              <div className="overflow-x-auto">
+            {/* User Accounts */}
+            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <User className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground">User Accounts</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  {accounts.length} total
+                </span>
+              </div>
+              <div className="max-h-[280px] overflow-y-auto rounded-lg border border-border/30">
                 <table className="w-full text-sm">
-                  <thead>
+                  <thead className="sticky top-0 bg-card z-10">
                     <tr className="border-b border-border/50">
                       <th className="text-left py-3 px-2 text-muted-foreground font-medium">User ID</th>
                       <th className="text-center py-3 px-2 text-muted-foreground font-medium">Tier</th>
@@ -703,22 +715,6 @@ export default function Admin() {
                           </td>
                           <td className="py-3 px-2">
                             <div className="flex items-center justify-end gap-1 flex-wrap">
-                              {(["free", "paid", "nft_holder"] as const).filter(t => t !== account.tier).map((t) => (
-                                <Button
-                                  key={t}
-                                  variant="outline"
-                                  size="sm"
-                                  className="text-xs h-7 px-2"
-                                  disabled={actionLoading === `tier-${account.external_user_id}`}
-                                  onClick={() => account.external_user_id && handleUpdateTier(account.external_user_id, t)}
-                                >
-                                  {actionLoading === `tier-${account.external_user_id}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    `→ ${t}`
-                                  )}
-                                </Button>
-                              ))}
                               <Button
                                 variant="outline"
                                 size="sm"

@@ -214,7 +214,7 @@ export default function Settings() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Daily Queries</p>
-                  <p className="text-foreground font-medium">{queriesUsedToday} / {limits.maxQueries}</p>
+                  <p className="text-foreground font-medium">{Math.min(queriesUsedToday, limits.maxQueries)} / {limits.maxQueries}</p>
                 </div>
                 <div>
                   <p className="text-muted-foreground">Max Response Length</p>
