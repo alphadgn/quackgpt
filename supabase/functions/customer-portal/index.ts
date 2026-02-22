@@ -73,6 +73,12 @@ serve(async (req) => {
       });
     }
 
+    if (!/^[a-zA-Z0-9:_-]+$/.test(privyUserId)) {
+      return new Response(JSON.stringify({ error: "Invalid user ID format" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });

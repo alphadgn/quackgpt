@@ -74,6 +74,12 @@ serve(async (req) => {
       });
     }
 
+    if (!/^[a-zA-Z0-9:_-]+$/.test(privyUserId)) {
+      return new Response(JSON.stringify({ error: "Invalid user ID format" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
