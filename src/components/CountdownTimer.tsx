@@ -33,8 +33,8 @@ export function CountdownTimer({ resetTime }: CountdownTimerProps) {
   if (!resetTime || remaining <= 0) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-40 px-3 py-1.5 rounded-lg bg-card/80 backdrop-blur border border-border/50 shadow-sm">
-      <span className="text-[11px] text-muted-foreground font-mono">
+    <div className="px-3 py-1.5 rounded-lg bg-card/80 backdrop-blur border border-destructive/30 shadow-sm text-center">
+      <span className="text-[11px] text-destructive font-mono">
         Reset in: {formatTime(remaining)}
       </span>
     </div>
