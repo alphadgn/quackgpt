@@ -186,11 +186,11 @@
 
 @keyframes point-down {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  50% { transform: translateY(-7.5px); }
 }
 
 .animate-point-down {
-  animation: point-down 3s ease-in-out infinite;
+  animation: point-down 1.5s ease-in-out infinite;
 }
 
 @keyframes pulse-glow {
