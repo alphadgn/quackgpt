@@ -98,8 +98,8 @@ const Index = () => {
   }, [user?.id, navigate, getAccessToken]);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-y-auto overflow-x-hidden">
-      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+      <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
         isLoggedIn={authenticated}
@@ -115,7 +115,7 @@ const Index = () => {
         embeddedWallet={embeddedWallet}
       />
       
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-visible min-h-0">
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-visible">
         {/* Chat area */}
         <div className="flex-1">
           {messages.length === 0 ? (
