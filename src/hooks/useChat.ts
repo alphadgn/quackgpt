@@ -70,7 +70,17 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
 
     (async () => {
       try {
-        const headers = await getAuthHeaders();
+        const token = getAccessToken ? await getAccessToken() : null;
+        if (!token) {
+          // Token not ready yet — skip silently, will retry on next render
+          if (!cancelled) setUsageLoaded(true);
+          return;
+        }
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          'x-privy-token': token,
+        };
         const body = (isSuperAdmin && tierOverride) ? JSON.stringify({ tierOverride }) : undefined;
         const resp = await fetch(CHECK_USAGE_URL, {
           method: body ? 'POST' : 'GET',
