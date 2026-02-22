@@ -206,7 +206,7 @@ export default function Settings() {
         ) : (
           <div className="space-y-6">
             {/* Current Tier */}
-            <section className="rounded-xl border border-border/50 bg-card/50 p-6">
+            <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Current Plan</h2>
               <div className="flex items-center gap-3 mb-4">
                 <TierBadge tier={tier} showLimits />
@@ -229,7 +229,7 @@ export default function Settings() {
             </section>
 
             {/* Subscription Actions */}
-            <section className="rounded-xl border border-border/50 bg-card/50 p-6">
+            <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Subscription</h2>
               {tier === "free" ? (
                 <div>
@@ -259,7 +259,7 @@ export default function Settings() {
             </section>
 
             {/* Tier Comparison Table */}
-            <section className="rounded-xl border border-border/50 bg-card/50 p-6">
+            <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4">Plans & Pricing</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -296,7 +296,7 @@ export default function Settings() {
             </section>
 
             {/* Linked Wallets */}
-            <section className="rounded-xl border border-border/50 bg-card/50 p-6">
+            <section className="border-y border-border/50 bg-card/50 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-display font-semibold text-foreground">Linked Wallets</h2>
                 <span className="text-xs text-muted-foreground">1 Privy + up to 2 external</span>
@@ -357,8 +357,8 @@ export default function Settings() {
             </section>
 
             {/* Account Info */}
-            <section className="rounded-xl border border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Account</h2>
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4">Connected Account</h2>
               {email && (
                 <div className="text-sm">
                   <p className="text-muted-foreground">Email</p>
