@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { ScrollBendContainer } from "./ScrollBendContainer";
 import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
 import { UserTier, WHITELISTED_SOURCES } from "@/types";
@@ -198,7 +199,7 @@ function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<
 
 export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin, getAuthHeaders }: WelcomeScreenProps) {
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+    <ScrollBendContainer className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
       <div className="animate-float mb-8">
         <QuackLogo size="xl" />
@@ -279,6 +280,6 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
           Data sourced exclusively from official Wallchain channels
         </p>
       </div>
-    </div>
+    </ScrollBendContainer>
   );
 }

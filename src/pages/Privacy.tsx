@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { QuackLogo } from "@/components/QuackLogo";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 
 const Privacy = () => {
   return (
@@ -24,7 +25,7 @@ const Privacy = () => {
       <main className="container max-w-3xl mx-auto px-4 py-12">
         <h1 className="text-3xl font-display font-bold text-gradient mb-8">Privacy Policy</h1>
         
-        <div className="prose prose-invert prose-sm max-w-none space-y-6">
+        <ScrollBendContainer className="prose prose-invert prose-sm max-w-none space-y-6">
           <p className="text-muted-foreground">Last updated: January 2026</p>
           
           <section className="space-y-4">
@@ -89,7 +90,7 @@ const Privacy = () => {
               For privacy-related inquiries, please contact us through official Wallchain channels.
             </p>
           </section>
-        </div>
+        </ScrollBendContainer>
       </main>
     </div>
   );

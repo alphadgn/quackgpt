@@ -3,6 +3,7 @@ import { QuackLogo } from "@/components/QuackLogo";
 import { ArrowLeft, AlertTriangle, Shield, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WHITELISTED_SOURCES } from "@/types";
+import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 
 const AIDisclosure = () => {
   return (
@@ -38,7 +39,7 @@ const AIDisclosure = () => {
           </div>
         </div>
         
-        <div className="space-y-8">
+        <ScrollBendContainer className="space-y-8">
           {/* How it works */}
           <section className="p-6 rounded-xl bg-card border border-border">
             <div className="flex items-center gap-3 mb-4">
@@ -104,7 +105,7 @@ const AIDisclosure = () => {
               </p>
             </div>
           </section>
-        </div>
+        </ScrollBendContainer>
       </main>
     </div>
   );
