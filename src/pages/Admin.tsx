@@ -1,3 +1,4 @@
+import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -361,8 +362,8 @@ export default function Admin() {
           <ArrowLeft className="w-4 h-4" /> Back to Chat
         </Link>
 
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-display font-bold text-foreground">Admin Dashboard</h1>
+        <h1 className="text-2xl font-display font-bold text-foreground mb-4 text-center">Admin Dashboard</h1>
+        <div className="flex items-center justify-end mb-8">
           {isAdmin && (
             <Button variant="outline" size="sm" onClick={() => { fetchAccounts(); fetchSources(); fetchFeedback(); fetchHistoryUsers(); }} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
@@ -385,7 +386,7 @@ export default function Admin() {
             <p className="text-muted-foreground">Access restricted to super administrators.</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <ScrollBendContainer className="space-y-8">
             {/* Profile Testing Mode */}
             {isSuperAdmin && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
@@ -742,7 +743,7 @@ export default function Admin() {
                 </table>
               </div>
             </div>
-          </div>
+          </ScrollBendContainer>
         )}
       </main>
       <Footer />

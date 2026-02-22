@@ -221,6 +221,16 @@
   50% { opacity: 0.8; }
 }
 
+/* Scroll bend effect - top and bottom thirds curve away */
+.scroll-bend {
+  perspective: 800px;
+  perspective-origin: center center;
+}
+
+.scroll-bend > * {
+  transform-style: preserve-3d;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
