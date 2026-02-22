@@ -200,7 +200,7 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               
               {isSuperAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-primary"}>
+                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : ""}>
                     <ShieldCheck className="w-4 h-4" />
                   </Button>
                 </Link>
