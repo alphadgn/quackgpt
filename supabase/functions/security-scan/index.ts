@@ -69,15 +69,7 @@ async function runSecurityScan(supabase: ReturnType<typeof createClient>): Promi
 }> {
   const findings: Finding[] = [];
 
-  // 1. Check RLS enabled on all public tables
-  const { data: tables } = await supabase.rpc("", {}).catch(() => ({ data: null }));
-  
-  // Use raw query via service role to check RLS
-  const { data: rlsCheck } = await supabase
-    .from("security_scans")
-    .select("id")
-    .limit(0);
-
+  // 1. Check RLS by querying tables with service role
   // Check tables with RLS status
   const tablesToCheck = [
     "profiles", "app_users", "user_roles", "chat_history", 
