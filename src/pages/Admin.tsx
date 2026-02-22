@@ -66,7 +66,7 @@ export default function Admin() {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride, setTierOverride } = useAuth();
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Sources state
@@ -370,7 +370,7 @@ export default function Admin() {
             <p className="text-muted-foreground mb-4">Sign in to access admin panel</p>
             <Button onClick={login} variant="hero">Sign In</Button>
           </div>
-        ) : loading ? (
+        ) : loading || isAdmin === null ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
