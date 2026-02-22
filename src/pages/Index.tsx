@@ -146,7 +146,7 @@ const Index = () => {
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
-              <div className="max-w-3xl mx-auto w-full space-y-2">
+              <div className="max-w-3xl mx-auto w-full">
                 <div
                   className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
                   onClick={handleCheckout}
@@ -157,20 +157,20 @@ const Index = () => {
                     Subscribe or connect a wallet with{' '}
                     <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
                   </div>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading}
-                    className="shrink-0 gap-1"
-                  >
-                    {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                    Subscribe
-                  </Button>
+                  <div className="shrink-0 flex flex-col items-stretch gap-1">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleCheckout(); }}
+                      disabled={checkoutLoading}
+                      className="gap-1"
+                    >
+                      {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      Subscribe
+                    </Button>
+                    {resetTime && <CountdownTimer resetTime={resetTime} />}
+                  </div>
                 </div>
-                {resetTime && (
-                  <CountdownTimer resetTime={resetTime} />
-                )}
               </div>
             ) : (
               <ChatInput
