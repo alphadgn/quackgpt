@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
 
-const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 
 export function useInactivityLogout(isAuthenticated: boolean, logout: () => void) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

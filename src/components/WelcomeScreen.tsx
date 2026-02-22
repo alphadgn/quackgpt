@@ -1,7 +1,23 @@
+import { useState, useCallback, useEffect } from "react";
 import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
 import { UserTier, WHITELISTED_SOURCES } from "@/types";
-import { Database, Shield, Zap, ExternalLink, History } from "lucide-react";
+import { Database, Shield, Zap, ExternalLink, ChevronRight, Loader2, Trash2, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+interface ChatMessage {
+  role: string;
+  content: string;
+  created_at: string;
+}
+
+interface ChatSession {
+  session_id: string;
+  created_at: string;
+  preview: string;
+  messages: ChatMessage[];
+  user_deleted: boolean;
+}
 
 interface WelcomeScreenProps {
   tier: UserTier;
@@ -9,7 +25,7 @@ interface WelcomeScreenProps {
   onQuerySelect?: (query: string) => void;
   isAuthenticated?: boolean;
   onLogin?: () => void;
-  onOpenHistory?: () => void;
+  getAuthHeaders?: () => Promise<Record<string, string>>;
 }
 
 const features = [
@@ -37,7 +53,150 @@ const exampleQueries = [
   "What are Quack Heads NFTs?",
 ];
 
-export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin, onOpenHistory }: WelcomeScreenProps) {
+function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<Record<string, string>> }) {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [deletingSession, setDeletingSession] = useState<string | null>(null);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, { type: string; query: string }>>({});
+
+  const fetchSessions = useCallback(async () => {
+    setLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const [sessResp, fbResp] = await Promise.all([
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions`, { headers }),
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-feedback`, { headers }),
+      ]);
+      const sessData = await sessResp.json();
+      if (sessResp.ok && sessData.sessions) setSessions(sessData.sessions);
+      const fbData = await fbResp.json().catch(() => ({ feedback: [] }));
+      if (fbData.feedback) {
+        const map: Record<string, { type: string; query: string }> = {};
+        for (const fb of fbData.feedback) {
+          const key = fb.message_content?.substring(0, 100) || "";
+          if (key) map[key] = { type: fb.feedback_type, query: fb.user_query || "" };
+        }
+        setFeedbackMap(map);
+      }
+    } catch (err) {
+      console.error("Failed to fetch history:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [getAuthHeaders]);
+
+  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+
+  const handleDelete = async (sessionId: string) => {
+    setDeletingSession(sessionId);
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=user-delete`, {
+        method: "POST", headers, body: JSON.stringify({ sessionId }),
+      });
+      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+    } catch (err) {
+      console.error("Failed to delete session:", err);
+    } finally {
+      setDeletingSession(null);
+    }
+  };
+
+  const getFeedbackForMessage = (content: string) => {
+    const key = content?.substring(0, 100) || "";
+    return feedbackMap[key] || null;
+  };
+
+  const getQAPairs = (messages: ChatMessage[]) => {
+    const pairs: { user: ChatMessage; assistant: ChatMessage | null }[] = [];
+    for (let i = 0; i < messages.length; i++) {
+      if (messages[i].role === "user") {
+        const next = messages[i + 1];
+        pairs.push({ user: messages[i], assistant: next?.role === "assistant" ? next : null });
+        if (next?.role === "assistant") i++;
+      }
+    }
+    return pairs;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Loader2 className="w-4 h-4 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="text-center py-4">
+        <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
+        <p className="text-xs text-muted-foreground">No query history yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+      {sessions.map((session) => {
+        const pairs = getQAPairs(session.messages);
+        const isExpanded = expandedSession === session.session_id;
+        return (
+          <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+            <button
+              className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors"
+              onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
+            >
+              <ChevronRight className={`w-3 h-3 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
+                <p className="text-[10px] text-muted-foreground">
+                  {new Date(session.created_at).toLocaleDateString()} • {pairs.length} {pairs.length === 1 ? "exchange" : "exchanges"}
+                </p>
+              </div>
+              <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); handleDelete(session.session_id); }}
+                disabled={deletingSession === session.session_id}
+              >
+                {deletingSession === session.session_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              </Button>
+            </button>
+            {isExpanded && (
+              <div className="border-t border-border/30 bg-muted/10 max-h-52 overflow-y-auto p-2.5 space-y-2">
+                {pairs.map((pair, i) => {
+                  const feedback = pair.assistant ? getFeedbackForMessage(pair.assistant.content) : null;
+                  return (
+                    <div key={i} className="rounded-md bg-card/60 border border-border/30 p-2.5 space-y-1.5">
+                      <div className="text-xs">
+                        <span className="font-semibold text-primary">You:</span>{" "}
+                        <span className="text-foreground/90">{pair.user.content}</span>
+                      </div>
+                      {pair.assistant && (
+                        <div className="text-xs">
+                          <span className="font-semibold text-muted-foreground">quackGPT:</span>{" "}
+                          <span className="text-foreground/70">{pair.assistant.content}</span>
+                        </div>
+                      )}
+                      {feedback && (
+                        <div className="flex items-center gap-1 pt-1 border-t border-border/20">
+                          {feedback.type === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
+                          <span className="text-[10px] text-muted-foreground">{feedback.type === "positive" ? "Liked" : "Disliked"}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin, getAuthHeaders }: WelcomeScreenProps) {
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
@@ -76,7 +235,7 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         ))}
       </div>
       
-      {/* Example queries - only for authenticated users */}
+      {/* Example queries or login */}
       {isAuthenticated ? (
         <div className="text-center">
           <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
@@ -104,16 +263,16 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         </div>
       )}
       
-      {/* Chat History + Sources reference */}
-      <div className="mt-12 flex flex-col items-center gap-3">
-        {onOpenHistory && (
-          <button
-            onClick={onOpenHistory}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm text-foreground/80 hover:bg-secondary hover:border-primary/30 hover:text-foreground transition-all"
-          >
-            <History className="w-4 h-4 text-primary" />
-            Chat History
-          </button>
+      {/* Inline Query History + Sources reference */}
+      <div className="mt-10 w-full max-w-xl flex flex-col items-center gap-3">
+        {isAuthenticated && getAuthHeaders && (
+          <div className="w-full rounded-xl bg-card/50 border border-border/50 p-4">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              Query History
+            </h3>
+            <InlineQueryHistory getAuthHeaders={getAuthHeaders} />
+          </div>
         )}
         <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
           <ExternalLink className="w-3 h-3" />

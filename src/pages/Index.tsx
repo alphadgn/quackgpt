@@ -5,7 +5,6 @@ import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
-import { ChatHistoryPanel } from "@/components/ChatHistoryPanel";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
@@ -17,7 +16,6 @@ const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -101,13 +99,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-y-auto">
-      {authenticated && (
-        <ChatHistoryPanel
-          getAuthHeaders={getAuthHeaders}
-          isOpen={historyOpen}
-          onClose={() => setHistoryOpen(false)}
-        />
-      )}
       <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
@@ -128,11 +119,10 @@ const Index = () => {
         {/* Chat area */}
         <div className="flex-1">
           {messages.length === 0 ? (
-            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} onOpenHistory={authenticated ? () => setHistoryOpen(true) : undefined} />
+            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
           ) : (
             <div className="divide-y divide-border/30">
               {messages.map((message, index) => {
-                // Find the previous user message for feedback context
                 let previousUserMessage: string | undefined;
                 if (message.role === 'assistant') {
                   for (let i = index - 1; i >= 0; i--) {
@@ -156,7 +146,7 @@ const Index = () => {
         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
-              <div className="max-w-3xl mx-auto w-full">
+              <div className="max-w-3xl mx-auto w-full space-y-2">
                 <div
                   className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
                   onClick={handleCheckout}
@@ -178,6 +168,9 @@ const Index = () => {
                     Subscribe
                   </Button>
                 </div>
+                {resetTime && (
+                  <CountdownTimer resetTime={resetTime} />
+                )}
               </div>
             ) : (
               <ChatInput
@@ -202,8 +195,6 @@ const Index = () => {
         </div>
       </main>
       </div>
-      
-      {authenticated && <CountdownTimer resetTime={resetTime} />}
     </div>
   );
 };
