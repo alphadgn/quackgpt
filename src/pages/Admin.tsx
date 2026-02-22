@@ -427,7 +427,7 @@ export default function Admin() {
             )}
 
             {/* Data Sources Management */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+            <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Globe className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">Official Data Sources</h2>
@@ -480,7 +480,7 @@ export default function Admin() {
             </div>
 
             {/* Negative Feedback Review */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+            <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <ThumbsDown className="w-5 h-5 text-destructive" />
                 <h2 className="text-lg font-semibold text-foreground">Feedback Review</h2>
@@ -545,7 +545,7 @@ export default function Admin() {
             </div>
 
             {/* Chat History Viewer */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+            <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <History className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">Chat History</h2>
@@ -678,7 +678,7 @@ export default function Admin() {
             </div>
 
             {/* User Accounts */}
-            <div className="rounded-xl border border-border/50 bg-card/30 p-6">
+            <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <User className="w-5 h-5 text-primary" />
                 <h2 className="text-lg font-semibold text-foreground">User Accounts</h2>
