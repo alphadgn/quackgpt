@@ -229,7 +229,7 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
             className="p-4 rounded-xl bg-card/50 border border-border/50 hover:border-primary/30 transition-colors"
           >
             <feature.icon className="w-6 h-6 text-primary mb-3" />
-            <h3 className="font-medium text-foreground mb-1">{feature.title}</h3>
+            <h3 className="font-medium text-foreground mb-1 text-center">{feature.title}</h3>
             <p className="text-sm text-muted-foreground">{feature.description}</p>
           </div>
         ))}
