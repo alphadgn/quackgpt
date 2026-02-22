@@ -75,11 +75,11 @@ const AIDisclosure = () => {
             <p className="text-foreground/80 mb-4">
               quackGPT only references information from these official sources:
             </p>
-            <ul className="grid gap-2">
+            <ul className="grid gap-2 justify-items-center text-center">
               {WHITELISTED_SOURCES.map((source) => (
                 <li 
                   key={source}
-                  className="px-3 py-2 rounded-lg bg-secondary/50 text-sm text-foreground/80 font-mono"
+                  className="px-3 py-2 rounded-lg bg-secondary/50 text-sm text-foreground/80 font-mono w-full text-center"
                 >
                   {source}
                 </li>

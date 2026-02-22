@@ -6,7 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { UserTier } from "@/types";
 import { Wallet, LogIn, LogOut, Menu, Loader2, Plus, X, Settings, ShieldCheck, Unlink } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 interface LinkedWallet {
   address: string;
@@ -35,6 +35,7 @@ function shortenAddress(address: string) {
 export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogout, nftCheckLoading, linkedWallets = [], onLinkWallet, onUnlinkWallet, isSuperAdmin, embeddedWallet }: HeaderProps) {
   const [showNotification, setShowNotification] = useState(false);
   const [unlinkTarget, setUnlinkTarget] = useState<string | null>(null);
+  const location = useLocation();
 
   // Build deduplicated list of all wallets to display
   const allWallets = (() => {
@@ -199,14 +200,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               
               {isSuperAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className="text-primary">
+                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-primary"}>
                     <ShieldCheck className="w-4 h-4" />
                   </Button>
                 </Link>
               )}
 
               <Link to="/settings">
-                <Button variant="ghost" size="icon-sm" title="Settings">
+                <Button variant="ghost" size="icon-sm" title="Settings" className={location.pathname === "/settings" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : ""}>
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>

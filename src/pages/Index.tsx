@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
 import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
@@ -195,6 +196,7 @@ const Index = () => {
           </p>
         </div>
       </main>
+      <Footer />
       </div>
     </div>
   );

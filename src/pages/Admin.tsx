@@ -1,7 +1,7 @@
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -966,7 +966,6 @@ export default function Admin() {
           </ScrollBendContainer>
         )}
       </main>
-      <Footer />
     </div>
   );
 }
