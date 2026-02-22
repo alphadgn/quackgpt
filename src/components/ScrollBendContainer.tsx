@@ -1,10 +1,10 @@
 import { useRef, useEffect, useCallback } from "react";
 
 /**
- * Wraps scrollable content and applies a 3D bend effect:
- * items in the top third rotate away (tilt backward), 
- * items in the bottom third rotate away (tilt forward),
- * items in the center are flat.
+ * Wraps content and applies a 3D bend effect based on viewport position:
+ * items near the top of the viewport tilt backward,
+ * items near the bottom tilt forward,
+ * items in the center appear flat.
  */
 export function ScrollBendContainer({
   children,
@@ -19,33 +19,32 @@ export function ScrollBendContainer({
     const container = containerRef.current;
     if (!container) return;
 
-    const rect = container.getBoundingClientRect();
-    const viewH = rect.height;
+    const viewH = window.innerHeight;
     const topZone = viewH * 0.33;
     const bottomZone = viewH * 0.67;
 
-    // Direct children with data-bend attribute
     const items = container.querySelectorAll<HTMLElement>("[data-bend]");
     items.forEach((el) => {
       const elRect = el.getBoundingClientRect();
-      const elCenter = elRect.top + elRect.height / 2 - rect.top;
+      // Center of element relative to the viewport
+      const elCenter = elRect.top + elRect.height / 2;
 
       let rotateX = 0;
       let scale = 1;
       let opacity = 1;
 
       if (elCenter < topZone) {
-        // Top third: bend backward
-        const progress = 1 - elCenter / topZone; // 0 at boundary, 1 at top
-        rotateX = progress * 8; // degrees tilting back
-        scale = 1 - progress * 0.04;
-        opacity = 1 - progress * 0.3;
+        // Top third of viewport: bend backward
+        const progress = Math.min(1, Math.max(0, 1 - elCenter / topZone));
+        rotateX = progress * 12;
+        scale = 1 - progress * 0.05;
+        opacity = 1 - progress * 0.4;
       } else if (elCenter > bottomZone) {
-        // Bottom third: bend forward
-        const progress = (elCenter - bottomZone) / (viewH - bottomZone);
-        rotateX = -progress * 8;
-        scale = 1 - progress * 0.04;
-        opacity = 1 - progress * 0.3;
+        // Bottom third of viewport: bend forward
+        const progress = Math.min(1, Math.max(0, (elCenter - bottomZone) / (viewH - bottomZone)));
+        rotateX = -progress * 12;
+        scale = 1 - progress * 0.05;
+        opacity = 1 - progress * 0.4;
       }
 
       el.style.transform = `perspective(800px) rotateX(${rotateX}deg) scale(${scale})`;
@@ -57,7 +56,6 @@ export function ScrollBendContainer({
     const container = containerRef.current;
     if (!container) return;
 
-    // Mark direct section children for bending
     const markChildren = () => {
       Array.from(container.children).forEach((child) => {
         if (child instanceof HTMLElement && !child.hasAttribute("data-bend")) {
@@ -72,17 +70,12 @@ export function ScrollBendContainer({
     markChildren();
     applyBend();
 
-    // Listen for scroll on the container or window
-    const scrollParent = container.closest("[style*='overflow']") || window;
     const onScroll = () => requestAnimationFrame(applyBend);
 
     window.addEventListener("scroll", onScroll, { passive: true });
     container.addEventListener("scroll", onScroll, { passive: true });
-
-    // Also re-calc on resize
     window.addEventListener("resize", onScroll, { passive: true });
 
-    // MutationObserver to catch dynamic children
     const observer = new MutationObserver(() => {
       markChildren();
       applyBend();
