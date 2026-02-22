@@ -237,10 +237,12 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week.
                   </p>
-                  <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
-                    {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                    Subscribe — $1.49/week
-                  </Button>
+                  <div className="flex justify-center">
+                    <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
+                      {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                      Subscribe — $1.49/week
+                    </Button>
+                  </div>
                 </div>
               ) : isSubscribed ? (
                 <div>
@@ -337,14 +339,13 @@ export default function Settings() {
                 </div>
               )}
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 {externalWalletCount < 2 && (
                   <Button variant="outline" size="sm" onClick={linkWallet}>
                     <Wallet className="w-3.5 h-3.5 mr-2" />
                     Link {linkedWallets.length === 0 ? "a" : "Another"} Wallet
                   </Button>
                 )}
-                {/* Always show Reset — even if ghost wallets exist but aren't displayed */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -361,7 +362,7 @@ export default function Settings() {
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Connected Account</h2>
               {email && (
-                <div className="text-sm">
+                <div className="text-sm text-center">
                   <p className="text-muted-foreground">Email</p>
                   <p className="text-foreground">{email}</p>
                 </div>

@@ -217,8 +217,9 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         Ask questions, receive facts—no content creation, just reality.
       </p>
       
-      {/* User tier */}
-      <div className="mb-8">
+      {/* User tier with pointing hand */}
+      <div className="mb-8 flex items-center gap-2">
+        <span className="text-2xl animate-point-down">👇</span>
         <TierBadge tier={tier} showLimits />
       </div>
       
