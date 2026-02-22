@@ -33,8 +33,8 @@ export function CountdownTimer({ resetTime }: CountdownTimerProps) {
   if (!resetTime || remaining <= 0) return null;
 
   return (
-    <div className="w-full py-1 rounded-md bg-destructive/10 border border-destructive/20 text-center">
-      <span className="text-[10px] text-destructive font-mono tracking-wider">
+    <div className="py-0.5 rounded bg-destructive/10 text-center">
+      <span className="text-[9px] text-destructive font-mono tracking-wide">
         {formatTime(remaining)}
       </span>
     </div>

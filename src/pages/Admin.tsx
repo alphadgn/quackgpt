@@ -3,7 +3,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, Check, X, MessageSquare, History, ChevronRight, User } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, ThumbsUp, Check, X, MessageSquare, History, ChevronRight, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -44,6 +44,12 @@ interface HistorySession {
   user_deleted: boolean;
 }
 
+interface FeedbackEntry {
+  message_content: string;
+  feedback_type: string;
+  user_query: string | null;
+}
+
 const tierIcons: Record<string, typeof Shield> = {
   free: Shield,
   paid: Zap,
@@ -81,6 +87,7 @@ export default function Admin() {
   const [selectedHistoryUser, setSelectedHistoryUser] = useState<string | null>(null);
   const [expandedHistorySession, setExpandedHistorySession] = useState<string | null>(null);
   const [deletingHistorySession, setDeletingHistorySession] = useState<string | null>(null);
+  const [historyFeedbackMap, setHistoryFeedbackMap] = useState<Record<string, string>>({});
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
     return {
@@ -279,12 +286,21 @@ export default function Admin() {
     setSelectedHistoryUser(userId);
     try {
       const headers = await getAuthHeaders();
-      const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions&userId=${encodeURIComponent(userId)}`,
-        { headers }
-      );
-      const data = await resp.json();
-      if (resp.ok && data.sessions) setHistorySessions(data.sessions);
+      const [sessResp, fbResp] = await Promise.all([
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions&userId=${encodeURIComponent(userId)}`, { headers }),
+        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-feedback&userId=${encodeURIComponent(userId)}`, { headers }),
+      ]);
+      const data = await sessResp.json();
+      if (sessResp.ok && data.sessions) setHistorySessions(data.sessions);
+      const fbData = await fbResp.json().catch(() => ({ feedback: [] }));
+      if (fbData.feedback) {
+        const map: Record<string, string> = {};
+        for (const fb of fbData.feedback) {
+          const key = fb.message_content?.substring(0, 100) || "";
+          if (key) map[key] = fb.feedback_type;
+        }
+        setHistoryFeedbackMap(map);
+      }
     } catch { console.error("Failed to fetch user history"); }
     finally { setHistoryLoading(false); }
   }, [getAuthHeaders]);
@@ -609,21 +625,30 @@ export default function Admin() {
                           {isExpanded && (
                             <div className="border-t border-border/30 bg-muted/10">
                               <div className="max-h-80 overflow-y-auto p-3 space-y-3">
-                                {pairs.map((pair, i) => (
-                                  <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
-                                    <div className="text-xs">
-                                      <span className="font-semibold text-primary">User:</span>{' '}
-                                      <span className="text-foreground/90">{pair.user.content}</span>
-                                    </div>
-                                    {pair.assistant && (
+                                {pairs.map((pair, i) => {
+                                  const fbKey = pair.assistant?.content?.substring(0, 100) || "";
+                                  const fbType = fbKey ? historyFeedbackMap[fbKey] : null;
+                                  return (
+                                    <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
                                       <div className="text-xs">
-                                        <span className="font-semibold text-muted-foreground">quackGPT:</span>{' '}
-                                        <span className="text-foreground/70">{pair.assistant.content}</span>
+                                        <span className="font-semibold text-primary">User:</span>{' '}
+                                        <span className="text-foreground/90">{pair.user.content}</span>
                                       </div>
-                                    )}
-                                    {/* TODO: feedback per message can be added when admin feedback data is loaded */}
-                                  </div>
-                                ))}
+                                      {pair.assistant && (
+                                        <div className="text-xs">
+                                          <span className="font-semibold text-muted-foreground">quackGPT:</span>{' '}
+                                          <span className="text-foreground/70">{pair.assistant.content}</span>
+                                        </div>
+                                      )}
+                                      {fbType && (
+                                        <div className="flex items-center gap-1 pt-1 border-t border-border/20">
+                                          {fbType === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
+                                          <span className="text-[10px] text-muted-foreground">{fbType === "positive" ? "Liked" : "Disliked"}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
                           )}
