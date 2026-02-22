@@ -237,7 +237,7 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground mb-4">
                     Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week.
                   </p>
-                  <Button onClick={handleCheckout} disabled={checkoutLoading} className="bg-[hsl(120_100%_50%)] text-black font-semibold hover:bg-[hsl(120_100%_45%)] shadow-[0_0_20px_hsl(120_100%_50%_/_0.4)] hover:shadow-[0_0_30px_hsl(120_100%_50%_/_0.6)]">
+                  <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
                     {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
                     Subscribe — $1.49/week
                   </Button>

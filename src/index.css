@@ -231,6 +231,21 @@
   transform-style: preserve-3d;
 }
 
+/* Privy modal submit button — fluorescent green */
+#privy-dialog button[type="submit"],
+#privy-modal button[type="submit"],
+[data-privy-dialog] button[type="submit"],
+iframe#privy-iframe ~ div button[type="submit"] {
+  background-color: hsl(120 100% 50%) !important;
+  color: hsl(0 0% 0%) !important;
+  box-shadow: 0 0 20px hsl(120 100% 50% / 0.4) !important;
+}
+[data-privy-dialog] button[type="submit"]:hover,
+#privy-dialog button[type="submit"]:hover {
+  background-color: hsl(120 100% 45%) !important;
+  box-shadow: 0 0 30px hsl(120 100% 50% / 0.6) !important;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 8px;
