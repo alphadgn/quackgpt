@@ -224,12 +224,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
             </Button>
           )}
           
-          {/* Home button */}
-          <Link to="/">
-            <Button variant="ghost" size="icon-sm" title="Home" className={location.pathname === "/" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : ""}>
-              <Home className="w-5 h-5" />
-            </Button>
-          </Link>
+          {/* Home button - only for logged-in users on non-home pages */}
+          {isLoggedIn && location.pathname !== "/" && (
+            <Link to="/">
+              <Button variant="ghost" size="icon-sm" title="Home" className="">
+                <Home className="w-5 h-5" />
+              </Button>
+            </Link>
+          )}
 
           {/* Logout - right of menu */}
           {isLoggedIn && (

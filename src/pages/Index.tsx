@@ -190,7 +190,7 @@ const Index = () => {
           ) : null}
           
           {/* Disclaimer */}
-          <p className="text-center text-xs text-muted-foreground mt-4 max-w-xl mx-auto">
+          <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto">
             quackGPT provides information only. Not financial advice. 
             Data sourced from official Wallchain channels.
           </p>
