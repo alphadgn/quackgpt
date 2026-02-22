@@ -209,10 +209,10 @@ export default function Settings() {
             {/* Current Tier */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Current Plan</h2>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center gap-3 mb-4">
                 <TierBadge tier={tier} showLimits />
               </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4 text-sm text-center">
                 <div>
                   <p className="text-muted-foreground">Daily Queries</p>
                   <p className="text-foreground font-medium">{Math.min(queriesUsedToday, limits.maxQueries)} / {limits.maxQueries}</p>
@@ -234,7 +234,7 @@ export default function Settings() {
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Subscription</h2>
               {tier === "free" ? (
                 <div>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-sm text-muted-foreground mb-4 text-center">
                     Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week.
                   </p>
                   <div className="flex justify-center">
