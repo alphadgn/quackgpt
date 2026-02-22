@@ -91,13 +91,18 @@ export default function Admin() {
   const [historyFeedbackMap, setHistoryFeedbackMap] = useState<Record<string, { type: string; reviewed: boolean; hasOverride: boolean }>>({});
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
+    if (!token) {
+      toast.error("Session expired. Please sign in again.");
+      logout();
+      throw new Error("No auth token");
+    }
     return {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      ...(token ? { 'x-privy-token': token } : {}),
+      'x-privy-token': token,
     };
-  }, [getAccessToken]);
+  }, [getAccessToken, logout]);
 
   const fetchAccounts = useCallback(async () => {
     if (!user?.id) return;
