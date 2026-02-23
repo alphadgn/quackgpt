@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, ThumbsUp, Check, X, MessageSquare, History, ChevronRight, User, ShieldAlert, ShieldCheck, AlertTriangle, Bell, BellOff, ScanSearch } from "lucide-react";
+import { ArrowLeft, Loader2, RefreshCw, Shield, Zap, Crown, FlaskConical, Globe, Plus, Trash2, ThumbsDown, ThumbsUp, Check, X, MessageSquare, History, ChevronRight, User, ShieldAlert, ShieldCheck, AlertTriangle, Bell, BellOff, ScanSearch, Bird } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
@@ -111,6 +111,12 @@ export default function Admin() {
   const [scanRunning, setScanRunning] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Tweet audit state
+  const [adminAudits, setAdminAudits] = useState<any[]>([]);
+  const [adminAuditsLoading, setAdminAuditsLoading] = useState(false);
+  const [expandedAdminAudit, setExpandedAdminAudit] = useState<string | null>(null);
+
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
     if (!token) {
@@ -351,6 +357,25 @@ export default function Admin() {
     if (isAdmin) fetchHistoryUsers();
   }, [isAdmin, fetchHistoryUsers]);
 
+  // Fetch all tweet audits for admin
+  const fetchAdminAudits = useCallback(async () => {
+    setAdminAuditsLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-list-audits`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.audits) setAdminAudits(data.audits);
+    } catch { console.error("Failed to fetch admin audits"); }
+    finally { setAdminAuditsLoading(false); }
+  }, [getAuthHeaders]);
+
+  useEffect(() => {
+    if (isAdmin) fetchAdminAudits();
+  }, [isAdmin, fetchAdminAudits]);
+
   // Security scan functions
   const fetchSecurityScans = useCallback(async () => {
     setSecurityLoading(true);
@@ -465,7 +490,7 @@ export default function Admin() {
         <h1 className="text-2xl font-display font-bold text-foreground mb-4 text-center">Admin Dashboard</h1>
         <div className="flex items-center justify-end mb-8">
           {isAdmin && (
-            <Button variant="outline" size="sm" onClick={() => { fetchAccounts(); fetchSources(); fetchFeedback(); fetchHistoryUsers(); }} disabled={loading}>
+            <Button variant="outline" size="sm" onClick={() => { fetchAccounts(); fetchSources(); fetchFeedback(); fetchHistoryUsers(); fetchAdminAudits(); }} disabled={loading}>
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? "animate-spin" : ""}`} /> Refresh
             </Button>
           )}
@@ -898,6 +923,72 @@ export default function Admin() {
                     })}
                   </div>
                 )
+              )}
+            </div>
+
+            {/* Tweet Audit History (Admin) */}
+            <div className="border-y border-border/50 bg-card/30 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <Bird className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Tweet Audit History</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  {adminAudits.length} audits
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                All tweet audit results across all users. Each audit deducts one query from the user's account.
+              </p>
+
+              {adminAuditsLoading ? (
+                <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+              ) : adminAudits.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No tweet audits yet.</p>
+              ) : (
+                <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
+                  {adminAudits.map((audit: any) => {
+                    const isExpanded = expandedAdminAudit === audit.id;
+                    const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
+                    return (
+                      <div key={audit.id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                        <button
+                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
+                          onClick={() => setExpandedAdminAudit(isExpanded ? null : audit.id)}
+                        >
+                          <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-foreground truncate">"{audit.tweet_text}"</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(audit.created_at).toLocaleString()} • {audit.external_user_id ? shortenId(audit.external_user_id) : "—"}
+                            </p>
+                          </div>
+                          <span className={`text-sm font-bold font-mono ${scoreColor}`}>{audit.composite_score}</span>
+                        </button>
+                        {isExpanded && (
+                          <div className="border-t border-border/30 bg-muted/10 p-3 space-y-2">
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div><span className="text-muted-foreground">Relevancy:</span> <span className="font-mono font-semibold">{audit.relevancy_score}</span></div>
+                              <div><span className="text-muted-foreground">Correctness:</span> <span className="font-mono font-semibold">{audit.correctness_score}</span></div>
+                              <div><span className="text-muted-foreground">Honesty:</span> <span className="font-mono font-semibold">{audit.honesty_score}</span></div>
+                              <div><span className="text-muted-foreground">Brand Alignment:</span> <span className="font-mono font-semibold">{audit.brand_alignment_score}</span></div>
+                            </div>
+                            {audit.risk_flags?.length > 0 && (
+                              <div className="text-xs text-destructive">
+                                <p className="font-semibold mb-1">⚠️ Risk Flags:</p>
+                                {audit.risk_flags.map((f: string, i: number) => <p key={i}>• {f}</p>)}
+                              </div>
+                            )}
+                            {audit.suggested_improvements?.length > 0 && (
+                              <div className="text-xs text-primary">
+                                <p className="font-semibold mb-1">💡 Improvements:</p>
+                                {audit.suggested_improvements.map((s: string, i: number) => <p key={i}>• {s}</p>)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 

@@ -5,7 +5,7 @@ import { TierBadge } from "@/components/TierBadge";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TIER_LIMITS, UserTier } from "@/types";
-import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink, Unlink } from "lucide-react";
+import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink, Unlink, History, Bird, ChevronRight, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -29,6 +29,17 @@ export default function Settings() {
   const [searchParams] = useSearchParams();
   const [showResetWalletsDialog, setShowResetWalletsDialog] = useState(false);
   const [resetWalletsLoading, setResetWalletsLoading] = useState(false);
+
+  // History state
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [expandedSession, setExpandedSession] = useState<string | null>(null);
+  const [feedbackMap, setFeedbackMap] = useState<Record<string, { type: string }>>({});
+
+  // Tweet audit history state
+  const [audits, setAudits] = useState<any[]>([]);
+  const [auditsLoading, setAuditsLoading] = useState(false);
+  const [expandedAudit, setExpandedAudit] = useState<string | null>(null);
 
   const getAuthHeaders = useCallback(async () => {
     const token = await getAccessToken();
@@ -85,6 +96,42 @@ export default function Settings() {
       }
     })();
   }, [user?.id, authenticated, searchParams]);
+
+  // Fetch query history and tweet audit history
+  useEffect(() => {
+    if (!user?.id || !authenticated) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const [sessResp, fbResp, auditResp] = await Promise.all([
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions`, { headers }),
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-feedback`, { headers }),
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-audits`, { headers }),
+        ]);
+        if (!cancelled) {
+          const sessData = await sessResp.json();
+          if (sessData.sessions) setSessions(sessData.sessions);
+
+          const fbData = await fbResp.json().catch(() => ({ feedback: [] }));
+          if (fbData.feedback) {
+            const map: Record<string, { type: string }> = {};
+            for (const fb of fbData.feedback) {
+              const key = fb.message_content?.substring(0, 100) || "";
+              if (key) map[key] = { type: fb.feedback_type };
+            }
+            setFeedbackMap(map);
+          }
+
+          const auditData = await auditResp.json();
+          if (auditData.audits) setAudits(auditData.audits);
+        }
+      } catch (err) {
+        console.error("Failed to fetch history:", err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user?.id, authenticated]);
 
   const handleCheckout = async () => {
     if (!user?.id) return;
@@ -362,6 +409,140 @@ export default function Settings() {
                 <div className="text-sm text-center">
                   <p className="text-muted-foreground">Email</p>
                   <p className="text-foreground">{email}</p>
+                </div>
+              )}
+            </section>
+
+            {/* Query History */}
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <div className="flex items-center gap-2 mb-4 justify-center">
+                <History className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-display font-semibold text-foreground">Query History</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">
+                  {sessions.length} sessions
+                </span>
+              </div>
+
+              {sessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No query history yet. Start a search, quack check, or tweet audit!</p>
+              ) : (
+                <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
+                  {sessions.map((session: any) => {
+                    const isExpanded = expandedSession === session.session_id;
+                    const pairs: { user: any; assistant: any | null }[] = [];
+                    for (let i = 0; i < session.messages.length; i++) {
+                      if (session.messages[i].role === "user") {
+                        const next = session.messages[i + 1];
+                        pairs.push({
+                          user: session.messages[i],
+                          assistant: next?.role === "assistant" ? next : null,
+                        });
+                        if (next?.role === "assistant") i++;
+                      }
+                    }
+                    return (
+                      <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                        <button
+                          className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
+                          onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
+                        >
+                          <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {new Date(session.created_at).toLocaleDateString()} • {pairs.length} {pairs.length === 1 ? "exchange" : "exchanges"}
+                            </p>
+                          </div>
+                        </button>
+                        {isExpanded && (
+                          <div className="border-t border-border/30 bg-muted/10 max-h-60 overflow-y-auto p-3 space-y-2">
+                            {pairs.map((pair, i) => {
+                              const fb = pair.assistant ? feedbackMap[pair.assistant.content?.substring(0, 100) || ""] : null;
+                              return (
+                                <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-1">
+                                  <div className="text-xs">
+                                    <span className="font-semibold text-primary">You:</span>{" "}
+                                    <span className="text-foreground/90">{pair.user.content}</span>
+                                  </div>
+                                  {pair.assistant && (
+                                    <div className="text-xs">
+                                      <span className="font-semibold text-muted-foreground">quackGPT:</span>{" "}
+                                      <span className="text-foreground/70">{pair.assistant.content}</span>
+                                    </div>
+                                  )}
+                                  {fb && (
+                                    <div className="flex items-center gap-1 pt-1 border-t border-border/20">
+                                      {fb.type === "positive" ? <ThumbsUp className="w-3 h-3 text-primary" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
+                                      <span className="text-[10px] text-muted-foreground">{fb.type === "positive" ? "Liked" : "Disliked"}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* Tweet Audit History */}
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <div className="flex items-center gap-2 mb-4 justify-center">
+                <Bird className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-display font-semibold text-foreground">Tweet Audit History</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">
+                  {audits.length} audits
+                </span>
+              </div>
+
+              {audits.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">No tweet audits yet. Try the Tweet Audit mode!</p>
+              ) : (
+                <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
+                  {audits.map((audit: any) => {
+                    const isExpanded = expandedAudit === audit.id;
+                    const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
+                    return (
+                      <div key={audit.id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                        <button
+                          className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
+                          onClick={() => setExpandedAudit(isExpanded ? null : audit.id)}
+                        >
+                          <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-foreground truncate">"{audit.tweet_text}"</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(audit.created_at).toLocaleString()}</p>
+                          </div>
+                          <span className={`text-sm font-bold font-mono ${scoreColor}`}>{audit.composite_score}</span>
+                        </button>
+                        {isExpanded && (
+                          <div className="border-t border-border/30 bg-muted/10 p-3 space-y-2">
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div><span className="text-muted-foreground">Relevancy:</span> <span className="font-mono font-semibold">{audit.relevancy_score}</span></div>
+                              <div><span className="text-muted-foreground">Correctness:</span> <span className="font-mono font-semibold">{audit.correctness_score}</span></div>
+                              <div><span className="text-muted-foreground">Honesty:</span> <span className="font-mono font-semibold">{audit.honesty_score}</span></div>
+                              <div><span className="text-muted-foreground">Brand Alignment:</span> <span className="font-mono font-semibold">{audit.brand_alignment_score}</span></div>
+                            </div>
+                            {audit.risk_flags?.length > 0 && (
+                              <div className="text-xs text-destructive">
+                                <p className="font-semibold mb-1">⚠️ Risk Flags:</p>
+                                {audit.risk_flags.map((f: string, i: number) => <p key={i}>• {f}</p>)}
+                              </div>
+                            )}
+                            {audit.suggested_improvements?.length > 0 && (
+                              <div className="text-xs text-primary">
+                                <p className="font-semibold mb-1">💡 Improvements:</p>
+                                {audit.suggested_improvements.map((s: string, i: number) => <p key={i}>• {s}</p>)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </section>
