@@ -227,7 +227,7 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
           {/* Home button - only for logged-in users on non-home pages */}
           {isLoggedIn && location.pathname !== "/" && (
             <Link to="/">
-              <Button variant="ghost" size="icon-sm" title="Home" className="">
+              <Button variant="ghost" size="icon-sm" title="Home" className="text-muted-foreground">
                 <Home className="w-5 h-5" />
               </Button>
             </Link>

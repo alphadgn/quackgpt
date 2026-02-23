@@ -35,25 +35,25 @@ export function Footer() {
             All rights reserved QuackGPT 2026
           </p>
           
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
             <a 
               href="/terms"
               onClick={(e) => handleLinkClick(e, "/terms")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer whitespace-nowrap"
             >
               Terms
             </a>
             <a 
               href="/privacy"
               onClick={(e) => handleLinkClick(e, "/privacy")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer whitespace-nowrap"
             >
               Privacy
             </a>
             <a 
               href="/ai-disclosure"
               onClick={(e) => handleLinkClick(e, "/ai-disclosure")}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer whitespace-nowrap"
             >
               AI Disclosure
             </a>
@@ -61,7 +61,7 @@ export function Footer() {
               href="https://docs.wallchain.xyz/intro"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors truncate max-w-[120px] sm:max-w-none whitespace-nowrap"
             >
               Docs
             </a>

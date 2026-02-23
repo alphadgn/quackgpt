@@ -40,13 +40,13 @@ export function ScrollBendContainer({
 
       if (elCenter < topZone) {
         const progress = Math.min(1, Math.max(0, 1 - elCenter / topZone));
-        rotateX = progress * 40.5;
-        scale = 1 - progress * 0.0945;
+        rotateX = progress * 48.6;
+        scale = 1 - progress * 0.1134;
         opacity = 1 - progress * 1;
       } else if (elCenter > bottomZone) {
         const progress = Math.min(1, Math.max(0, (elCenter - bottomZone) / (viewH - bottomZone)));
-        rotateX = -progress * 40.5;
-        scale = 1 - progress * 0.0945;
+        rotateX = -progress * 48.6;
+        scale = 1 - progress * 0.1134;
         opacity = 1 - progress * 1;
       }
 
