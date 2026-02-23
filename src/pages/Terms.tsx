@@ -46,8 +46,8 @@ const Terms = () => {
             <p className="text-foreground/80">The Service offers different access tiers:</p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li><strong>Free Users:</strong> 1 query per 24 hours, 100 character response limit, no image generation</li>
-              <li><strong>Quack Heads NFT Holders:</strong> 5 queries per 24 hours, 1000 character response limit, 5 images per day</li>
               <li><strong>Paid Users ($1.49/week):</strong> 3 queries per 24 hours, 300 character response limit, 3 images per day</li>
+              <li><strong>Quack Heads NFT Holders:</strong> 5 queries per 24 hours, 1000 character response limit, 5 images per day</li>
             </ul>
           </section>
           
@@ -72,7 +72,7 @@ const Terms = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">6. Limitation of Liability</h2>
             <p className="text-foreground/80">
-              In no event shall quackGPT, its operators, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.
+              In no event shall quackGPT, it's operators, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the Service.
             </p>
           </section>
           
