@@ -136,7 +136,10 @@ const Index = () => {
         {/* Tweet Audit mode */}
         {chatMode === "tweet-audit" && authenticated ? (
           <div className="p-4 max-w-2xl mx-auto">
-            <TweetAuditPanel getAuthHeaders={getAuthHeaders} />
+            <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {
+              // Re-fetch usage to reflect the deduction
+              // The useChat hook will pick this up on next render
+            }} />
           </div>
         ) : (
           <>

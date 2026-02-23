@@ -46,6 +46,14 @@ function checkIpRateLimit(req: Request): boolean {
   return entry.count <= 20;
 }
 
+const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
+  free: { maxQueries: 1, maxCharacters: 100 },
+  nft_holder: { maxQueries: 5, maxCharacters: 5000 },
+  paid: { maxQueries: 3, maxCharacters: 300 },
+};
+
+const CYCLE_DURATION_MS = 24 * 60 * 60 * 1000;
+
 const TWEET_AUDIT_PROMPT = `You are QuackGPT Tweet Auditor. You evaluate user-drafted Twitter/X posts for alignment with the WallChain ecosystem.
 
 SCORING DIMENSIONS (each 0-100):
@@ -99,6 +107,79 @@ serve(async (req) => {
       });
     }
 
+    // --- USAGE DEDUCTION: Tweet audit counts as 1 query ---
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("tier")
+      .eq("external_user_id", privyUserId)
+      .single();
+
+    const tier = profile?.tier || "free";
+    const limits = TIER_LIMITS[tier] || TIER_LIMITS.free;
+
+    const { data: usage } = await supabase
+      .from("daily_query_usage")
+      .select("queries_used, cycle_started_at")
+      .eq("external_user_id", privyUserId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    const now = Date.now();
+    let queriesUsed = 0;
+    let cycleStartedAt: string;
+
+    if (usage) {
+      const cycleStart = new Date(usage.cycle_started_at).getTime();
+      const cycleEnd = cycleStart + CYCLE_DURATION_MS;
+      if (now >= cycleEnd) {
+        cycleStartedAt = new Date(now).toISOString();
+        queriesUsed = 0;
+        await supabase
+          .from("daily_query_usage")
+          .update({ queries_used: 0, cycle_started_at: cycleStartedAt, query_date: new Date().toISOString().split("T")[0] })
+          .eq("external_user_id", privyUserId);
+      } else {
+        queriesUsed = usage.queries_used || 0;
+        cycleStartedAt = usage.cycle_started_at;
+      }
+    } else {
+      cycleStartedAt = new Date(now).toISOString();
+    }
+
+    if (limits.maxQueries !== -1 && queriesUsed >= limits.maxQueries) {
+      const cycleStart = new Date(cycleStartedAt).getTime();
+      const resetTime = cycleStart + CYCLE_DURATION_MS;
+      return new Response(JSON.stringify({
+        error: "Daily query limit reached",
+        queriesUsed,
+        maxQueries: limits.maxQueries,
+        resetTime,
+      }), {
+        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Increment usage
+    if (usage) {
+      await supabase
+        .from("daily_query_usage")
+        .update({ queries_used: queriesUsed + 1, cycle_started_at: cycleStartedAt })
+        .eq("external_user_id", privyUserId);
+    } else {
+      await supabase
+        .from("daily_query_usage")
+        .insert({
+          external_user_id: privyUserId,
+          query_date: new Date().toISOString().split("T")[0],
+          queries_used: 1,
+          cycle_started_at: cycleStartedAt,
+        });
+    }
+
+    // --- AI AUDIT ---
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -144,14 +225,8 @@ serve(async (req) => {
                     required: ["claim", "verdict", "explanation"],
                   },
                 },
-                suggested_improvements: {
-                  type: "array",
-                  items: { type: "string" },
-                },
-                risk_flags: {
-                  type: "array",
-                  items: { type: "string" },
-                },
+                suggested_improvements: { type: "array", items: { type: "string" } },
+                risk_flags: { type: "array", items: { type: "string" } },
               },
               required: ["relevancy_score", "honesty_score", "correctness_score", "brand_alignment_score", "summary", "claim_analysis", "suggested_improvements", "risk_flags"],
             },
@@ -188,7 +263,6 @@ serve(async (req) => {
     );
 
     // Persist audit
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     await supabase.from("tweet_audits").insert({
       external_user_id: privyUserId,
       tweet_text: tweetText.trim(),
@@ -213,6 +287,7 @@ serve(async (req) => {
       claim_analysis: scores.claim_analysis || [],
       suggested_improvements: scores.suggested_improvements || [],
       risk_flags: scores.risk_flags || [],
+      queriesUsed: queriesUsed + 1,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

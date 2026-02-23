@@ -18,6 +18,7 @@ interface TweetAuditResult {
 
 interface TweetAuditPanelProps {
   getAuthHeaders: () => Promise<Record<string, string>>;
+  onQueryUsed?: () => void;
 }
 
 function ScoreBar({ label, score, weight }: { label: string; score: number; weight: string }) {
@@ -44,7 +45,7 @@ function VerdictIcon({ verdict }: { verdict: string }) {
   }
 }
 
-export function TweetAuditPanel({ getAuthHeaders }: TweetAuditPanelProps) {
+export function TweetAuditPanel({ getAuthHeaders, onQueryUsed }: TweetAuditPanelProps) {
   const [tweetText, setTweetText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<TweetAuditResult | null>(null);
@@ -88,6 +89,7 @@ export function TweetAuditPanel({ getAuthHeaders }: TweetAuditPanelProps) {
 
       const data = await resp.json();
       setResult(data);
+      onQueryUsed?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Audit failed");
     } finally {

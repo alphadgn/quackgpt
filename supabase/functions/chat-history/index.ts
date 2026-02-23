@@ -88,7 +88,6 @@ Deno.serve(async (req) => {
       const isAdmin = await isSuperAdmin(supabase, privyUserId);
       const targetUser = url.searchParams.get("userId");
 
-      // Admin can view any user; regular users see only their own (non-deleted)
       let query = supabase
         .from("chat_history")
         .select("session_id, created_at, content, role, user_deleted")
@@ -106,7 +105,6 @@ Deno.serve(async (req) => {
       const { data, error } = await query;
       if (error) throw error;
 
-      // Group by session_id
       const sessions: Record<string, { session_id: string; created_at: string; preview: string; messages: any[]; user_deleted: boolean }> = {};
       for (const row of data || []) {
         if (!sessions[row.session_id]) {
@@ -133,7 +131,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- USER SOFT DELETE: marks session as user_deleted ---
+    // --- USER SOFT DELETE ---
     if (action === "user-delete" && req.method === "POST") {
       const { sessionId } = await req.json();
       if (!sessionId) {
@@ -208,6 +206,44 @@ Deno.serve(async (req) => {
         .eq("external_user_id", queryUserId);
       if (error) throw error;
       return new Response(JSON.stringify({ feedback: data || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- LIST TWEET AUDITS for current user ---
+    if (action === "list-audits") {
+      const { data, error } = await supabase
+        .from("tweet_audits")
+        .select("id, tweet_text, composite_score, relevancy_score, honesty_score, correctness_score, brand_alignment_score, risk_flags, suggested_improvements, created_at")
+        .eq("external_user_id", privyUserId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return new Response(JSON.stringify({ audits: data || [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- ADMIN LIST TWEET AUDITS for any user ---
+    if (action === "admin-list-audits") {
+      const isAdmin = await isSuperAdmin(supabase, privyUserId);
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const targetUser = url.searchParams.get("userId");
+      let query = supabase
+        .from("tweet_audits")
+        .select("id, external_user_id, tweet_text, composite_score, relevancy_score, honesty_score, correctness_score, brand_alignment_score, risk_flags, suggested_improvements, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (targetUser) {
+        query = query.eq("external_user_id", targetUser);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return new Response(JSON.stringify({ audits: data || [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
