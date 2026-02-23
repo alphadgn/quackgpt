@@ -143,6 +143,66 @@ export type Database = {
         }
         Relationships: []
       }
+      indexed_sources: {
+        Row: {
+          author: string | null
+          change_detected: boolean
+          chunk_index: number
+          content: string
+          content_hash: string
+          created_at: string
+          embedding: string | null
+          id: string
+          is_current: boolean
+          last_scraped: string
+          parent_source_id: string | null
+          reliability_tier: number
+          source_timestamp: string | null
+          source_url: string
+          title: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          author?: string | null
+          change_detected?: boolean
+          chunk_index?: number
+          content: string
+          content_hash: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          is_current?: boolean
+          last_scraped?: string
+          parent_source_id?: string | null
+          reliability_tier?: number
+          source_timestamp?: string | null
+          source_url: string
+          title?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          author?: string | null
+          change_detected?: boolean
+          chunk_index?: number
+          content?: string
+          content_hash?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          is_current?: boolean
+          last_scraped?: string
+          parent_source_id?: string | null
+          reliability_tier?: number
+          source_timestamp?: string | null
+          source_url?: string
+          title?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       nft_token_bindings: {
         Row: {
           bound_at: string
@@ -194,6 +254,39 @@ export type Database = {
           tier?: string
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      scrape_jobs: {
+        Row: {
+          completed_at: string | null
+          errors: Json
+          id: string
+          sources_checked: number
+          sources_updated: number
+          started_at: string
+          status: string
+          triggered_by: string
+        }
+        Insert: {
+          completed_at?: string | null
+          errors?: Json
+          id?: string
+          sources_checked?: number
+          sources_updated?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string
+        }
+        Update: {
+          completed_at?: string | null
+          errors?: Json
+          id?: string
+          sources_checked?: number
+          sources_updated?: number
+          started_at?: string
+          status?: string
+          triggered_by?: string
         }
         Relationships: []
       }
@@ -269,6 +362,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tweet_audits: {
+        Row: {
+          brand_alignment_score: number
+          composite_score: number
+          correctness_score: number
+          created_at: string
+          detailed_breakdown: Json
+          external_user_id: string
+          honesty_score: number
+          id: string
+          relevancy_score: number
+          risk_flags: string[] | null
+          suggested_improvements: string[] | null
+          supporting_sources: string[] | null
+          tweet_text: string
+        }
+        Insert: {
+          brand_alignment_score?: number
+          composite_score?: number
+          correctness_score?: number
+          created_at?: string
+          detailed_breakdown?: Json
+          external_user_id: string
+          honesty_score?: number
+          id?: string
+          relevancy_score?: number
+          risk_flags?: string[] | null
+          suggested_improvements?: string[] | null
+          supporting_sources?: string[] | null
+          tweet_text: string
+        }
+        Update: {
+          brand_alignment_score?: number
+          composite_score?: number
+          correctness_score?: number
+          created_at?: string
+          detailed_breakdown?: Json
+          external_user_id?: string
+          honesty_score?: number
+          id?: string
+          relevancy_score?: number
+          risk_flags?: string[] | null
+          suggested_improvements?: string[] | null
+          supporting_sources?: string[] | null
+          tweet_text?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -301,6 +442,21 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      match_documents: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          reliability_tier: number
+          similarity: number
+          source_url: string
+          title: string
+        }[]
       }
     }
     Enums: {
