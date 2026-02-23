@@ -101,7 +101,7 @@ export function ScrollBendContainer({
   }, [applyBend, scheduleUpdate]);
 
   return (
-    <div ref={containerRef} className={className} style={{ contain: "content" }}>
+    <div ref={containerRef} className={className}>
       {children}
     </div>
   );
