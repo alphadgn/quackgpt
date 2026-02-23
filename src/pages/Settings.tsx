@@ -193,9 +193,6 @@ export default function Settings() {
         embeddedWallet={embeddedWallet}
       />
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Chat
-        </Link>
 
         <h1 className="text-2xl font-display font-bold text-foreground mb-8 text-center">Account Settings</h1>
 

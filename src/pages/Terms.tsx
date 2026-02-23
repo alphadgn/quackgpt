@@ -16,7 +16,7 @@ const Terms = () => {
           <Button variant="ghost" size="sm" asChild>
             <Link to="/">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Chat
+              Home
             </Link>
           </Button>
         </div>
