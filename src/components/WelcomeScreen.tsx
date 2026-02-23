@@ -32,18 +32,18 @@ interface WelcomeScreenProps {
 const features = [
   {
     icon: Database,
-    title: "Source-Bound Intelligence",
-    description: "All responses are derived exclusively from verified Wallchain sources.",
+    title: "🔎 Search Mode",
+    description: "Source-bound ecosystem intelligence from verified Wallchain channels.",
   },
   {
     icon: Shield,
-    title: "No Content Creation",
-    description: "quackGPT verifies reality—it does not create narratives or marketing content.",
+    title: "🦆 Quack Check",
+    description: "Fact-check claims with structured verdicts: TRUE, FALSE, UNVERIFIED.",
   },
   {
     icon: Zap,
-    title: "Ecosystem Knowledge",
-    description: "Deep understanding of Wallchain, InfoFi, gQuack, and Quack Heads.",
+    title: "🐦 Tweet Audit",
+    description: "Score your tweets 0-100 on relevancy, correctness, honesty & brand alignment.",
   },
 ];
 
