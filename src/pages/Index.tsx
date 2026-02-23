@@ -100,7 +100,7 @@ const Index = () => {
   }, [user?.id, navigate, getAccessToken]);
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-x-hidden">
+    <div className="min-h-screen flex flex-col relative">
       <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
