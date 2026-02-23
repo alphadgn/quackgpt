@@ -200,14 +200,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               
               {isSuperAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-muted-foreground"}>
+                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={`focus-visible:ring-0 focus-visible:ring-offset-0 ${location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-muted-foreground hover:text-foreground"}`}>
                     <ShieldCheck className="w-4 h-4" />
                   </Button>
                 </Link>
               )}
 
               <Link to="/settings">
-                <Button variant="ghost" size="icon-sm" title="Settings" className={location.pathname === "/settings" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-muted-foreground"}>
+                <Button variant="ghost" size="icon-sm" title="Settings" className={`focus-visible:ring-0 focus-visible:ring-offset-0 ${location.pathname === "/settings" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-muted-foreground hover:text-foreground"}`}>
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>
@@ -227,7 +227,7 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
           {/* Home button - only for logged-in users on non-home pages */}
           {isLoggedIn && location.pathname !== "/" && (
             <Link to="/">
-              <Button variant="ghost" size="icon-sm" title="Home" className="text-muted-foreground">
+              <Button variant="ghost" size="icon-sm" title="Home" className="text-muted-foreground hover:text-foreground focus-visible:ring-0 focus-visible:ring-offset-0">
                 <Home className="w-5 h-5" />
               </Button>
             </Link>
