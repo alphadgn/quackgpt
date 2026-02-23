@@ -58,7 +58,7 @@ const Terms = () => {
               <li>Request content creation of any kind</li>
               <li>Generate misleading or false information</li>
               <li>Violate any applicable laws or regulations</li>
-              <li>Attempt to circumvent rate limits or access controls</li>
+              
             </ul>
           </section>
           
