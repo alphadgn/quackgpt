@@ -17,18 +17,18 @@ export interface TierLimits {
 
 export const TIER_LIMITS: Record<UserTier, TierLimits> = {
   free: {
-    maxQueries: 5,
-    maxCharacters: 500,
+    maxQueries: 1,
+    maxCharacters: 100,
     maxImages: 0,
   },
   nft_holder: {
-    maxQueries: -1, // Unlimited
+    maxQueries: 5, // Per verified NFT
     maxCharacters: 5000,
     maxImages: 10,
   },
   paid: {
-    maxQueries: 15,
-    maxCharacters: 2000,
+    maxQueries: 3,
+    maxCharacters: 300,
     maxImages: 5,
   },
 };
