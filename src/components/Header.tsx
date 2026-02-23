@@ -200,14 +200,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               
               {isSuperAdmin && (
                 <Link to="/admin">
-                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : ""}>
+                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" className={location.pathname === "/admin" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-muted-foreground"}>
                     <ShieldCheck className="w-4 h-4" />
                   </Button>
                 </Link>
               )}
 
               <Link to="/settings">
-                <Button variant="ghost" size="icon-sm" title="Settings" className={location.pathname === "/settings" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : ""}>
+                <Button variant="ghost" size="icon-sm" title="Settings" className={location.pathname === "/settings" ? "text-primary bg-primary/15 ring-1 ring-primary/40" : "text-muted-foreground"}>
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>
