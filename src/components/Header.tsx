@@ -199,17 +199,17 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               )}
               
               {isSuperAdmin && (
-                <Link to="/admin" tabIndex={-1}>
-                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" tabIndex={-1} className="text-muted-foreground hover:text-foreground outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none">
+                <Link to="/admin" tabIndex={-1} className="outline-none">
+                  <button type="button" title="Admin Dashboard" tabIndex={-1} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground transition-colors outline-none border-none bg-transparent appearance-none cursor-pointer">
                     <ShieldCheck className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </Link>
               )}
 
-              <Link to="/settings" tabIndex={-1}>
-                <Button variant="ghost" size="icon-sm" title="Settings" tabIndex={-1} className="text-muted-foreground hover:text-foreground outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none">
+              <Link to="/settings" tabIndex={-1} className="outline-none">
+                <button type="button" title="Settings" tabIndex={-1} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground transition-colors outline-none border-none bg-transparent appearance-none cursor-pointer">
                   <Settings className="w-4 h-4" />
-                </Button>
+                </button>
               </Link>
               
             </>
@@ -226,10 +226,10 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
           
           {/* Home button - only for logged-in users on non-home pages */}
           {isLoggedIn && location.pathname !== "/" && (
-            <Link to="/" tabIndex={-1}>
-              <Button variant="ghost" size="icon-sm" title="Home" tabIndex={-1} className="text-muted-foreground hover:text-foreground outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none">
+            <Link to="/" tabIndex={-1} className="outline-none">
+              <button type="button" title="Home" tabIndex={-1} className="inline-flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground transition-colors outline-none border-none bg-transparent appearance-none cursor-pointer">
                 <Home className="w-5 h-5" />
-              </Button>
+              </button>
             </Link>
           )}
 
