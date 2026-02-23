@@ -100,8 +100,8 @@ const Index = () => {
   }, [user?.id, navigate, getAccessToken]);
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="relative z-10 flex flex-col flex-1 min-h-0">
+    <div className="min-h-screen flex flex-col relative">
+      <div className="relative z-10 flex flex-col flex-1">
       <Header 
         tier={tier}
         isLoggedIn={authenticated}
@@ -117,9 +117,9 @@ const Index = () => {
         embeddedWallet={embeddedWallet}
       />
       
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full min-h-0">
-        {/* Chat area - scrollable */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full overflow-visible">
+        {/* Chat area */}
+        <div className="flex-1">
           {messages.length === 0 ? (
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
           ) : (
@@ -144,8 +144,8 @@ const Index = () => {
           )}
         </div>
         
-        {/* Input area - pinned at bottom, never floats */}
-        <div className="shrink-0 p-4 bg-background">
+        {/* Input area */}
+        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
           {authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
@@ -190,7 +190,7 @@ const Index = () => {
           ) : null}
           
           {/* Disclaimer */}
-          <p className="text-center text-xs text-muted-foreground mt-4 max-w-xl mx-auto">
+          <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto">
             quackGPT provides information only. Not financial advice. 
             Data sourced from official Wallchain channels.
           </p>
