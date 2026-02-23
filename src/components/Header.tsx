@@ -200,14 +200,14 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               
               {isSuperAdmin && (
                 <Link to="/admin" tabIndex={-1}>
-                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" tabIndex={-1} className={`outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none ${location.pathname === "/admin" ? "text-primary bg-primary/15 border border-primary/40" : "text-muted-foreground hover:text-foreground"}`}>
+                  <Button variant="ghost" size="icon-sm" title="Admin Dashboard" tabIndex={-1} className="text-muted-foreground hover:text-foreground outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none">
                     <ShieldCheck className="w-4 h-4" />
                   </Button>
                 </Link>
               )}
 
               <Link to="/settings" tabIndex={-1}>
-                <Button variant="ghost" size="icon-sm" title="Settings" tabIndex={-1} className={`outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none ${location.pathname === "/settings" ? "text-primary bg-primary/15 border border-primary/40" : "text-muted-foreground hover:text-foreground"}`}>
+                <Button variant="ghost" size="icon-sm" title="Settings" tabIndex={-1} className="text-muted-foreground hover:text-foreground outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none">
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>
