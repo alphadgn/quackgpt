@@ -377,9 +377,15 @@ export default function Admin() {
       const data = await resp.json();
       if (resp.ok) {
         toast.success(data.scan?.summary || "Scan complete");
-        if (data.alert && notificationsEnabled) {
+        // Notify on warnings OR critical vulnerabilities
+        const hasWarnings = (data.scan?.warning_count || 0) > 0;
+        const hasCritical = (data.scan?.vulnerability_count || 0) > 0;
+        if ((hasWarnings || hasCritical) && Notification.permission === "granted") {
+          const parts: string[] = [];
+          if (hasCritical) parts.push(`${data.scan.vulnerability_count} critical`);
+          if (hasWarnings) parts.push(`${data.scan.warning_count} warning(s)`);
           new Notification("🔴 QuackGPT Security Alert", {
-            body: `${data.scan.vulnerability_count} critical vulnerability(s) detected!`,
+            body: parts.join(", ") + " detected!",
             icon: "/favicon.ico",
           });
         }
@@ -391,7 +397,7 @@ export default function Admin() {
     finally { setScanRunning(false); }
   }, [getAuthHeaders, notificationsEnabled, fetchSecurityScans]);
 
-  // Request notification permission on EVERY super admin sign-in
+  // Request notification permission on EVERY super admin sign-in (redundant safety net)
   useEffect(() => {
     if (!authenticated || !isAdmin || !isSuperAdmin) return;
     if (!("Notification" in window)) return;
@@ -399,7 +405,6 @@ export default function Admin() {
     if (Notification.permission === "granted") {
       setNotificationsEnabled(true);
     } else if (Notification.permission !== "denied") {
-      // Always prompt on sign-in
       Notification.requestPermission().then(p => {
         setNotificationsEnabled(p === "granted");
         if (p === "granted") {
@@ -409,7 +414,8 @@ export default function Admin() {
         }
       });
     } else {
-      toast.info("Notifications are blocked. Enable in browser settings to receive security alerts.");
+      // Permission was denied — show persistent warning
+      toast.warning("⚠️ Notifications are BLOCKED. Go to browser settings → Site Settings → Notifications to re-enable for security alerts.", { duration: 10000 });
     }
   }, [authenticated, isAdmin, isSuperAdmin]);
 

@@ -79,7 +79,8 @@ const Terms = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">7. Contact</h2>
             <p className="text-foreground/80">
-              For questions about these Terms, please contact us through official Wallchain channels.
+              For questions about these Terms, please contact customer support at{' '}
+              <a href="mailto:info@QuackGPT.info" className="text-primary hover:underline">info@QuackGPT.info</a>.
             </p>
           </section>
         </ScrollBendContainer>
