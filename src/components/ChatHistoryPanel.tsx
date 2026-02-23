@@ -35,6 +35,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
     setLoading(true);
     try {
       const headers = await getAuthHeaders();
+      if (!headers['x-privy-token']) { setLoading(false); return; }
       const [sessResp, fbResp] = await Promise.all([
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions`, { headers }),
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-feedback`, { headers }),
