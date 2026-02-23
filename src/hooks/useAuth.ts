@@ -165,7 +165,22 @@ export function useAuth() {
           },
         });
         const data = await resp.json();
-        if (!cancelled) setIsSuperAdmin(data?.isSuperAdmin === true);
+        if (!cancelled) {
+          const admin = data?.isSuperAdmin === true;
+          setIsSuperAdmin(admin);
+          // Hardwire: request notification permission on EVERY super admin sign-in
+          if (admin && "Notification" in window) {
+            if (Notification.permission === "granted") {
+              // Already granted — nothing to prompt
+            } else if (Notification.permission !== "denied") {
+              Notification.requestPermission().then(p => {
+                if (p === "granted") {
+                  console.log("[QuackGPT] Notification permission granted for super admin");
+                }
+              });
+            }
+          }
+        }
       } catch {
         if (!cancelled) setIsSuperAdmin(false);
       }
