@@ -117,9 +117,9 @@ const Index = () => {
         embeddedWallet={embeddedWallet}
       />
       
-      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full min-h-0">
-        {/* Chat area - scrollable */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+      <main className="max-w-4xl mx-auto w-full">
+        {/* Chat area - flows naturally in page */}
+        <div>
           {messages.length === 0 ? (
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
           ) : (
@@ -144,8 +144,8 @@ const Index = () => {
           )}
         </div>
         
-        {/* Input area - stays in place, never floats */}
-        <div className="shrink-0 p-4 bg-background pt-4">
+        {/* Input area - natural document flow, never floating */}
+        <div className="p-4">
           {authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
