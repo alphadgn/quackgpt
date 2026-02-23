@@ -220,7 +220,7 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
               onClick={onLogin}
             >
               <LogIn className="w-4 h-4 mr-2" />
-              Sign In
+              Sign In/Up
             </Button>
           )}
           

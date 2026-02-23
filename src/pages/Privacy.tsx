@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { QuackLogo } from "@/components/QuackLogo";
-import { ArrowLeft } from "lucide-react";
+import { Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 
@@ -13,10 +13,9 @@ const Privacy = () => {
           <Link to="/" className="flex items-center">
             <QuackLogo size="sm" />
           </Link>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="icon-sm" asChild title="Home">
             <Link to="/">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Home
+              <Home className="w-5 h-5" />
             </Link>
           </Button>
         </div>

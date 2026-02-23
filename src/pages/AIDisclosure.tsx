@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { QuackLogo } from "@/components/QuackLogo";
-import { ArrowLeft, AlertTriangle, Shield, Database } from "lucide-react";
+import { Home, AlertTriangle, Shield, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { WHITELISTED_SOURCES } from "@/types";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
@@ -14,10 +14,9 @@ const AIDisclosure = () => {
           <Link to="/" className="flex items-center">
             <QuackLogo size="sm" />
           </Link>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="ghost" size="icon-sm" asChild title="Home">
             <Link to="/">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Home
+              <Home className="w-5 h-5" />
             </Link>
           </Button>
         </div>
@@ -79,7 +78,7 @@ const AIDisclosure = () => {
               {WHITELISTED_SOURCES.map((source) => (
                 <li 
                   key={source}
-                  className="px-3 py-2 rounded-lg bg-secondary/50 text-sm text-foreground/80 font-mono w-full max-w-md text-center"
+                  className="px-3 py-2 rounded-lg bg-secondary/50 text-sm text-foreground/80 font-mono w-full max-w-md text-center truncate overflow-hidden"
                 >
                   {source}
                 </li>
