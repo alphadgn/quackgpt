@@ -117,7 +117,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
   }, [resetTime]);
 
   const limits = TIER_LIMITS[tier];
-  const queriesRemaining = limits.maxQueries - queriesUsedToday;
+  const queriesRemaining = limits.maxQueries === -1 ? 999 : limits.maxQueries - queriesUsedToday;
   const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
 
   const sendMessage = useCallback(async (content: string) => {
