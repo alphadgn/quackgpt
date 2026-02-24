@@ -126,99 +126,96 @@ const Index = () => {
       />
       
       <main className="max-w-4xl mx-auto w-full">
-        {/* Tweet Audit mode */}
-        {chatMode === "tweet-audit" && authenticated ? (
-          <div className="p-4 max-w-2xl mx-auto">
-            <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {
-              // Re-fetch usage to reflect the deduction
-              // The useChat hook will pick this up on next render
-            }} />
-          </div>
-        ) : (
-          <>
-            {/* Chat area */}
-            <div>
-              {messages.length === 0 ? (
-                <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
-              ) : (
-                <ScrollBendContainer className="divide-y divide-border/30">
-                  {messages.map((message, index) => {
-                    let previousUserMessage: string | undefined;
-                    if (message.role === 'assistant') {
-                      for (let i = index - 1; i >= 0; i--) {
-                        if (messages[i].role === 'user') {
-                          previousUserMessage = messages[i].content;
-                          break;
-                        }
+        {/* Chat area - only shown when NOT in tweet-audit mode */}
+        {chatMode !== "tweet-audit" && (
+          <div>
+            {messages.length === 0 ? (
+              <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
+            ) : (
+              <ScrollBendContainer className="divide-y divide-border/30">
+                {messages.map((message, index) => {
+                  let previousUserMessage: string | undefined;
+                  if (message.role === 'assistant') {
+                    for (let i = index - 1; i >= 0; i--) {
+                      if (messages[i].role === 'user') {
+                        previousUserMessage = messages[i].content;
+                        break;
                       }
                     }
-                    return (
-                      <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMessage} />
-                    );
-                  })}
-                  {isTyping && <TypingIndicator />}
-                  <div ref={chatEndRef} />
-                </ScrollBendContainer>
-              )}
-            </div>
-            
-            {/* Mode selector + Input area */}
-            <div className="p-4">
-              {authenticated && (
-                <div className="flex justify-center mb-3 max-w-3xl mx-auto">
-                  <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
-                </div>
-              )}
-              {authenticated ? (
-                usageLoaded && queriesRemaining <= 0 ? (
-                  <div className="max-w-3xl mx-auto w-full">
-                    <div
-                      className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
-                      onClick={handleCheckout}
-                    >
-                      <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
-                      <div className="flex-1 text-sm text-muted-foreground">
-                        <span className="font-medium text-foreground">Daily queries depleted.</span>{' '}
-                        Subscribe or connect a wallet with{' '}
-                        <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
-                      </div>
-                      <div className="shrink-0 flex flex-col items-stretch gap-1">
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleCheckout(); }}
-                          disabled={checkoutLoading}
-                          className="gap-1"
-                        >
-                          {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                          Subscribe
-                        </Button>
-                        {resetTime && <CountdownTimer resetTime={resetTime} />}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <ChatInput
-                    onSend={handleSendMessage}
-                    disabled={isTyping || !usageLoaded}
-                    tier={tier}
-                    queriesRemaining={usageLoaded ? queriesRemaining : -1}
-                    className="max-w-3xl mx-auto"
-                    prefillValue={prefillMessage}
-                    onPrefillConsumed={handlePrefillConsumed}
-                    cooldownUntil={cooldownUntil}
-                    privyUserId={user?.id ?? null}
-                  />
-                )
-              ) : null}
-              
-              <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto">
-                quackGPT provides information only. Not financial advice. 
-                Data sourced from official Wallchain channels.
-              </p>
-            </div>
-          </>
+                  }
+                  return (
+                    <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMessage} />
+                  );
+                })}
+                {isTyping && <TypingIndicator />}
+                <div ref={chatEndRef} />
+              </ScrollBendContainer>
+            )}
+          </div>
         )}
+
+        {/* Tweet Audit panel - only shown in tweet-audit mode */}
+        {chatMode === "tweet-audit" && authenticated && (
+          <div className="p-4 max-w-2xl mx-auto">
+            <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {}} />
+          </div>
+        )}
+
+        {/* Mode selector + Input area - always visible */}
+        <div className="p-4">
+          {authenticated && (
+            <div className="flex justify-center mb-3 max-w-3xl mx-auto">
+              <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
+            </div>
+          )}
+          {authenticated && chatMode !== "tweet-audit" ? (
+            usageLoaded && queriesRemaining <= 0 ? (
+              <div className="max-w-3xl mx-auto w-full">
+                <div
+                  className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
+                  onClick={handleCheckout}
+                >
+                  <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
+                  <div className="flex-1 text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Daily queries depleted.</span>{' '}
+                    Subscribe or connect a wallet with{' '}
+                    <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
+                  </div>
+                  <div className="shrink-0 flex flex-col items-stretch gap-1">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); handleCheckout(); }}
+                      disabled={checkoutLoading}
+                      className="gap-1"
+                    >
+                      {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                      Subscribe
+                    </Button>
+                    {resetTime && <CountdownTimer resetTime={resetTime} />}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <ChatInput
+                onSend={handleSendMessage}
+                disabled={isTyping || !usageLoaded}
+                tier={tier}
+                queriesRemaining={usageLoaded ? queriesRemaining : -1}
+                className="max-w-3xl mx-auto"
+                prefillValue={prefillMessage}
+                onPrefillConsumed={handlePrefillConsumed}
+                cooldownUntil={cooldownUntil}
+                privyUserId={user?.id ?? null}
+              />
+            )
+          ) : null}
+          
+          <p className="text-center text-xs text-muted-foreground mt-8 max-w-xl mx-auto">
+            quackGPT provides information only. Not financial advice. 
+            Data sourced from official Wallchain channels.
+          </p>
+        </div>
       </main>
       <Footer />
       </div>
