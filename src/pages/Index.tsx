@@ -126,13 +126,6 @@ const Index = () => {
       />
       
       <main className="max-w-4xl mx-auto w-full">
-        {/* Mode selector - only show when authenticated */}
-        {authenticated && (
-          <div className="flex justify-center px-4 pt-4">
-            <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
-          </div>
-        )}
-
         {/* Tweet Audit mode */}
         {chatMode === "tweet-audit" && authenticated ? (
           <div className="p-4 max-w-2xl mx-auto">
@@ -169,8 +162,13 @@ const Index = () => {
               )}
             </div>
             
-            {/* Input area */}
+            {/* Mode selector + Input area */}
             <div className="p-4">
+              {authenticated && (
+                <div className="flex justify-center mb-3 max-w-3xl mx-auto">
+                  <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
+                </div>
+              )}
               {authenticated ? (
                 usageLoaded && queriesRemaining <= 0 ? (
                   <div className="max-w-3xl mx-auto w-full">
