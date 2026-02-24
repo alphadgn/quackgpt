@@ -132,6 +132,13 @@ export default function Admin() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Security findings state
+  const [openFindings, setOpenFindings] = useState<SecurityFinding[]>([]);
+  const [findingsLoading, setFindingsLoading] = useState(false);
+  const [securityTab, setSecurityTab] = useState<"overview" | "findings" | "history">("overview");
+  const [resolvingFinding, setResolvingFinding] = useState<string | null>(null);
+  const [resolveNotes, setResolveNotes] = useState<Record<string, string>>({});
+
   // Tweet audit state
   const [adminAudits, setAdminAudits] = useState<any[]>([]);
   const [adminAuditsLoading, setAdminAuditsLoading] = useState(false);
