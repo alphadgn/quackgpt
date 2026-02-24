@@ -480,25 +480,13 @@ export default function Admin() {
     finally { setResolvingFinding(null); }
   }, [getAuthHeaders, resolveNotes]);
 
-  // Request notification permission on EVERY super admin sign-in (redundant safety net)
+  // Auto-enable in-app alerts for super admin
   useEffect(() => {
     if (!authenticated || !isAdmin || !isSuperAdmin) return;
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
-      setNotificationsEnabled(true);
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then(p => {
-        setNotificationsEnabled(p === "granted");
-        if (p === "granted") {
-          toast.success("Notifications enabled for security alerts");
-        } else {
-          toast.info("Enable notifications to receive critical security alerts");
-        }
-      });
-    } else {
-      // Permission was denied — show persistent warning
-      toast.warning("⚠️ Notifications are BLOCKED. Go to browser settings → Site Settings → Notifications to re-enable for security alerts.", { duration: 10000 });
+    setNotificationsEnabled(true);
+    // Try browser notifications if available, but don't error if unsupported
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
     }
   }, [authenticated, isAdmin, isSuperAdmin]);
 
