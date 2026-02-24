@@ -127,7 +127,7 @@ const Index = () => {
         embeddedWallet={embeddedWallet}
       />
       
-      <main className="max-w-4xl mx-auto w-full">
+      <main className="flex-1 max-w-4xl mx-auto w-full">
         {/* Chat area - always visible */}
         <div>
           {messages.length === 0 ? (

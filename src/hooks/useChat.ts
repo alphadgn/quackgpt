@@ -417,8 +417,19 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
         for (const imp of data.suggested_improvements) resultContent += `- ${imp}\n`;
       }
 
+      // Apply character truncation for tweet audit just like search/quack check
+      let finalAuditContent = resultContent.trim();
+      const auditMaxChars = limits.maxCharacters;
+      const auditTruncated = finalAuditContent.length > auditMaxChars;
+      if (auditTruncated) {
+        finalAuditContent = finalAuditContent.substring(0, auditMaxChars);
+      }
+
       setMessages(prev => [...prev, {
-        id: generateId(), role: 'assistant', content: resultContent.trim(), timestamp: new Date(),
+        id: generateId(), role: 'assistant', content: finalAuditContent, timestamp: new Date(),
+        isTruncated: auditTruncated,
+        userTier: tier,
+        maxCharacters: auditMaxChars,
       }]);
 
       setQueriesUsedToday(prev => prev + 1);
