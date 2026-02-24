@@ -305,6 +305,11 @@ export default function Settings() {
               )}
             </section>
 
+            {/* Floating finger pointing down */}
+            <div className="flex justify-center py-2">
+              <span className="text-2xl animate-point-down">👇</span>
+            </div>
+
             {/* Tier Comparison Table */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Plans & Pricing</h2>
