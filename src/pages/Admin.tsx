@@ -432,14 +432,16 @@ export default function Admin() {
         // Notify on warnings OR critical vulnerabilities
         const hasWarnings = (data.scan?.warning_count || 0) > 0;
         const hasCritical = (data.scan?.vulnerability_count || 0) > 0;
-        if ((hasWarnings || hasCritical) && Notification.permission === "granted") {
+        if ((hasWarnings || hasCritical) && "Notification" in window && Notification.permission === "granted") {
           const parts: string[] = [];
           if (hasCritical) parts.push(`${data.scan.vulnerability_count} critical`);
           if (hasWarnings) parts.push(`${data.scan.warning_count} warning(s)`);
-          new Notification("🔴 QuackGPT Security Alert", {
-            body: parts.join(", ") + " detected!",
-            icon: "/favicon.ico",
-          });
+          try {
+            new Notification("🔴 QuackGPT Security Alert", {
+              body: parts.join(", ") + " detected!",
+              icon: "/favicon.ico",
+            });
+          } catch { /* browser may not support */ }
         }
         fetchSecurityScans();
         fetchOpenFindings();
@@ -480,25 +482,13 @@ export default function Admin() {
     finally { setResolvingFinding(null); }
   }, [getAuthHeaders, resolveNotes]);
 
-  // Request notification permission on EVERY super admin sign-in (redundant safety net)
+  // Auto-enable in-app alerts for super admin
   useEffect(() => {
     if (!authenticated || !isAdmin || !isSuperAdmin) return;
-    if (!("Notification" in window)) return;
-
-    if (Notification.permission === "granted") {
-      setNotificationsEnabled(true);
-    } else if (Notification.permission !== "denied") {
-      Notification.requestPermission().then(p => {
-        setNotificationsEnabled(p === "granted");
-        if (p === "granted") {
-          toast.success("Notifications enabled for security alerts");
-        } else {
-          toast.info("Enable notifications to receive critical security alerts");
-        }
-      });
-    } else {
-      // Permission was denied — show persistent warning
-      toast.warning("⚠️ Notifications are BLOCKED. Go to browser settings → Site Settings → Notifications to re-enable for security alerts.", { duration: 10000 });
+    setNotificationsEnabled(true);
+    // Try browser notifications if available, but don't error if unsupported
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
     }
   }, [authenticated, isAdmin, isSuperAdmin]);
 
@@ -622,24 +612,17 @@ export default function Admin() {
                       title={notificationsEnabled ? "Click to disable notifications" : "Click to enable notifications"}
                       className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                       onClick={async () => {
-                        if (!("Notification" in window)) {
-                          toast.error("Notifications not supported in this browser");
-                          return;
-                        }
                         if (notificationsEnabled) {
                           setNotificationsEnabled(false);
-                          toast.info("Notifications disabled");
+                          toast.info("In-app security alerts disabled");
                         } else {
-                          if (Notification.permission === "granted") {
-                            setNotificationsEnabled(true);
-                            toast.success("Notifications enabled");
-                          } else if (Notification.permission !== "denied") {
-                            const p = await Notification.requestPermission();
-                            setNotificationsEnabled(p === "granted");
-                            if (p === "granted") toast.success("Notifications enabled");
-                            else toast.info("Notification permission denied");
-                          } else {
-                            toast.warning("Notifications are blocked. Update browser settings to re-enable.", { duration: 8000 });
+                          setNotificationsEnabled(true);
+                          toast.success("In-app security alerts enabled");
+                          // Also try browser notifications if available
+                          if ("Notification" in window && Notification.permission === "default") {
+                            try {
+                              await Notification.requestPermission();
+                            } catch { /* ignore — browser may not support */ }
                           }
                         }
                       }}
