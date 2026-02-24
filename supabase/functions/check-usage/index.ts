@@ -4,6 +4,8 @@ import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/i
 
 function isAllowedOrigin(origin: string): boolean {
   if (origin === "https://quackgpt.lovable.app") return true;
+  if (origin === "https://quackgpt.info") return true;
+  if (origin === "https://www.quackgpt.info") return true;
   if (/^https:\/\/[a-z0-9-]+\.lovableproject\.com$/.test(origin)) return true;
   if (/^https:\/\/id-preview--[a-z0-9-]+\.lovable\.app$/.test(origin)) return true;
   return false;
