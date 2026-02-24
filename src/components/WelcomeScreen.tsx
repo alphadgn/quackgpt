@@ -54,7 +54,7 @@ const exampleQueries = [
   "What are Quack Heads NFTs?",
 ];
 
-function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<Record<string, string>> }) {
+export function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<Record<string, string>> }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
