@@ -27,6 +27,19 @@ const Index = () => {
   const navigate = useNavigate();
 
   useInactivityLogout(authenticated, logout);
+
+  // Always scroll to top of welcome page when user signs in
+  const prevAuth = useRef(false);
+  useEffect(() => {
+    if (authenticated && !prevAuth.current) {
+      // User just signed in — navigate home and scroll to top
+      if (window.location.pathname !== '/') {
+        navigate('/');
+      }
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+    prevAuth.current = authenticated;
+  }, [authenticated, navigate]);
   
   const { 
     messages, 

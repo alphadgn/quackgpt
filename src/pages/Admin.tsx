@@ -622,24 +622,17 @@ export default function Admin() {
                       title={notificationsEnabled ? "Click to disable notifications" : "Click to enable notifications"}
                       className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                       onClick={async () => {
-                        if (!("Notification" in window)) {
-                          toast.error("Notifications not supported in this browser");
-                          return;
-                        }
                         if (notificationsEnabled) {
                           setNotificationsEnabled(false);
-                          toast.info("Notifications disabled");
+                          toast.info("In-app security alerts disabled");
                         } else {
-                          if (Notification.permission === "granted") {
-                            setNotificationsEnabled(true);
-                            toast.success("Notifications enabled");
-                          } else if (Notification.permission !== "denied") {
-                            const p = await Notification.requestPermission();
-                            setNotificationsEnabled(p === "granted");
-                            if (p === "granted") toast.success("Notifications enabled");
-                            else toast.info("Notification permission denied");
-                          } else {
-                            toast.warning("Notifications are blocked. Update browser settings to re-enable.", { duration: 8000 });
+                          setNotificationsEnabled(true);
+                          toast.success("In-app security alerts enabled");
+                          // Also try browser notifications if available
+                          if ("Notification" in window && Notification.permission === "default") {
+                            try {
+                              await Notification.requestPermission();
+                            } catch { /* ignore — browser may not support */ }
                           }
                         }
                       }}
