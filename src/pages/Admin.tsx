@@ -442,12 +442,43 @@ export default function Admin() {
           });
         }
         fetchSecurityScans();
+        fetchOpenFindings();
       } else {
         toast.error(data.error || "Scan failed");
       }
     } catch { toast.error("Failed to run security scan"); }
     finally { setScanRunning(false); }
   }, [getAuthHeaders, notificationsEnabled, fetchSecurityScans]);
+
+  // Fetch open findings
+  const fetchOpenFindings = useCallback(async () => {
+    setFindingsLoading(true);
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/security-scan?action=list-findings&status=open`,
+        { headers }
+      );
+      const data = await resp.json();
+      if (resp.ok && data.findings) setOpenFindings(data.findings);
+    } catch { console.error("Failed to fetch findings"); }
+    finally { setFindingsLoading(false); }
+  }, [getAuthHeaders]);
+
+  // Resolve / acknowledge a finding
+  const handleResolveFinding = useCallback(async (findingId: string, newStatus: string) => {
+    setResolvingFinding(findingId);
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/security-scan?action=resolve-finding`,
+        { method: "POST", headers, body: JSON.stringify({ findingId, status: newStatus, resolution_notes: resolveNotes[findingId] || "" }) }
+      );
+      toast.success(`Finding ${newStatus}`);
+      setOpenFindings(prev => prev.filter(f => f.id !== findingId));
+    } catch { toast.error("Failed to update finding"); }
+    finally { setResolvingFinding(null); }
+  }, [getAuthHeaders, resolveNotes]);
 
   // Request notification permission on EVERY super admin sign-in (redundant safety net)
   useEffect(() => {
