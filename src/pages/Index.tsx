@@ -55,13 +55,14 @@ const Index = () => {
   }, [getAccessToken]);
 
   const handleSendMessage = useCallback((content: string) => {
-    // For quack-check mode, prefix the message so the LLM detects fact-check intent
-    if (chatMode === "quack-check") {
+    if (chatMode === "tweet-audit") {
+      sendTweetAudit(content);
+    } else if (chatMode === "quack-check") {
       sendMessage(`[QUACK CHECK] ${content}`);
     } else {
       sendMessage(content);
     }
-  }, [chatMode, sendMessage]);
+  }, [chatMode, sendMessage, sendTweetAudit]);
 
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
