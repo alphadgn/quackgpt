@@ -8,7 +8,7 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatModeSelector, ChatMode } from "@/components/ChatModeSelector";
-import { TweetAuditPanel } from "@/components/TweetAuditPanel";
+
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
@@ -31,6 +31,7 @@ const Index = () => {
     isTyping, 
     queriesRemaining, 
     sendMessage,
+    sendTweetAudit,
     cooldownUntil,
     resetTime,
     usageLoaded,
@@ -54,13 +55,14 @@ const Index = () => {
   }, [getAccessToken]);
 
   const handleSendMessage = useCallback((content: string) => {
-    // For quack-check mode, prefix the message so the LLM detects fact-check intent
-    if (chatMode === "quack-check") {
+    if (chatMode === "tweet-audit") {
+      sendTweetAudit(content);
+    } else if (chatMode === "quack-check") {
       sendMessage(`[QUACK CHECK] ${content}`);
     } else {
       sendMessage(content);
     }
-  }, [chatMode, sendMessage]);
+  }, [chatMode, sendMessage, sendTweetAudit]);
 
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
@@ -159,12 +161,7 @@ const Index = () => {
               <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
             </div>
           )}
-          {/* Tweet Audit panel - shown instead of chat input when in tweet-audit mode */}
-          {authenticated && chatMode === "tweet-audit" ? (
-            <div className="max-w-2xl mx-auto">
-              <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {}} />
-            </div>
-          ) : authenticated ? (
+          {authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div

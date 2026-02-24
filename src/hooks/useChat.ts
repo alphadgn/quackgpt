@@ -350,6 +350,89 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     }
   }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders, tierOverride, isSuperAdmin]);
 
+  const sendTweetAudit = useCallback(async (tweetText: string) => {
+    if (!isAuthenticated || !privyUserId) return;
+    if (queriesRemaining <= 0) return;
+
+    const userMessage: Message = { id: generateId(), role: 'user', content: tweetText, timestamp: new Date() };
+    setMessages(prev => [...prev, userMessage]);
+    setIsTyping(true);
+
+    try {
+      const headers = await getAuthHeaders();
+
+      // Scrape context
+      let context = '';
+      try {
+        const scrapeResp = await fetch(SCRAPE_URL, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ query: tweetText }),
+        });
+        if (scrapeResp.ok) {
+          const scrapeData = await scrapeResp.json();
+          if (scrapeData.success && scrapeData.context) context = scrapeData.context;
+        }
+      } catch { /* skip */ }
+
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tweet-audit`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ tweetText: tweetText.trim(), context }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || 'Audit failed');
+      }
+
+      const data = await resp.json();
+
+      // Format result as markdown chat message
+      const scoreEmoji = (s: number) => s >= 75 ? '🟢' : s >= 50 ? '🟡' : '🔴';
+      let resultContent = `## 🦆 Tweet Integrity Score: ${scoreEmoji(data.composite_score)} ${data.composite_score}/100\n\n`;
+      if (data.summary) resultContent += `${data.summary}\n\n`;
+      resultContent += `### Score Breakdown\n`;
+      resultContent += `- **Relevancy** (25%): ${data.relevancy_score}/100\n`;
+      resultContent += `- **Correctness** (30%): ${data.correctness_score}/100\n`;
+      resultContent += `- **Honesty** (25%): ${data.honesty_score}/100\n`;
+      resultContent += `- **Brand Alignment** (20%): ${data.brand_alignment_score}/100\n\n`;
+
+      if (data.claim_analysis?.length > 0) {
+        resultContent += `### Claim Analysis\n`;
+        for (const c of data.claim_analysis) {
+          const icon = c.verdict === 'TRUE' ? '✅' : c.verdict === 'FALSE' ? '❌' : c.verdict === 'PARTIALLY_TRUE' ? '⚠️' : '❓';
+          resultContent += `${icon} **"${c.claim}"** — ${c.explanation}\n\n`;
+        }
+      }
+
+      if (data.risk_flags?.length > 0) {
+        resultContent += `### ⚠️ Risk Flags\n`;
+        for (const f of data.risk_flags) resultContent += `- ${f}\n`;
+        resultContent += '\n';
+      }
+
+      if (data.suggested_improvements?.length > 0) {
+        resultContent += `### 💡 Suggested Improvements\n`;
+        for (const imp of data.suggested_improvements) resultContent += `- ${imp}\n`;
+      }
+
+      setMessages(prev => [...prev, {
+        id: generateId(), role: 'assistant', content: resultContent.trim(), timestamp: new Date(),
+      }]);
+
+      setQueriesUsedToday(prev => prev + 1);
+    } catch (error) {
+      setMessages(prev => [...prev, {
+        id: generateId(), role: 'assistant',
+        content: error instanceof Error ? error.message : 'Tweet audit failed. Please try again.',
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  }, [isAuthenticated, privyUserId, queriesRemaining, getAuthHeaders]);
+
   const clearMessages = useCallback(() => {
     setMessages([]);
     sessionIdRef.current = generateSessionId();
@@ -361,6 +444,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     queriesUsedToday,
     queriesRemaining,
     sendMessage,
+    sendTweetAudit,
     clearMessages,
     cooldownUntil,
     isOnCooldown,
