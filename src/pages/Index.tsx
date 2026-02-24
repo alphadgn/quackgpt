@@ -38,7 +38,8 @@ const Index = () => {
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken, tierOverride, isSuperAdmin });
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll only within the chat container, not the whole page
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages, isTyping]);
 
   const handlePrefillConsumed = useCallback(() => {
@@ -133,7 +134,7 @@ const Index = () => {
           {messages.length === 0 ? (
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
           ) : (
-            <ScrollBendContainer className="divide-y divide-border/30">
+            <ScrollBendContainer className="divide-y divide-border/30 max-h-[60vh] overflow-y-auto">
               {messages.map((message, index) => {
                 let previousUserMessage: string | undefined;
                 if (message.role === 'assistant') {
