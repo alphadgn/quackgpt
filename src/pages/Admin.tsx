@@ -59,12 +59,31 @@ interface SecurityScan {
   status: string;
   started_at: string;
   completed_at: string | null;
-  findings: { severity: string; category: string; title: string; detail: string }[];
+  findings: { severity: string; category: string; title: string; detail: string; component?: string; exploit_vector?: string; recommended_fix?: string; exploitability_score?: number; impact_score?: number; confidence_score?: number }[];
   summary: string | null;
   vulnerability_count: number;
   warning_count: number;
   ok_count: number;
   triggered_by: string | null;
+  overall_score?: number;
+}
+
+interface SecurityFinding {
+  id: string;
+  scan_id: string;
+  component: string;
+  severity: string;
+  category: string;
+  title: string;
+  description: string;
+  exploit_vector: string | null;
+  recommended_fix: string | null;
+  status: string;
+  exploitability_score: number;
+  impact_score: number;
+  confidence_score: number;
+  auto_fix_available: boolean;
+  created_at: string;
 }
 
 const tierIcons: Record<string, typeof Shield> = {
