@@ -305,6 +305,11 @@ export default function Settings() {
               )}
             </section>
 
+            {/* Floating finger pointing down */}
+            <div className="flex justify-center py-2">
+              <span className="text-2xl animate-point-down">👇</span>
+            </div>
+
             {/* Tier Comparison Table */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Plans & Pricing</h2>
@@ -400,17 +405,6 @@ export default function Settings() {
                   Reset All Web3 Wallets
                 </Button>
               </div>
-            </section>
-
-            {/* Account Info */}
-            <section className="border-y border-border/50 bg-card/50 p-6">
-              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Connected Account</h2>
-              {email && (
-                <div className="text-sm text-center">
-                  <p className="text-muted-foreground">Email</p>
-                  <p className="text-foreground">{email}</p>
-                </div>
-              )}
             </section>
 
             {/* Query History */}
@@ -543,6 +537,17 @@ export default function Settings() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </section>
+
+            {/* Connected Account - at bottom */}
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Connected Account</h2>
+              {email && (
+                <div className="text-sm text-center">
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="text-foreground">{email}</p>
                 </div>
               )}
             </section>
