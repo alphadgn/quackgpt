@@ -559,11 +559,39 @@ export default function Admin() {
                   <ScanSearch className="w-5 h-5 text-primary" />
                   <h2 className="text-lg font-semibold text-foreground text-center flex-1">Security Scanner</h2>
                   <div className="flex items-center gap-2">
-                    {notificationsEnabled ? (
-                      <span title="Notifications enabled"><Bell className="w-4 h-4 text-primary" /></span>
-                    ) : (
-                      <span title="Notifications disabled"><BellOff className="w-4 h-4 text-muted-foreground" /></span>
-                    )}
+                    <button
+                      type="button"
+                      title={notificationsEnabled ? "Click to disable notifications" : "Click to enable notifications"}
+                      className="inline-flex items-center justify-center w-8 h-8 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={async () => {
+                        if (!("Notification" in window)) {
+                          toast.error("Notifications not supported in this browser");
+                          return;
+                        }
+                        if (notificationsEnabled) {
+                          setNotificationsEnabled(false);
+                          toast.info("Notifications disabled");
+                        } else {
+                          if (Notification.permission === "granted") {
+                            setNotificationsEnabled(true);
+                            toast.success("Notifications enabled");
+                          } else if (Notification.permission !== "denied") {
+                            const p = await Notification.requestPermission();
+                            setNotificationsEnabled(p === "granted");
+                            if (p === "granted") toast.success("Notifications enabled");
+                            else toast.info("Notification permission denied");
+                          } else {
+                            toast.warning("Notifications are blocked. Update browser settings to re-enable.", { duration: 8000 });
+                          }
+                        }
+                      }}
+                    >
+                      {notificationsEnabled ? (
+                        <Bell className="w-4 h-4 text-primary" />
+                      ) : (
+                        <BellOff className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </button>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                       {securityScans.length} report{securityScans.length !== 1 ? "s" : ""}
                     </span>
