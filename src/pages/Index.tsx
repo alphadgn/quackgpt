@@ -126,40 +126,31 @@ const Index = () => {
       />
       
       <main className="max-w-4xl mx-auto w-full">
-        {/* Chat area - only shown when NOT in tweet-audit mode */}
-        {chatMode !== "tweet-audit" && (
-          <div>
-            {messages.length === 0 ? (
-              <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
-            ) : (
-              <ScrollBendContainer className="divide-y divide-border/30">
-                {messages.map((message, index) => {
-                  let previousUserMessage: string | undefined;
-                  if (message.role === 'assistant') {
-                    for (let i = index - 1; i >= 0; i--) {
-                      if (messages[i].role === 'user') {
-                        previousUserMessage = messages[i].content;
-                        break;
-                      }
+        {/* Chat area - always visible */}
+        <div>
+          {messages.length === 0 ? (
+            <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
+          ) : (
+            <ScrollBendContainer className="divide-y divide-border/30">
+              {messages.map((message, index) => {
+                let previousUserMessage: string | undefined;
+                if (message.role === 'assistant') {
+                  for (let i = index - 1; i >= 0; i--) {
+                    if (messages[i].role === 'user') {
+                      previousUserMessage = messages[i].content;
+                      break;
                     }
                   }
-                  return (
-                    <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMessage} />
-                  );
-                })}
-                {isTyping && <TypingIndicator />}
-                <div ref={chatEndRef} />
-              </ScrollBendContainer>
-            )}
-          </div>
-        )}
-
-        {/* Tweet Audit panel - only shown in tweet-audit mode */}
-        {chatMode === "tweet-audit" && authenticated && (
-          <div className="p-4 max-w-2xl mx-auto">
-            <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {}} />
-          </div>
-        )}
+                }
+                return (
+                  <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMessage} />
+                );
+              })}
+              {isTyping && <TypingIndicator />}
+              <div ref={chatEndRef} />
+            </ScrollBendContainer>
+          )}
+        </div>
 
         {/* Mode selector + Input area - always visible */}
         <div className="p-4">
@@ -168,7 +159,12 @@ const Index = () => {
               <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
             </div>
           )}
-          {authenticated && chatMode !== "tweet-audit" ? (
+          {/* Tweet Audit panel - shown instead of chat input when in tweet-audit mode */}
+          {authenticated && chatMode === "tweet-audit" ? (
+            <div className="max-w-2xl mx-auto">
+              <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {}} />
+            </div>
+          ) : authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div
