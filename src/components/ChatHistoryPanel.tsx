@@ -68,6 +68,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
     setDeletingSession(sessionId);
     try {
       const headers = await getAuthHeaders();
+      if (!headers['x-privy-token']) { setDeletingSession(null); return; }
       await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=user-delete`,
         { method: "POST", headers, body: JSON.stringify({ sessionId }) }
