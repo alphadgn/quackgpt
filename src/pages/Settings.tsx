@@ -540,6 +540,17 @@ export default function Settings() {
                 </div>
               )}
             </section>
+
+            {/* Connected Account - at bottom */}
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Connected Account</h2>
+              {email && (
+                <div className="text-sm text-center">
+                  <p className="text-muted-foreground">Email</p>
+                  <p className="text-foreground">{email}</p>
+                </div>
+              )}
+            </section>
           </ScrollBendContainer>
         )}
       </main>
