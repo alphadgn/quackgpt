@@ -126,7 +126,7 @@ const Index = () => {
       />
       
       <main className="max-w-4xl mx-auto w-full">
-        {/* Chat area */}
+        {/* Tweet Audit mode */}
         {chatMode === "tweet-audit" && authenticated ? (
           <div className="p-4 max-w-2xl mx-auto">
             <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {
