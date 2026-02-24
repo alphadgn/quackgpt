@@ -432,14 +432,16 @@ export default function Admin() {
         // Notify on warnings OR critical vulnerabilities
         const hasWarnings = (data.scan?.warning_count || 0) > 0;
         const hasCritical = (data.scan?.vulnerability_count || 0) > 0;
-        if ((hasWarnings || hasCritical) && Notification.permission === "granted") {
+        if ((hasWarnings || hasCritical) && "Notification" in window && Notification.permission === "granted") {
           const parts: string[] = [];
           if (hasCritical) parts.push(`${data.scan.vulnerability_count} critical`);
           if (hasWarnings) parts.push(`${data.scan.warning_count} warning(s)`);
-          new Notification("🔴 QuackGPT Security Alert", {
-            body: parts.join(", ") + " detected!",
-            icon: "/favicon.ico",
-          });
+          try {
+            new Notification("🔴 QuackGPT Security Alert", {
+              body: parts.join(", ") + " detected!",
+              icon: "/favicon.ico",
+            });
+          } catch { /* browser may not support */ }
         }
         fetchSecurityScans();
         fetchOpenFindings();
