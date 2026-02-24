@@ -161,12 +161,7 @@ const Index = () => {
               <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
             </div>
           )}
-          {/* Tweet Audit panel - shown instead of chat input when in tweet-audit mode */}
-          {authenticated && chatMode === "tweet-audit" ? (
-            <div className="max-w-2xl mx-auto">
-              <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {}} />
-            </div>
-          ) : authenticated ? (
+          {authenticated ? (
             usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div
