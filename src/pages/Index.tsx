@@ -31,6 +31,7 @@ const Index = () => {
     isTyping, 
     queriesRemaining, 
     sendMessage,
+    sendTweetAudit,
     cooldownUntil,
     resetTime,
     usageLoaded,
