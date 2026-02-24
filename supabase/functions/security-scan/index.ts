@@ -1,7 +1,6 @@
-// Security scanner v2 — hourly automated + manual scans
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Security scanner v3
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { createRemoteJWKSet, jwtVerify } from "npm:jose@5.2.2";
+import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/index.ts";
 
 function isAllowedOrigin(origin: string): boolean {
   if (origin === "https://quackgpt.lovable.app") return true;
