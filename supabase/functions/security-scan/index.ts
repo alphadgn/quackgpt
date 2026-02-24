@@ -149,24 +149,9 @@ serve(async (req) => {
     const isCron = req.headers.get("authorization")?.includes(Deno.env.get("SUPABASE_ANON_KEY") || "NONE");
 
     if (!isCron) {
-      // For manual calls, verify Privy token
-      const privyToken = req.headers.get("x-privy-token");
-      if (!privyToken) {
+      const privyUserId = await verifyPrivyToken(req);
+      if (!privyUserId) {
         return new Response(JSON.stringify({ error: "Not authenticated" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Verify admin role
-      const PRIVY_APP_ID = Deno.env.get("PRIVY_APP_ID") || "";
-      const PRIVY_APP_SECRET = Deno.env.get("PRIVY_APP_SECRET") || "";
-      const verifyResp = await fetch(`https://auth.privy.io/api/v1/users/${privyToken}/verify`, {
-        headers: { "Authorization": `Basic ${btoa(PRIVY_APP_ID + ":" + PRIVY_APP_SECRET)}` },
-      });
-
-      // Simplified: just check if privyToken looks valid
-      if (!privyToken || !/^[a-zA-Z0-9:_-]+$/.test(privyToken)) {
-        return new Response(JSON.stringify({ error: "Invalid token format" }), {
           status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
@@ -174,11 +159,11 @@ serve(async (req) => {
       const { data: adminRole } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", privyToken)
+        .eq("user_id", privyUserId)
         .eq("role", "super_admin")
         .maybeSingle();
 
-      if (!adminRole && !isCron) {
+      if (!adminRole) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
