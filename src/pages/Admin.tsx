@@ -610,12 +610,12 @@ export default function Admin() {
               </div>
             )}
 
-            {/* Security Scanner */}
+            {/* Security Command Center */}
             {isSuperAdmin && (
               <div className="rounded-xl border border-primary/30 bg-primary/5 p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <ScanSearch className="w-5 h-5 text-primary" />
-                  <h2 className="text-lg font-semibold text-foreground text-center flex-1">Security Scanner</h2>
+                  <h2 className="text-lg font-semibold text-foreground text-center flex-1">Security Command Center</h2>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
@@ -650,15 +650,87 @@ export default function Admin() {
                         <BellOff className="w-4 h-4 text-muted-foreground" />
                       )}
                     </button>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                      {securityScans.length} report{securityScans.length !== 1 ? "s" : ""}
-                    </span>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Comprehensive database & configuration security audit. Auto-scans every hour. Critical alerts push to device notifications.
-                </p>
 
+                {/* Overall Security Score */}
+                {securityScans.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                    <div className="rounded-lg border border-border/50 bg-card/50 p-3 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Security Score</p>
+                      <p className={`text-2xl font-bold font-mono ${
+                        (securityScans[0]?.overall_score ?? 100) >= 80 ? "text-primary"
+                        : (securityScans[0]?.overall_score ?? 100) >= 50 ? "text-amber-500"
+                        : "text-destructive"
+                      }`}>
+                        {securityScans[0]?.overall_score ?? 100}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border/50 bg-card/50 p-3 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Open Findings</p>
+                      <p className={`text-2xl font-bold font-mono ${openFindings.length > 0 ? "text-destructive" : "text-primary"}`}>
+                        {openFindings.length}
+                      </p>
+                    </div>
+                    <div className="rounded-lg border border-border/50 bg-card/50 p-3 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Scans (24h)</p>
+                      <p className="text-2xl font-bold font-mono text-foreground">{securityScans.length}</p>
+                    </div>
+                    <div className="rounded-lg border border-border/50 bg-card/50 p-3 text-center">
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">Last Scan</p>
+                      <p className="text-xs font-medium text-foreground mt-1">
+                        {securityScans[0]?.completed_at
+                          ? new Date(securityScans[0].completed_at).toLocaleTimeString()
+                          : "—"}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 7-day trend (mini spark line using recent scans) */}
+                {securityScans.length > 1 && (
+                  <div className="mb-5 rounded-lg border border-border/30 bg-card/30 p-3">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1">
+                      <Activity className="w-3 h-3" /> Score Trend
+                    </p>
+                    <div className="flex items-end gap-1 h-10">
+                      {[...securityScans].reverse().slice(-12).map((scan, i) => {
+                        const score = scan.overall_score ?? 100;
+                        const height = Math.max(4, (score / 100) * 40);
+                        return (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-sm transition-all ${
+                              score >= 80 ? "bg-primary/60" : score >= 50 ? "bg-amber-500/60" : "bg-destructive/60"
+                            }`}
+                            style={{ height: `${height}px` }}
+                            title={`${new Date(scan.started_at).toLocaleString()}: ${score}/100`}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab switcher */}
+                <div className="flex gap-1 mb-4 rounded-lg bg-muted/30 p-1">
+                  {(["overview", "findings", "history"] as const).map(tab => (
+                    <button
+                      key={tab}
+                      className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors capitalize ${
+                        securityTab === tab ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() => setSecurityTab(tab)}
+                    >
+                      {tab === "overview" && <Shield className="w-3 h-3 inline mr-1" />}
+                      {tab === "findings" && <Target className="w-3 h-3 inline mr-1" />}
+                      {tab === "history" && <Clock className="w-3 h-3 inline mr-1" />}
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Run Scan button */}
                 <div className="flex justify-center mb-5">
                   <Button
                     variant="hero"
@@ -668,95 +740,230 @@ export default function Admin() {
                     className="gap-2"
                   >
                     {scanRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldAlert className="w-4 h-4" />}
-                    {scanRunning ? "Scanning…" : "Run Scan"}
+                    {scanRunning ? "Scanning…" : "Run Full Scan"}
                   </Button>
                 </div>
 
-                {securityLoading ? (
-                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
-                ) : securityScans.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No scan reports yet. Run your first scan above.</p>
-                ) : (
-                  <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-3">
-                    {securityScans.map((scan, idx) => (
-                      <details
-                        key={scan.id}
-                        className={`rounded-lg border overflow-hidden ${
-                          scan.vulnerability_count > 0
-                            ? "border-destructive/30 bg-destructive/5"
-                            : scan.warning_count > 0
-                            ? "border-amber-500/30 bg-amber-500/5"
-                            : "border-border/50 bg-card/50"
-                        }`}
-                        open={idx === 0}
-                      >
-                        <summary className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/20 transition-colors">
-                          {scan.vulnerability_count > 0 ? (
-                            <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
-                          ) : scan.warning_count > 0 ? (
-                            <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
-                          ) : (
-                            <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-foreground">
-                              {scan.scan_type === "scheduled" ? "Scheduled" : "Manual"} Scan
-                              <span className="text-muted-foreground font-normal ml-2">
-                                {new Date(scan.started_at).toLocaleString()}
-                              </span>
-                            </p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {scan.vulnerability_count > 0 && <span className="text-destructive font-medium">{scan.vulnerability_count} critical</span>}
-                              {scan.vulnerability_count > 0 && scan.warning_count > 0 && " · "}
-                              {scan.warning_count > 0 && <span className="text-amber-500 font-medium">{scan.warning_count} warning{scan.warning_count !== 1 ? "s" : ""}</span>}
-                              {(scan.vulnerability_count > 0 || scan.warning_count > 0) && " · "}
-                              <span className="text-primary">{scan.ok_count} passed</span>
-                            </p>
-                          </div>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                            scan.status === "completed"
-                              ? scan.vulnerability_count > 0
-                                ? "bg-destructive/20 text-destructive"
-                                : "bg-primary/20 text-primary"
-                              : "bg-muted text-muted-foreground"
-                          }`}>
-                            {scan.status}
-                          </span>
-                        </summary>
-                        {scan.findings && scan.findings.length > 0 && (
-                          <div className="border-t border-border/30 p-3 space-y-2">
-                            {scan.summary && (
-                              <p className="text-xs font-medium text-foreground mb-2">{scan.summary}</p>
-                            )}
-                            {scan.findings.map((f, fi) => (
-                              <div key={fi} className={`text-xs rounded-md px-3 py-2 ${
-                                f.severity === "critical"
-                                  ? "bg-destructive/10 border border-destructive/20"
-                                  : f.severity === "warning"
-                                  ? "bg-amber-500/10 border border-amber-500/20"
-                                  : f.severity === "info"
-                                  ? "bg-blue-500/10 border border-blue-500/20"
-                                  : "bg-primary/5 border border-border/30"
-                              }`}>
-                                <div className="flex items-center gap-2 mb-0.5">
-                                  <span className={`font-semibold uppercase text-[10px] ${
-                                    f.severity === "critical" ? "text-destructive"
-                                      : f.severity === "warning" ? "text-amber-500"
-                                      : f.severity === "info" ? "text-blue-500"
-                                      : "text-primary"
-                                  }`}>{f.severity}</span>
-                                  <span className="text-muted-foreground">·</span>
-                                  <span className="text-muted-foreground">{f.category}</span>
-                                </div>
-                                <p className="text-foreground font-medium">{f.title}</p>
-                                <p className="text-muted-foreground mt-0.5">{f.detail}</p>
+                {/* Overview Tab - latest scan findings */}
+                {securityTab === "overview" && (
+                  securityLoading ? (
+                    <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : securityScans.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No scan reports yet. Run your first scan above.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {securityScans[0]?.summary && (
+                        <p className="text-xs font-medium text-foreground p-3 rounded-lg border border-border/30 bg-card/50">{securityScans[0].summary}</p>
+                      )}
+                      {securityScans[0]?.findings && (
+                        <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
+                          {securityScans[0].findings.map((f, fi) => (
+                            <div key={fi} className={`text-xs rounded-md px-3 py-2 ${
+                              f.severity === "critical" ? "bg-destructive/10 border border-destructive/20"
+                              : f.severity === "high" ? "bg-destructive/5 border border-destructive/10"
+                              : f.severity === "warning" ? "bg-amber-500/10 border border-amber-500/20"
+                              : f.severity === "info" ? "bg-blue-500/10 border border-blue-500/20"
+                              : "bg-primary/5 border border-border/30"
+                            }`}>
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <span className={`font-semibold uppercase text-[10px] ${
+                                  f.severity === "critical" ? "text-destructive"
+                                  : f.severity === "high" ? "text-destructive/80"
+                                  : f.severity === "warning" ? "text-amber-500"
+                                  : f.severity === "info" ? "text-blue-500"
+                                  : "text-primary"
+                                }`}>{f.severity}</span>
+                                <span className="text-muted-foreground">·</span>
+                                <span className="text-muted-foreground">{f.category}</span>
+                                {f.component && <span className="text-muted-foreground/60 text-[9px]">({f.component})</span>}
                               </div>
-                            ))}
+                              <p className="text-foreground font-medium">{f.title}</p>
+                              <p className="text-muted-foreground mt-0.5">{f.detail}</p>
+                              {f.exploit_vector && (
+                                <p className="text-destructive/70 mt-1 text-[10px]">⚡ Vector: {f.exploit_vector}</p>
+                              )}
+                              {f.recommended_fix && (
+                                <p className="text-primary/70 mt-0.5 text-[10px]">💡 Fix: {f.recommended_fix}</p>
+                              )}
+                              {(f.exploitability_score || f.impact_score || f.confidence_score) ? (
+                                <div className="flex gap-3 mt-1 text-[9px] text-muted-foreground">
+                                  {f.exploitability_score ? <span>Exploit: {f.exploitability_score}/10</span> : null}
+                                  {f.impact_score ? <span>Impact: {f.impact_score}/10</span> : null}
+                                  {f.confidence_score ? <span>Confidence: {f.confidence_score}%</span> : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                )}
+
+                {/* Findings Tab - open findings with resolve/acknowledge */}
+                {securityTab === "findings" && (
+                  findingsLoading ? (
+                    <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : openFindings.length === 0 ? (
+                    <div className="text-center py-6">
+                      <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">No open findings 🎉</p>
+                    </div>
+                  ) : (
+                    <div className="max-h-[500px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-3">
+                      {openFindings.map(finding => (
+                        <div key={finding.id} className={`rounded-lg border p-3 ${
+                          finding.severity === "critical" ? "border-destructive/30 bg-destructive/5"
+                          : finding.severity === "high" ? "border-destructive/20 bg-destructive/5"
+                          : "border-amber-500/20 bg-amber-500/5"
+                        }`}>
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                              finding.severity === "critical" ? "bg-destructive/20 text-destructive"
+                              : finding.severity === "high" ? "bg-destructive/15 text-destructive/80"
+                              : "bg-amber-500/20 text-amber-500"
+                            }`}>{finding.severity}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-foreground">{finding.title}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">{finding.component} · {finding.category}</p>
+                            </div>
                           </div>
-                        )}
-                      </details>
-                    ))}
-                  </div>
+                          <p className="text-xs text-muted-foreground mb-2">{finding.description}</p>
+                          {finding.exploit_vector && (
+                            <p className="text-[10px] text-destructive/70 mb-1">⚡ {finding.exploit_vector}</p>
+                          )}
+                          {finding.recommended_fix && (
+                            <p className="text-[10px] text-primary/70 mb-2">💡 {finding.recommended_fix}</p>
+                          )}
+                          <div className="flex gap-3 mb-2 text-[9px] text-muted-foreground">
+                            <span>Exploit: {finding.exploitability_score}/10</span>
+                            <span>Impact: {finding.impact_score}/10</span>
+                            <span>Confidence: {finding.confidence_score}%</span>
+                          </div>
+                          <div className="flex gap-2 items-end border-t border-border/20 pt-2 mt-2">
+                            <Input
+                              placeholder="Resolution notes..."
+                              value={resolveNotes[finding.id] || ""}
+                              onChange={(e) => setResolveNotes(prev => ({ ...prev, [finding.id]: e.target.value }))}
+                              className="flex-1 text-xs h-7"
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[10px] gap-1"
+                              disabled={resolvingFinding === finding.id}
+                              onClick={() => handleResolveFinding(finding.id, "acknowledged")}
+                            >
+                              {resolvingFinding === finding.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                              Acknowledge
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[10px] gap-1 border-primary/30 text-primary"
+                              disabled={resolvingFinding === finding.id}
+                              onClick={() => handleResolveFinding(finding.id, "resolved")}
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              Resolve
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                )}
+
+                {/* History Tab - scan archive */}
+                {securityTab === "history" && (
+                  securityLoading ? (
+                    <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                  ) : securityScans.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">No scan reports yet.</p>
+                  ) : (
+                    <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-3">
+                      {securityScans.map((scan, idx) => (
+                        <details
+                          key={scan.id}
+                          className={`rounded-lg border overflow-hidden ${
+                            scan.vulnerability_count > 0
+                              ? "border-destructive/30 bg-destructive/5"
+                              : scan.warning_count > 0
+                              ? "border-amber-500/30 bg-amber-500/5"
+                              : "border-border/50 bg-card/50"
+                          }`}
+                          open={idx === 0}
+                        >
+                          <summary className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/20 transition-colors">
+                            {scan.vulnerability_count > 0 ? (
+                              <ShieldAlert className="w-4 h-4 text-destructive shrink-0" />
+                            ) : scan.warning_count > 0 ? (
+                              <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                            ) : (
+                              <ShieldCheck className="w-4 h-4 text-primary shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium text-foreground">
+                                {scan.scan_type === "scheduled" ? "Scheduled" : "Manual"} Scan
+                                <span className="text-muted-foreground font-normal ml-2">
+                                  {new Date(scan.started_at).toLocaleString()}
+                                </span>
+                              </p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                Score: <span className={`font-mono font-medium ${(scan.overall_score ?? 100) >= 80 ? "text-primary" : (scan.overall_score ?? 100) >= 50 ? "text-amber-500" : "text-destructive"}`}>{scan.overall_score ?? 100}</span>
+                                {" · "}
+                                {scan.vulnerability_count > 0 && <span className="text-destructive font-medium">{scan.vulnerability_count} critical</span>}
+                                {scan.vulnerability_count > 0 && scan.warning_count > 0 && " · "}
+                                {scan.warning_count > 0 && <span className="text-amber-500 font-medium">{scan.warning_count} warning{scan.warning_count !== 1 ? "s" : ""}</span>}
+                                {(scan.vulnerability_count > 0 || scan.warning_count > 0) && " · "}
+                                <span className="text-primary">{scan.ok_count} passed</span>
+                              </p>
+                            </div>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                              scan.status === "completed"
+                                ? scan.vulnerability_count > 0
+                                  ? "bg-destructive/20 text-destructive"
+                                  : "bg-primary/20 text-primary"
+                                : "bg-muted text-muted-foreground"
+                            }`}>
+                              {scan.status}
+                            </span>
+                          </summary>
+                          {scan.findings && scan.findings.length > 0 && (
+                            <div className="border-t border-border/30 p-3 space-y-2">
+                              {scan.summary && (
+                                <p className="text-xs font-medium text-foreground mb-2">{scan.summary}</p>
+                              )}
+                              {scan.findings.map((f, fi) => (
+                                <div key={fi} className={`text-xs rounded-md px-3 py-2 ${
+                                  f.severity === "critical"
+                                    ? "bg-destructive/10 border border-destructive/20"
+                                    : f.severity === "warning"
+                                    ? "bg-amber-500/10 border border-amber-500/20"
+                                    : f.severity === "info"
+                                    ? "bg-blue-500/10 border border-blue-500/20"
+                                    : "bg-primary/5 border border-border/30"
+                                }`}>
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className={`font-semibold uppercase text-[10px] ${
+                                      f.severity === "critical" ? "text-destructive"
+                                        : f.severity === "warning" ? "text-amber-500"
+                                        : f.severity === "info" ? "text-blue-500"
+                                        : "text-primary"
+                                    }`}>{f.severity}</span>
+                                    <span className="text-muted-foreground">·</span>
+                                    <span className="text-muted-foreground">{f.category}</span>
+                                  </div>
+                                  <p className="text-foreground font-medium">{f.title}</p>
+                                  <p className="text-muted-foreground mt-0.5">{f.detail}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </details>
+                      ))}
+                    </div>
+                  )
                 )}
               </div>
             )}
