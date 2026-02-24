@@ -36,7 +36,7 @@ verify_jwt = false
 [functions.chat-history]
 verify_jwt = false
 
-[functions.securityscan]
+[functions.security-scan]
 verify_jwt = false
 
 [functions.tweet-audit]
