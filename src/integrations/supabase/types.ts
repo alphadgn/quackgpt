@@ -143,6 +143,41 @@ export type Database = {
         }
         Relationships: []
       }
+      incident_logs: {
+        Row: {
+          acknowledged_by: string | null
+          created_at: string
+          finding_id: string
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+        }
+        Insert: {
+          acknowledged_by?: string | null
+          created_at?: string
+          finding_id: string
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+        }
+        Update: {
+          acknowledged_by?: string | null
+          created_at?: string
+          finding_id?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_logs_finding_id_fkey"
+            columns: ["finding_id"]
+            isOneToOne: false
+            referencedRelation: "security_findings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       indexed_sources: {
         Row: {
           author: string | null
@@ -320,12 +355,78 @@ export type Database = {
         }
         Relationships: []
       }
+      security_findings: {
+        Row: {
+          auto_fix_available: boolean | null
+          category: string
+          component: string
+          confidence_score: number | null
+          created_at: string
+          description: string
+          exploit_vector: string | null
+          exploitability_score: number | null
+          id: string
+          impact_score: number | null
+          recommended_fix: string | null
+          scan_id: string
+          severity: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          auto_fix_available?: boolean | null
+          category?: string
+          component: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string
+          exploit_vector?: string | null
+          exploitability_score?: number | null
+          id?: string
+          impact_score?: number | null
+          recommended_fix?: string | null
+          scan_id: string
+          severity?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          auto_fix_available?: boolean | null
+          category?: string
+          component?: string
+          confidence_score?: number | null
+          created_at?: string
+          description?: string
+          exploit_vector?: string | null
+          exploitability_score?: number | null
+          id?: string
+          impact_score?: number | null
+          recommended_fix?: string | null
+          scan_id?: string
+          severity?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_findings_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "security_scans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_scans: {
         Row: {
           completed_at: string | null
           findings: Json
           id: string
           ok_count: number
+          overall_score: number | null
           scan_type: string
           started_at: string
           status: string
@@ -339,6 +440,7 @@ export type Database = {
           findings?: Json
           id?: string
           ok_count?: number
+          overall_score?: number | null
           scan_type?: string
           started_at?: string
           status?: string
@@ -352,6 +454,7 @@ export type Database = {
           findings?: Json
           id?: string
           ok_count?: number
+          overall_score?: number | null
           scan_type?: string
           started_at?: string
           status?: string
