@@ -506,7 +506,7 @@ export default function Admin() {
   useEffect(() => {
     if (isAdmin) {
       fetchSecurityScans();
-      // Auto-scan every hour
+      fetchOpenFindings();
       scanIntervalRef.current = setInterval(() => {
         runSecurityScan();
       }, 60 * 60 * 1000);
@@ -514,7 +514,7 @@ export default function Admin() {
         if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
       };
     }
-  }, [isAdmin, fetchSecurityScans, runSecurityScan]);
+  }, [isAdmin, fetchSecurityScans, runSecurityScan, fetchOpenFindings]);
 
   const handleTierSwitch = (selectedTier: UserTier) => {
     if (tierOverride === selectedTier) return;
