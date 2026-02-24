@@ -282,7 +282,7 @@ async function runSecurityScan(supabase: ReturnType<typeof createClient>): Promi
   return { findings, vulnerability_count, warning_count, ok_count, summary };
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   const corsHeaders = getCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
