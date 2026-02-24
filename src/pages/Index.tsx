@@ -134,7 +134,7 @@ const Index = () => {
           {messages.length === 0 ? (
             <WelcomeScreen tier={tier} queriesRemaining={queriesRemaining} onQuerySelect={setPrefillMessage} isAuthenticated={authenticated} onLogin={login} getAuthHeaders={authenticated ? getAuthHeaders : undefined} />
           ) : (
-            <ScrollBendContainer className="divide-y divide-border/30 max-h-[60vh] overflow-y-auto">
+            <ScrollBendContainer className="divide-y divide-border/30">
               {messages.map((message, index) => {
                 let previousUserMessage: string | undefined;
                 if (message.role === 'assistant') {
