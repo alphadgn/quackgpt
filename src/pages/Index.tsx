@@ -126,14 +126,7 @@ const Index = () => {
       />
       
       <main className="max-w-4xl mx-auto w-full">
-        {/* Mode selector - only show when authenticated */}
-        {authenticated && (
-          <div className="flex justify-center px-4 pt-4">
-            <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
-          </div>
-        )}
-
-        {/* Tweet Audit mode */}
+        {/* Chat area */}
         {chatMode === "tweet-audit" && authenticated ? (
           <div className="p-4 max-w-2xl mx-auto">
             <TweetAuditPanel getAuthHeaders={getAuthHeaders} onQueryUsed={() => {
