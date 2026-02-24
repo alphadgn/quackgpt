@@ -8,6 +8,8 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatModeSelector, ChatMode } from "@/components/ChatModeSelector";
+import { InlineQueryHistory } from "@/components/WelcomeScreen";
+import { MessageSquare } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Loader2 } from "lucide-react";
@@ -211,6 +213,19 @@ const Index = () => {
             quackGPT provides information only. Not financial advice. 
             Data sourced from official Wallchain channels.
           </p>
+
+          {/* Query History - below input area */}
+          {authenticated && messages.length === 0 && (
+            <div className="max-w-3xl mx-auto mt-6">
+              <div className="w-full rounded-xl bg-card/50 border border-border/50 p-4">
+                <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center justify-center gap-1.5">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  Query History
+                </h3>
+                <InlineQueryHistory getAuthHeaders={getAuthHeaders} />
+              </div>
+            </div>
+          )}
         </div>
       </main>
       <Footer />

@@ -54,7 +54,7 @@ const exampleQueries = [
   "What are Quack Heads NFTs?",
 ];
 
-function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<Record<string, string>> }) {
+export function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<Record<string, string>> }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
@@ -266,17 +266,8 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         </div>
       )}
       
-      {/* Inline Query History + Sources reference */}
+      {/* Sources reference */}
       <div className="mt-10 w-full max-w-xl flex flex-col items-center gap-3">
-        {isAuthenticated && getAuthHeaders && (
-          <div className="w-full rounded-xl bg-card/50 border border-border/50 p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center justify-center gap-1.5">
-              <MessageSquare className="w-4 h-4 text-primary" />
-              Query History
-            </h3>
-            <InlineQueryHistory getAuthHeaders={getAuthHeaders} />
-          </div>
-        )}
         <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
           <ExternalLink className="w-3 h-3" />
           Data sourced exclusively from official Wallchain channels
