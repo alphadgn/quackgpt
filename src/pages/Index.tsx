@@ -162,8 +162,13 @@ const Index = () => {
               )}
             </div>
             
-            {/* Input area */}
+            {/* Mode selector + Input area */}
             <div className="p-4">
+              {authenticated && (
+                <div className="flex justify-center mb-3 max-w-3xl mx-auto">
+                  <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
+                </div>
+              )}
               {authenticated ? (
                 usageLoaded && queriesRemaining <= 0 ? (
                   <div className="max-w-3xl mx-auto w-full">
