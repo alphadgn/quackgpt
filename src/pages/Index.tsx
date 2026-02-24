@@ -38,8 +38,10 @@ const Index = () => {
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken, tierOverride, isSuperAdmin });
 
   useEffect(() => {
-    // Scroll only within the chat container, not the whole page
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Gentle scroll — don't hijack full-page scroll position
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
   }, [messages, isTyping]);
 
   const handlePrefillConsumed = useCallback(() => {
