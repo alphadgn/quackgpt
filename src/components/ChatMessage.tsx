@@ -11,10 +11,32 @@ interface ChatMessageProps {
   previousUserMessage?: string;
 }
 
+function detectCampaign(text?: string): 'wallchain' | 'idos' | 'beyond' | null {
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (lower.includes('[wallchain]')) return 'wallchain';
+  if (lower.includes('[idos network]')) return 'idos';
+  if (lower.includes('[beyond]')) return 'beyond';
+  return null;
+}
+
+const campaignBg: Record<string, string> = {
+  wallchain: 'bg-amber-500/10 border-l-2 border-l-amber-400',
+  idos: 'bg-emerald-500/10 border-l-2 border-l-emerald-400',
+  beyond: 'bg-orange-500/10 border-l-2 border-l-orange-400',
+};
+
 export function ChatMessage({ message, className, onFeedback, previousUserMessage }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isBlocked = message.isBlocked;
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
+
+  // Detect campaign from user message content, or from the preceding user message for assistant replies
+  const detectedCampaign = isUser
+    ? detectCampaign(message.content)
+    : detectCampaign(previousUserMessage);
+
+  const campaignStyle = detectedCampaign ? campaignBg[detectedCampaign] : '';
 
   const handleFeedback = (type: 'positive' | 'negative') => {
     if (feedback) return;
@@ -26,6 +48,7 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
     <div className={cn(
       "flex gap-4 py-6 px-4 animate-slide-up",
       isUser ? "bg-transparent" : "bg-secondary/30",
+      campaignStyle,
       className
     )}>
       {/* Avatar */}
