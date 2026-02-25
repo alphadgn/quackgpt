@@ -142,18 +142,18 @@ const Index = () => {
   ];
 
   const HistoryModeTabs = () => (
-    <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-secondary/30 border border-border/50 mb-3">
+    <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-secondary/30 border border-border/50 mb-3 overflow-x-auto">
       {historyModes.map((m) => (
         <button
           key={m.id}
           onClick={() => setHistoryFilter(m.id)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+          className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-medium transition-all whitespace-nowrap ${
             historyFilter === m.id
               ? "bg-primary text-primary-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
           }`}
         >
-          <m.icon className="w-3.5 h-3.5" />
+          <m.icon className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
           {m.label}
         </button>
       ))}
@@ -217,7 +217,7 @@ const Index = () => {
             usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div
-                  className="relative flex items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
+                  className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
                   onClick={handleCheckout}
                 >
                   <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
@@ -226,7 +226,7 @@ const Index = () => {
                     Subscribe or connect a wallet with{' '}
                     <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
                   </div>
-                  <div className="shrink-0 flex flex-col items-stretch gap-1">
+                  <div className="shrink-0 flex flex-col items-stretch gap-1 w-full sm:w-auto">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -234,7 +234,7 @@ const Index = () => {
                           size="sm"
                           onClick={(e) => { e.stopPropagation(); handleCheckout(); }}
                           disabled={checkoutLoading}
-                          className="gap-1"
+                          className="gap-1 w-full sm:w-auto"
                         >
                           {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                           Subscribe
