@@ -64,7 +64,7 @@ export function CampaignSelector({ campaign, onCampaignChange, className }: Camp
   return (
     <div className={cn("space-y-1.5", className)}>
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider text-center font-semibold">Select Ecosystem</p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap sm:flex-nowrap gap-2">
         {campaigns.map((c) => {
           const isActive = campaign === c.id;
           return (
@@ -72,13 +72,13 @@ export function CampaignSelector({ campaign, onCampaignChange, className }: Camp
               key={c.id}
               onClick={() => onCampaignChange(c.id)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                "flex-1 min-w-[90px] flex items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-2 sm:py-2.5 rounded-xl border text-[11px] sm:text-xs font-medium transition-all",
                 isActive
                   ? cn(c.activeBg, c.color, "shadow-sm")
                   : "border-border/30 bg-card/30 text-muted-foreground hover:text-foreground hover:border-border/60"
               )}
             >
-              <c.icon className={cn("w-4 h-4", isActive ? c.color : "")} />
+              <c.icon className={cn("w-3.5 h-3.5 sm:w-4 sm:h-4", isActive ? c.color : "")} />
               {c.label}
             </button>
           );

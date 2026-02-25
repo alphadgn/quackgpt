@@ -106,7 +106,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 left-0 z-50 w-96 bg-card border-r border-border shadow-xl flex flex-col animate-in slide-in-from-left-full duration-200">
+    <div className="fixed inset-y-0 left-0 z-50 w-full sm:w-96 bg-card border-r border-border shadow-xl flex flex-col animate-in slide-in-from-left-full duration-200">
       <div className="flex items-center justify-between p-4 border-b border-border">
         <div className="flex items-center gap-2">
           <History className="w-4 h-4 text-primary" />

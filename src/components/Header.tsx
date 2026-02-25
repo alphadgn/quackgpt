@@ -117,7 +117,7 @@ export function Header({ tier, isLoggedIn, walletAddress, email, onLogin, onLogo
         </Link>
         
         {/* Right section */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {isLoggedIn ? (
             <>
               {nftCheckLoading ? (

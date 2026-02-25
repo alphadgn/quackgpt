@@ -357,7 +357,7 @@ export default function Settings() {
 
             {/* Linked Wallets */}
             <section className="border-y border-border/50 bg-card/50 p-6">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-2">
                 <h2 className="text-lg font-display font-semibold text-foreground text-center flex-1">Linked Wallets</h2>
                 <span className="text-xs text-muted-foreground">1 Privy + up to 2 external</span>
               </div>

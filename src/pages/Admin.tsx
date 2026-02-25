@@ -826,33 +826,35 @@ export default function Admin() {
                             <span>Impact: {finding.impact_score}/10</span>
                             <span>Confidence: {finding.confidence_score}%</span>
                           </div>
-                          <div className="flex gap-2 items-end border-t border-border/20 pt-2 mt-2">
+                          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end border-t border-border/20 pt-2 mt-2">
                             <Input
                               placeholder="Resolution notes..."
                               value={resolveNotes[finding.id] || ""}
                               onChange={(e) => setResolveNotes(prev => ({ ...prev, [finding.id]: e.target.value }))}
                               className="flex-1 text-xs h-7"
                             />
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[10px] gap-1"
-                              disabled={resolvingFinding === finding.id}
-                              onClick={() => handleResolveFinding(finding.id, "acknowledged")}
-                            >
-                              {resolvingFinding === finding.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
-                              Acknowledge
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[10px] gap-1 border-primary/30 text-primary"
-                              disabled={resolvingFinding === finding.id}
-                              onClick={() => handleResolveFinding(finding.id, "resolved")}
-                            >
-                              <CheckCircle2 className="w-3 h-3" />
-                              Resolve
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-[10px] gap-1 flex-1 sm:flex-none"
+                                disabled={resolvingFinding === finding.id}
+                                onClick={() => handleResolveFinding(finding.id, "acknowledged")}
+                              >
+                                {resolvingFinding === finding.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
+                                Acknowledge
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-[10px] gap-1 border-primary/30 text-primary flex-1 sm:flex-none"
+                                disabled={resolvingFinding === finding.id}
+                                onClick={() => handleResolveFinding(finding.id, "resolved")}
+                              >
+                                <CheckCircle2 className="w-3 h-3" />
+                                Resolve
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1006,23 +1008,25 @@ export default function Admin() {
               )}
 
               {/* Add new source */}
-              <div className="flex gap-2 mt-4">
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
                 <Input
                   placeholder="https://example.com"
                   value={newSourceUrl}
                   onChange={(e) => setNewSourceUrl(e.target.value)}
                   className="flex-1"
                 />
-                <Input
-                  placeholder="Label"
-                  value={newSourceLabel}
-                  onChange={(e) => setNewSourceLabel(e.target.value)}
-                  className="w-40"
-                />
-                <Button onClick={handleAddSource} disabled={addingSource || !newSourceUrl.trim() || !newSourceLabel.trim()} size="sm" className="shrink-0 gap-1">
-                  {addingSource ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-                  Add
-                </Button>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Label"
+                    value={newSourceLabel}
+                    onChange={(e) => setNewSourceLabel(e.target.value)}
+                    className="flex-1 sm:w-40"
+                  />
+                  <Button onClick={handleAddSource} disabled={addingSource || !newSourceUrl.trim() || !newSourceLabel.trim()} size="sm" className="shrink-0 gap-1">
+                    {addingSource ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                    Add
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -1061,29 +1065,31 @@ export default function Admin() {
                         {new Date(item.created_at).toLocaleString()} • {shortenId(item.external_user_id)}
                       </p>
 
-                      <div className="flex gap-2 items-end">
+                      <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
                         <Input
                           placeholder="Override with corrected answer (optional)..."
                           value={overrideText[item.id] || ""}
                           onChange={(e) => setOverrideText(prev => ({ ...prev, [item.id]: e.target.value }))}
                           className="flex-1 text-xs h-8"
                         />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1 text-xs"
-                          onClick={() => handleReviewFeedback(item.id, overrideText[item.id])}
-                        >
-                          {overrideText[item.id] ? <><Check className="w-3 h-3" /> Override</> : <><Check className="w-3 h-3" /> Confirm</>}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 text-xs text-muted-foreground"
-                          onClick={() => handleReviewFeedback(item.id)}
-                        >
-                          <X className="w-3 h-3" /> Dismiss
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 gap-1 text-xs flex-1 sm:flex-none"
+                            onClick={() => handleReviewFeedback(item.id, overrideText[item.id])}
+                          >
+                            {overrideText[item.id] ? <><Check className="w-3 h-3" /> Override</> : <><Check className="w-3 h-3" /> Confirm</>}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 text-xs text-muted-foreground flex-1 sm:flex-none"
+                            onClick={() => handleReviewFeedback(item.id)}
+                          >
+                            <X className="w-3 h-3" /> Dismiss
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
