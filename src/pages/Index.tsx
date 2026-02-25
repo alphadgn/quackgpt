@@ -25,8 +25,8 @@ const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [chatMode, setChatMode] = useState<ChatMode>("search");
-  const [campaign, setCampaign] = useState<Campaign>("wallchain");
+  const [chatMode, setChatMode] = useState<ChatMode | null>(null);
+  const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [historyFilter, setHistoryFilter] = useState<"all" | "search" | "quack-check" | "tweet-audit">("all");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -78,9 +78,11 @@ const Index = () => {
   }, [getAccessToken]);
 
   const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
-  const campaignLabel = campaignLabels[campaign] || campaign;
+  const campaignLabel = campaign ? (campaignLabels[campaign] || campaign) : '';
+  const selectionComplete = chatMode !== null && campaign !== null;
 
   const handleSendMessage = useCallback((content: string) => {
+    if (!chatMode || !campaign) return;
     if (chatMode === "tweet-audit") {
       sendTweetAudit(content, campaign);
     } else if (chatMode === "quack-check") {
@@ -210,8 +212,22 @@ const Index = () => {
         <div className="p-4">
           {authenticated && (
             <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
-              <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
-              <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} />
+              {/* Step 1: Always show mode selector */}
+              <div className="w-full animate-fade-in">
+                <p className={`text-[10px] text-center uppercase tracking-wider font-semibold mb-1.5 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
+                  {chatMode ? 'Search Mode' : '① Select a search mode'}
+                </p>
+                <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
+              </div>
+              {/* Step 2: Campaign selector - animated in after mode selected */}
+              <div className={`w-full transition-all duration-500 ${chatMode ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-2 pointer-events-none'}`}>
+                {chatMode && !campaign && (
+                  <p className="text-[10px] text-center uppercase tracking-wider font-semibold mb-1.5 text-primary animate-pulse">
+                    ② Select an ecosystem
+                  </p>
+                )}
+                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} />
+              </div>
             </div>
           )}
           {authenticated ? (
@@ -252,7 +268,7 @@ const Index = () => {
             ) : (
               <ChatInput
                 onSend={handleSendMessage}
-                disabled={isTyping || !usageLoaded}
+                disabled={isTyping || !usageLoaded || !selectionComplete}
                 tier={tier}
                 queriesRemaining={usageLoaded ? queriesRemaining : -1}
                 className="max-w-3xl mx-auto"
@@ -260,6 +276,7 @@ const Index = () => {
                 onPrefillConsumed={handlePrefillConsumed}
                 cooldownUntil={cooldownUntil}
                 privyUserId={user?.id ?? null}
+                selectionComplete={selectionComplete}
               />
             )
           ) : null}

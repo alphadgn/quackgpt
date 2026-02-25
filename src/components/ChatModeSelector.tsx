@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export type ChatMode = "search" | "quack-check" | "tweet-audit";
 
 interface ChatModeSelectorProps {
-  mode: ChatMode;
+  mode: ChatMode | null;
   onModeChange: (mode: ChatMode) => void;
   className?: string;
 }

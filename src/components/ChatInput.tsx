@@ -16,9 +16,10 @@ interface ChatInputProps {
   onPrefillConsumed?: () => void;
   cooldownUntil?: number | null;
   privyUserId?: string | null;
+  selectionComplete?: boolean;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
@@ -140,11 +141,13 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
         onClick={isDepleted ? handleDepletedClick : undefined}
         className={cn(
         "relative flex items-end gap-2 p-2 rounded-2xl border transition-all duration-300",
-        isDepleted
-          ? "border-destructive/50 bg-destructive/5 cursor-pointer"
-          : isBlocked || isOnCooldown
-            ? "border-destructive/50 bg-destructive/5" 
-            : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
+        !selectionComplete
+          ? "border-border/30 bg-secondary/10 opacity-60 cursor-not-allowed"
+          : isDepleted
+            ? "border-destructive/50 bg-destructive/5 cursor-pointer"
+            : isBlocked || isOnCooldown
+              ? "border-destructive/50 bg-destructive/5" 
+              : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
       )}>
         {/* Depleted overlay notification */}
         {showDepletedOverlay && isDepleted && (
@@ -174,13 +177,15 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           onFocus={isDepleted ? (e) => { e.target.blur(); handleDepletedClick(); } : undefined}
           onClick={isDepleted ? handleDepletedClick : undefined}
           placeholder={
-            isLoadingUsage
-              ? "Loading usage data..."
-              : isOnCooldown
-                ? `Cooldown active — ${cooldownMinutes} min remaining...`
-                : queriesRemaining <= 0 
-                  ? "Daily query limit reached..." 
-                  : "Ask about Wallchain, InfoFi, or Quack Heads..."
+            !selectionComplete
+              ? "Select a search mode & ecosystem above to begin..."
+              : isLoadingUsage
+                ? "Loading usage data..."
+                : isOnCooldown
+                  ? `Cooldown active — ${cooldownMinutes} min remaining...`
+                  : queriesRemaining <= 0 
+                    ? "Daily query limit reached..." 
+                    : "Ask about Wallchain, InfoFi, or Quack Heads..."
           }
           disabled={isDisabled && !isDepleted}
           readOnly={isDepleted}
