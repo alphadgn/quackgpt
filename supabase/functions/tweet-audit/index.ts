@@ -306,6 +306,14 @@ serve(async (req) => {
     }
 
     const scores = JSON.parse(toolCall.function.arguments);
+
+    // Prevent hallucinated scores: if relevancy is low, correctness and honesty
+    // cannot be meaningfully assessed — force them to 0.
+    if (scores.relevancy_score < 30) {
+      scores.correctness_score = 0;
+      scores.honesty_score = 0;
+    }
+
     const composite = Math.round(
       0.25 * scores.relevancy_score +
       0.30 * scores.correctness_score +
