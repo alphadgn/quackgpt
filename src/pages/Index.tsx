@@ -8,6 +8,7 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatModeSelector, ChatMode } from "@/components/ChatModeSelector";
+import { CampaignSelector, Campaign } from "@/components/CampaignSelector";
 import { InlineQueryHistory } from "@/components/WelcomeScreen";
 import { MessageSquare } from "lucide-react";
 
@@ -23,6 +24,7 @@ const Index = () => {
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("search");
+  const [campaign, setCampaign] = useState<Campaign>("wallchain");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -74,13 +76,13 @@ const Index = () => {
 
   const handleSendMessage = useCallback((content: string) => {
     if (chatMode === "tweet-audit") {
-      sendTweetAudit(content);
+      sendTweetAudit(content, campaign);
     } else if (chatMode === "quack-check") {
       sendMessage(`[QUACK CHECK] ${content}`);
     } else {
       sendMessage(content);
     }
-  }, [chatMode, sendMessage, sendTweetAudit]);
+  }, [chatMode, campaign, sendMessage, sendTweetAudit]);
 
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
@@ -175,8 +177,11 @@ const Index = () => {
         {/* Mode selector + Input area - always visible */}
         <div className="p-4">
           {authenticated && (
-            <div className="flex justify-center mb-3 max-w-3xl mx-auto">
+            <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
               <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
+              {chatMode === "tweet-audit" && (
+                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} />
+              )}
             </div>
           )}
           {authenticated ? (

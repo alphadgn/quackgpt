@@ -350,24 +350,25 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     }
   }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders, tierOverride, isSuperAdmin]);
 
-  const sendTweetAudit = useCallback(async (tweetText: string) => {
+  const sendTweetAudit = useCallback(async (tweetText: string, campaign: string = 'wallchain') => {
     if (!isAuthenticated || !privyUserId) return;
     if (queriesRemaining <= 0) return;
 
-    const userMessage: Message = { id: generateId(), role: 'user', content: tweetText, timestamp: new Date() };
+    const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
+    const userMessage: Message = { id: generateId(), role: 'user', content: `[${campaignLabels[campaign] || campaign}] ${tweetText}`, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
     try {
       const headers = await getAuthHeaders();
 
-      // Scrape context
+      // Scrape context filtered by campaign
       let context = '';
       try {
         const scrapeResp = await fetch(SCRAPE_URL, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ query: tweetText }),
+          body: JSON.stringify({ query: tweetText, campaign }),
         });
         if (scrapeResp.ok) {
           const scrapeData = await scrapeResp.json();
@@ -378,7 +379,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tweet-audit`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tweetText: tweetText.trim(), context }),
+        body: JSON.stringify({ tweetText: tweetText.trim(), context, campaign }),
       });
 
       if (!resp.ok) {
