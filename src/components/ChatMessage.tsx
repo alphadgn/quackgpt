@@ -8,22 +8,13 @@ interface ChatMessageProps {
   message: Message;
   className?: string;
   onFeedback?: (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => void;
-  previousUserMessage?: string;
+  previousUserMessage?: Message;
 }
 
-function detectCampaign(text?: string): 'wallchain' | 'idos' | 'beyond' | null {
-  if (!text) return null;
-  const lower = text.toLowerCase();
-  if (lower.includes('[wallchain]')) return 'wallchain';
-  if (lower.includes('[idos network]')) return 'idos';
-  if (lower.includes('[beyond]')) return 'beyond';
-  return null;
-}
-
-const campaignBg: Record<string, string> = {
-  wallchain: 'bg-amber-500/10 border-l-2 border-l-amber-400',
-  idos: 'bg-emerald-500/10 border-l-2 border-l-emerald-400',
-  beyond: 'bg-orange-500/10 border-l-2 border-l-orange-400',
+const campaignStyles: Record<string, string> = {
+  wallchain: 'bg-amber-500/20 border-l-4 border-l-amber-400',
+  idos: 'bg-emerald-500/20 border-l-4 border-l-emerald-400',
+  beyond: 'bg-orange-500/20 border-l-4 border-l-orange-400',
 };
 
 export function ChatMessage({ message, className, onFeedback, previousUserMessage }: ChatMessageProps) {
@@ -31,25 +22,25 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
   const isBlocked = message.isBlocked;
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
 
-  // Detect campaign from user message content, or from the preceding user message for assistant replies
-  const detectedCampaign = isUser
-    ? detectCampaign(message.content)
-    : detectCampaign(previousUserMessage);
-
-  const campaignStyle = detectedCampaign ? campaignBg[detectedCampaign] : '';
+  // Use campaign from message directly, or inherit from previous user message for assistant replies
+  const campaign = message.campaign || (!isUser ? previousUserMessage?.campaign : undefined);
+  const campaignStyle = campaign ? campaignStyles[campaign] : '';
 
   const handleFeedback = (type: 'positive' | 'negative') => {
     if (feedback) return;
     setFeedback(type);
-    onFeedback?.(message.content, type, previousUserMessage);
+    onFeedback?.(message.content, type, previousUserMessage?.content);
   };
+
+  // Build background: campaign style takes priority over defaults
+  const bgClass = campaignStyle
+    ? campaignStyle
+    : isUser ? "bg-transparent" : "bg-secondary/30";
 
   return (
     <div className={cn(
       "flex gap-4 py-6 px-4 animate-slide-up",
-      detectedCampaign
-        ? campaignBg[detectedCampaign]
-        : isUser ? "bg-transparent" : "bg-secondary/30",
+      bgClass,
       className
     )}>
       {/* Avatar */}

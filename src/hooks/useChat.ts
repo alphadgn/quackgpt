@@ -173,7 +173,14 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       return;
     }
     
-    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
+    // Extract campaign from content prefix for color-coding
+    const campaignMatch = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
+    const campaignMap: Record<string, 'wallchain' | 'idos' | 'beyond'> = {
+      'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond',
+    };
+    const detectedCampaign = campaignMatch ? campaignMap[campaignMatch[1].toLowerCase()] : undefined;
+
+    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date(), campaign: detectedCampaign };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
     
@@ -250,7 +257,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       
       const assistantId = generateId();
       setMessages(prev => [...prev, {
-        id: assistantId, role: 'assistant', content: '', timestamp: new Date(),
+        id: assistantId, role: 'assistant', content: '', timestamp: new Date(), campaign: detectedCampaign,
       }]);
       
       while (true) {
@@ -355,7 +362,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     if (queriesRemaining <= 0) return;
 
     const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
-    const userMessage: Message = { id: generateId(), role: 'user', content: `[${campaignLabels[campaign] || campaign}] ${tweetText}`, timestamp: new Date() };
+    const userMessage: Message = { id: generateId(), role: 'user', content: `[${campaignLabels[campaign] || campaign}] ${tweetText}`, timestamp: new Date(), campaign: campaign as 'wallchain' | 'idos' | 'beyond' };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
@@ -431,6 +438,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
         isTruncated: auditTruncated,
         userTier: tier,
         maxCharacters: auditMaxChars,
+        campaign: campaign as 'wallchain' | 'idos' | 'beyond',
       }]);
 
       setQueriesUsedToday(prev => prev + 1);

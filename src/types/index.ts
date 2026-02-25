@@ -43,6 +43,7 @@ export interface Message {
   isTruncated?: boolean;
   userTier?: UserTier;
   maxCharacters?: number;
+  campaign?: 'wallchain' | 'idos' | 'beyond';
 }
 
 export interface ChatSession {
