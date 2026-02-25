@@ -76,15 +76,18 @@ const Index = () => {
     };
   }, [getAccessToken]);
 
+  const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
+  const campaignLabel = campaignLabels[campaign] || campaign;
+
   const handleSendMessage = useCallback((content: string) => {
     if (chatMode === "tweet-audit") {
       sendTweetAudit(content, campaign);
     } else if (chatMode === "quack-check") {
-      sendMessage(`[QUACK CHECK] ${content}`);
+      sendMessage(`[QUACK CHECK] [${campaignLabel}] ${content}`);
     } else {
-      sendMessage(content);
+      sendMessage(`[${campaignLabel}] ${content}`);
     }
-  }, [chatMode, campaign, sendMessage, sendTweetAudit]);
+  }, [chatMode, campaign, campaignLabel, sendMessage, sendTweetAudit]);
 
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
@@ -207,9 +210,7 @@ const Index = () => {
           {authenticated && (
             <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
               <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
-              {chatMode === "tweet-audit" && (
-                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} />
-              )}
+              <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} />
             </div>
           )}
           {authenticated ? (
