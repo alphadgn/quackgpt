@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { Message } from "@/types";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
@@ -186,17 +187,17 @@ const Index = () => {
           ) : (
             <ScrollBendContainer className="divide-y divide-border/30">
               {messages.map((message, index) => {
-                let previousUserMessage: string | undefined;
+                let previousUserMsg: Message | undefined;
                 if (message.role === 'assistant') {
                   for (let i = index - 1; i >= 0; i--) {
                     if (messages[i].role === 'user') {
-                      previousUserMessage = messages[i].content;
+                      previousUserMsg = messages[i];
                       break;
                     }
                   }
                 }
                 return (
-                  <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMessage} />
+                  <ChatMessage key={message.id} message={message} onFeedback={handleFeedback} previousUserMessage={previousUserMsg} />
                 );
               })}
               {isTyping && <TypingIndicator />}
