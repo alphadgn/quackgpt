@@ -3,7 +3,7 @@ import { ScrollBendContainer } from "./ScrollBendContainer";
 import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
 import { UserTier, WHITELISTED_SOURCES } from "@/types";
-import { Database, Shield, Zap, ExternalLink, ChevronRight, Loader2, Trash2, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
+import { Database, Shield, Zap, ChevronRight, Loader2, Trash2, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatMessage {
@@ -54,7 +54,7 @@ const exampleQueries = [
   "What are Quack Heads NFTs?",
 ];
 
-export function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => Promise<Record<string, string>> }) {
+export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { getAuthHeaders: () => Promise<Record<string, string>>; historyFilter?: "all" | "search" | "quack-check" | "tweet-audit" }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
@@ -139,9 +139,26 @@ export function InlineQueryHistory({ getAuthHeaders }: { getAuthHeaders: () => P
     );
   }
 
+  const filteredSessions = sessions.filter((session) => {
+    if (historyFilter === "all") return true;
+    const preview = (session.preview || "").toUpperCase();
+    if (historyFilter === "search") return !preview.startsWith("[QUACK CHECK]") && !preview.startsWith("[TWEET AUDIT");
+    if (historyFilter === "quack-check") return preview.startsWith("[QUACK CHECK]");
+    if (historyFilter === "tweet-audit") return preview.startsWith("[TWEET AUDIT");
+    return true;
+  });
+  if (filteredSessions.length === 0) {
+    return (
+      <div className="text-center py-4">
+        <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
+        <p className="text-xs text-muted-foreground">No history for this mode</p>
+      </div>
+    );
+  }
+
   return (
     <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-      {sessions.map((session) => {
+      {filteredSessions.map((session) => {
         const pairs = getQAPairs(session.messages);
         const isExpanded = expandedSession === session.session_id;
         return (
@@ -266,13 +283,6 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         </div>
       )}
       
-      {/* Sources reference */}
-      <div className="mt-10 w-full max-w-xl flex flex-col items-center gap-3">
-        <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-          <ExternalLink className="w-3 h-3" />
-          Data sourced exclusively from official Wallchain channels
-        </p>
-      </div>
     </ScrollBendContainer>
   );
 }

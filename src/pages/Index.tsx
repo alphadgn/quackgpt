@@ -10,9 +10,10 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatModeSelector, ChatMode } from "@/components/ChatModeSelector";
 import { CampaignSelector, Campaign } from "@/components/CampaignSelector";
 import { InlineQueryHistory } from "@/components/WelcomeScreen";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Search, Shield, Bird } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +26,7 @@ const Index = () => {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>("search");
   const [campaign, setCampaign] = useState<Campaign>("wallchain");
+  const [historyFilter, setHistoryFilter] = useState<"all" | "search" | "quack-check" | "tweet-audit">("all");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -129,6 +131,32 @@ const Index = () => {
     }
   }, [user?.id, navigate, getAccessToken]);
 
+  const historyModes = [
+    { id: "all" as const, label: "All", icon: MessageSquare },
+    { id: "search" as const, label: "Search", icon: Search },
+    { id: "quack-check" as const, label: "Quack Check", icon: Shield },
+    { id: "tweet-audit" as const, label: "Tweet Audit", icon: Bird },
+  ];
+
+  const HistoryModeTabs = () => (
+    <div className="flex items-center justify-center gap-1 p-1 rounded-xl bg-secondary/30 border border-border/50 mb-3">
+      {historyModes.map((m) => (
+        <button
+          key={m.id}
+          onClick={() => setHistoryFilter(m.id)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            historyFilter === m.id
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
+          }`}
+        >
+          <m.icon className="w-3.5 h-3.5" />
+          {m.label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex flex-col min-h-screen relative">
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -198,16 +226,23 @@ const Index = () => {
                     <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
                   </div>
                   <div className="shrink-0 flex flex-col items-stretch gap-1">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={(e) => { e.stopPropagation(); handleCheckout(); }}
-                      disabled={checkoutLoading}
-                      className="gap-1"
-                    >
-                      {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                      Subscribe
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleCheckout(); }}
+                          disabled={checkoutLoading}
+                          className="gap-1"
+                        >
+                          {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                          Subscribe
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[220px] text-center">
+                        <p className="text-xs">$1.49/week trial offer. Prices may change after the trial period ends.</p>
+                      </TooltipContent>
+                    </Tooltip>
                     {resetTime && <CountdownTimer resetTime={resetTime} />}
                   </div>
                 </div>
@@ -228,8 +263,8 @@ const Index = () => {
           ) : null}
           
           <p className="text-center text-xs text-muted-foreground mt-12 mb-12 max-w-xl mx-auto">
-            quackGPT provides information only. Not financial advice. 
-            Data sourced from official Wallchain channels.
+            QuackGPT provides information only. Not financial advice. 
+            Data sourced from Wallchain & other official channels.
           </p>
 
           {/* Query History - below input area */}
@@ -240,7 +275,8 @@ const Index = () => {
                   <MessageSquare className="w-4 h-4 text-primary" />
                   Query History
                 </h3>
-                <InlineQueryHistory getAuthHeaders={getAuthHeaders} />
+                <HistoryModeTabs />
+                <InlineQueryHistory getAuthHeaders={getAuthHeaders} historyFilter={historyFilter} />
               </div>
             </div>
           )}
