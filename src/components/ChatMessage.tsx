@@ -11,10 +11,10 @@ interface ChatMessageProps {
   previousUserMessage?: Message;
 }
 
-const campaignStyles: Record<string, string> = {
-  wallchain: 'bg-amber-500/20 border-l-4 border-l-amber-400',
-  idos: 'bg-emerald-500/20 border-l-4 border-l-emerald-400',
-  beyond: 'bg-orange-500/20 border-l-4 border-l-orange-400',
+const campaignInlineStyles: Record<string, React.CSSProperties> = {
+  wallchain: { backgroundColor: 'rgba(245, 158, 11, 0.2)', borderLeft: '4px solid rgb(251, 191, 36)' },
+  idos: { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid rgb(52, 211, 153)' },
+  beyond: { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid rgb(251, 146, 60)' },
 };
 
 export function ChatMessage({ message, className, onFeedback, previousUserMessage }: ChatMessageProps) {
@@ -24,7 +24,8 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
 
   // Use campaign from message directly, or inherit from previous user message for assistant replies
   const campaign = message.campaign || (!isUser ? previousUserMessage?.campaign : undefined);
-  const campaignStyle = campaign ? campaignStyles[campaign] : '';
+  const campaignStyle = campaign ? campaignInlineStyles[campaign] : undefined;
+
 
   const handleFeedback = (type: 'positive' | 'negative') => {
     if (feedback) return;
@@ -34,15 +35,18 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
 
   // Build background: campaign style takes priority over defaults
   const bgClass = campaignStyle
-    ? campaignStyle
+    ? ""
     : isUser ? "bg-transparent" : "bg-secondary/30";
 
   return (
-    <div className={cn(
-      "flex gap-4 py-6 px-4 animate-slide-up",
-      bgClass,
-      className
-    )}>
+    <div
+      className={cn(
+        "flex gap-4 py-6 px-4 animate-slide-up",
+        bgClass,
+        className
+      )}
+      style={campaignStyle || undefined}
+    >
       {/* Avatar */}
       <div className={cn(
         "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center",
