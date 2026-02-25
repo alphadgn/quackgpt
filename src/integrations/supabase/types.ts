@@ -328,6 +328,7 @@ export type Database = {
       scrape_sources: {
         Row: {
           added_by: string | null
+          campaign: string
           created_at: string
           id: string
           is_active: boolean
@@ -337,6 +338,7 @@ export type Database = {
         }
         Insert: {
           added_by?: string | null
+          campaign?: string
           created_at?: string
           id?: string
           is_active?: boolean
@@ -346,6 +348,7 @@ export type Database = {
         }
         Update: {
           added_by?: string | null
+          campaign?: string
           created_at?: string
           id?: string
           is_active?: boolean

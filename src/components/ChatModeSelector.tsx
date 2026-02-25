@@ -1,4 +1,3 @@
-import { useState, useCallback } from "react";
 import { Search, Shield, Bird } from "lucide-react";
 import { cn } from "@/lib/utils";
 

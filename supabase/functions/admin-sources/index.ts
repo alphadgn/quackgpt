@@ -72,10 +72,17 @@ Deno.serve(async (req) => {
     const action = url.searchParams.get("action");
 
     if (action === "list") {
-      const { data, error } = await supabase
+      const campaignFilter = url.searchParams.get("campaign");
+      let query = supabase
         .from("scrape_sources")
         .select("*")
         .order("created_at", { ascending: true });
+      
+      if (campaignFilter) {
+        query = query.eq("campaign", campaignFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return new Response(JSON.stringify({ sources: data }), {
@@ -84,14 +91,14 @@ Deno.serve(async (req) => {
     }
 
     if (action === "add" && req.method === "POST") {
-      const { url: sourceUrl, label } = await req.json();
+      const { url: sourceUrl, label, campaign: sourceCampaign } = await req.json();
       if (!sourceUrl || !label) {
         return new Response(JSON.stringify({ error: "URL and label required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const { error } = await supabase.from("scrape_sources").insert({
-        url: sourceUrl, label, added_by: privyUserId,
+        url: sourceUrl, label, added_by: privyUserId, campaign: sourceCampaign || "wallchain",
       });
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {

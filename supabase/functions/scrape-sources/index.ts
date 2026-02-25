@@ -76,7 +76,7 @@ serve(async (req) => {
       );
     }
 
-    const { query } = await req.json();
+    const { query, campaign } = await req.json();
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 
     if (!FIRECRAWL_API_KEY) {
@@ -87,15 +87,21 @@ serve(async (req) => {
       );
     }
 
-    // Load active sources from database
+    // Load active sources from database, filtered by campaign if provided
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { data: sources, error: sourcesErr } = await supabase
+    let sourcesQuery = supabase
       .from("scrape_sources")
       .select("url, label")
       .eq("is_active", true);
+    
+    if (campaign && typeof campaign === "string") {
+      sourcesQuery = sourcesQuery.eq("campaign", campaign);
+    }
+
+    const { data: sources, error: sourcesErr } = await sourcesQuery;
 
     if (sourcesErr) {
       console.error("Failed to load scrape sources:", sourcesErr);

@@ -26,6 +26,7 @@ interface ScrapeSource {
   label: string;
   is_active: boolean;
   created_at: string;
+  campaign: string;
 }
 
 interface FeedbackItem {
@@ -110,6 +111,7 @@ export default function Admin() {
   const [newSourceUrl, setNewSourceUrl] = useState("");
   const [newSourceLabel, setNewSourceLabel] = useState("");
   const [addingSource, setAddingSource] = useState(false);
+  const [sourcesCampaign, setSourcesCampaign] = useState<"wallchain" | "idos" | "beyond">("wallchain");
 
   // Feedback state
   const [negativeFeedback, setNegativeFeedback] = useState<FeedbackItem[]>([]);
@@ -190,12 +192,13 @@ export default function Admin() {
     }
   }, [user?.id, getAccessToken]);
 
-  const fetchSources = useCallback(async () => {
+  const fetchSources = useCallback(async (campaign?: string) => {
     setSourcesLoading(true);
     try {
       const headers = await getAuthHeaders();
+      const c = campaign || sourcesCampaign;
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list&campaign=${c}`,
         { headers }
       );
       const data = await resp.json();
@@ -205,7 +208,7 @@ export default function Admin() {
     } finally {
       setSourcesLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, [getAuthHeaders, sourcesCampaign]);
 
   const fetchFeedback = useCallback(async () => {
     setFeedbackLoading(true);
@@ -273,7 +276,7 @@ export default function Admin() {
       const headers = await getAuthHeaders();
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=add`,
-        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim() }) }
+        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim(), campaign: sourcesCampaign }) }
       );
       if (resp.ok) {
         toast.success("Source added");
@@ -960,9 +963,28 @@ export default function Admin() {
                   {sources.filter(s => s.is_active).length} active
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mb-5">
-                These URLs are scraped by Firecrawl to build quackGPT's knowledge base. Toggle to enable/disable.
+              <p className="text-sm text-muted-foreground mb-4">
+                These URLs are scraped by Firecrawl to build quackGPT's knowledge base per campaign. Toggle to enable/disable.
               </p>
+
+              {/* Campaign tabs */}
+              <div className="flex gap-1 mb-4 rounded-lg bg-muted/30 p-1">
+                {([
+                  { key: "wallchain" as const, label: "Wallchain" },
+                  { key: "idos" as const, label: "idOS Network" },
+                  { key: "beyond" as const, label: "Beyond" },
+                ] as const).map(tab => (
+                  <button
+                    key={tab.key}
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${
+                      sourcesCampaign === tab.key ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => { setSourcesCampaign(tab.key); fetchSources(tab.key); }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
               {sourcesLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
