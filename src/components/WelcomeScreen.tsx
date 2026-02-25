@@ -43,7 +43,7 @@ const features = [
   {
     icon: Zap,
     title: "🐦 Tweet Audit",
-    description: "Score your tweets 0-100 on relevancy, correctness, honesty & brand alignment.",
+    description: "Score your tweets 0-100 on relevancy, correctness, honesty, authenticity & brand alignment.",
   },
 ];
 
@@ -210,12 +210,12 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       <h1 className="text-2xl md:text-3xl font-display font-bold text-center mb-3">
         <span className="text-gradient">Wallchain & InfoFi</span>
         <br />
-        <span className="text-foreground/80">Intelligence Engine</span>
+        <span className="text-foreground/80">Campaign Intelligence Engine</span>
       </h1>
       
       <p className="text-muted-foreground text-center max-w-md mb-8">
-        Get verified information about the Wallchain ecosystem. 
-        Ask questions, receive facts—no content creation, just reality.
+        Get verified information about Wallchain campaigns. 
+        Ask questions, verify facts, & audit posts—no content creation, just solid, reliable information.
       </p>
       
       {/* User tier with pointing hand */}

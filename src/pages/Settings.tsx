@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 const tierInfo: Record<UserTier, { label: string; icon: typeof Crown; price: string }> = {
   free: { label: "Free", icon: Shield, price: "$0" },
-  paid: { label: "Paid", icon: Zap, price: "$1.49/week" },
+  paid: { label: "Paid", icon: Zap, price: "$1.49/week (trial offer)" },
   nft_holder: { label: "Quack Heads NFT", icon: Crown, price: "NFT Required" },
 };
 
@@ -279,12 +279,12 @@ export default function Settings() {
               {tier === "free" ? (
                 <div>
                   <p className="text-sm text-muted-foreground mb-4 text-center">
-                    Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week.
+                    Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week (trial offer).
                   </p>
                   <div className="flex justify-center">
                     <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
                       {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                      Subscribe — $1.49/week
+                      Subscribe — $1.49/week (trial offer)
                     </Button>
                   </div>
                 </div>

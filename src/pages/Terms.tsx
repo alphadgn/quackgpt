@@ -46,7 +46,7 @@ const Terms = () => {
             <p className="text-foreground/80">The Service offers different access tiers:</p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li><strong>Free Users:</strong> 1 query per 24 hours, 100 character response limit, no image generation</li>
-              <li><strong>Paid Users ($1.49/week):</strong> 3 queries per 24 hours, 300 character response limit, 3 images per day</li>
+              <li><strong>Paid Users ($1.49/week — trial offer):</strong> 3 queries per 24 hours, 300 character response limit, 3 images per day. This is a limited-time trial offer; prices are subject to change after the trial period ends.</li>
               <li><strong>Quack Heads NFT Holders:</strong> 5 queries per 24 hours, 1000 character response limit, 5 images per day</li>
             </ul>
           </section>
