@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 export type Campaign = "wallchain" | "idos" | "beyond";
 
 interface CampaignSelectorProps {
-  campaign: Campaign;
+  campaign: Campaign | null;
   onCampaignChange: (campaign: Campaign) => void;
   className?: string;
 }
