@@ -47,8 +47,9 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
   return (
     <div className={cn(
       "flex gap-4 py-6 px-4 animate-slide-up",
-      isUser ? "bg-transparent" : "bg-secondary/30",
-      campaignStyle,
+      detectedCampaign
+        ? campaignBg[detectedCampaign]
+        : isUser ? "bg-transparent" : "bg-secondary/30",
       className
     )}>
       {/* Avatar */}
