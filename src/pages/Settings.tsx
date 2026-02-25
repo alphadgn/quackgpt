@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TIER_LIMITS, UserTier } from "@/types";
 import { Wallet, ArrowLeft, Crown, Zap, Shield, Loader2, CreditCard, ExternalLink, Unlink, History, Bird, ChevronRight, MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Link, useSearchParams } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -281,11 +282,18 @@ export default function Settings() {
                   <p className="text-sm text-muted-foreground mb-4 text-center">
                     Upgrade to the Paid plan for 3 daily queries with 300-character responses at $1.49/week (trial offer).
                   </p>
-                  <div className="flex justify-center">
-                    <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
-                      {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
-                      Subscribe — $1.49/week (trial offer)
-                    </Button>
+                  <div className="flex flex-col items-center gap-2">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button onClick={handleCheckout} disabled={checkoutLoading} variant="hero">
+                          {checkoutLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                          Subscribe — $1.49/week (trial offer)
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-[260px] text-center">
+                        <p className="text-xs">This is a limited-time trial offer. Prices are subject to change after the trial period ends.</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               ) : isSubscribed ? (
