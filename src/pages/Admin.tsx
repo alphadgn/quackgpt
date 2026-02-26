@@ -1158,7 +1158,13 @@ export default function Admin() {
                         }
                       }
                       return (
-                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30 bg-destructive/5' : 'border-border/50 bg-card/50'}`}>
+                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30' : 'border-border/50'}`} style={(() => {
+                          const p = (session.preview || '').toUpperCase();
+                          if (p.includes('[WALLCHAIN]') || p.includes('WALLCHAIN') || p.includes('INFOFI') || p.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                          if (p.includes('[IDOS') || p.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                          if (p.includes('[BEYOND]') || p.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                        })()}>
                           <div className="flex items-center gap-2 p-3">
                             <button
                               className="flex-1 flex items-center gap-2 text-left"
