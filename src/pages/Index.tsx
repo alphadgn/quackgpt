@@ -222,9 +222,9 @@ const Index = () => {
               {/* Step 2: Campaign selector - animated in after mode selected */}
               <div className={`w-full transition-all duration-500 flex flex-col items-center ${chatMode ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-2 pointer-events-none'}`}>
                 {chatMode && !campaign && (
-                  <p className="text-[10px] text-center uppercase tracking-wider font-semibold mb-1.5 text-primary animate-pulse">
-                    ② Select an ecosystem
-                  </p>
+                  <div className="flex items-center justify-start w-full mb-1">
+                    <span className="text-2xl animate-bounce" style={{ animationDuration: '0.7s', marginLeft: '0.5rem' }}>👇</span>
+                  </div>
                 )}
                 <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} className="w-full" />
               </div>
