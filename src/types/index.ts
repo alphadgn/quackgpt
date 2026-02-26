@@ -23,13 +23,13 @@ export const TIER_LIMITS: Record<UserTier, TierLimits> = {
   },
   nft_holder: {
     maxQueries: 5, // Per verified NFT
-    maxCharacters: 5000,
-    maxImages: 10,
+    maxCharacters: 1000,
+    maxImages: 5,
   },
   paid: {
     maxQueries: 3,
     maxCharacters: 300,
-    maxImages: 5,
+    maxImages: 3,
   },
 };
 

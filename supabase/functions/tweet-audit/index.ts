@@ -50,7 +50,7 @@ function checkIpRateLimit(req: Request): boolean {
 
 const TIER_LIMITS: Record<string, { maxQueries: number; maxCharacters: number }> = {
   free: { maxQueries: 1, maxCharacters: 100 },
-  nft_holder: { maxQueries: 5, maxCharacters: 5000 },
+  nft_holder: { maxQueries: 5, maxCharacters: 1000 },
   paid: { maxQueries: 3, maxCharacters: 300 },
 };
 
