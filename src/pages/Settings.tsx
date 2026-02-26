@@ -226,7 +226,7 @@ export default function Settings() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-    <div className="min-h-screen flex flex-col relative z-10">
+    <div className="min-h-screen flex flex-col relative z-10 overflow-x-hidden">
       <Header
         tier={tier}
         isLoggedIn={authenticated}

@@ -97,7 +97,7 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
           </div>
         ) : (
           <>
-            <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap">
+            <div className="text-foreground/90 leading-relaxed whitespace-pre-wrap break-words overflow-hidden">
               {message.content}
               {message.isTruncated && message.maxCharacters && (
                 <span className="text-muted-foreground italic">

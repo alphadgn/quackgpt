@@ -185,8 +185,8 @@ const Index = () => {
   );
 
   return (
-    <div className="flex flex-col min-h-screen relative">
-      <div className="relative z-10 flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen relative overflow-x-hidden">
+      <div className="relative z-10 flex flex-col min-h-screen w-full">
       <Header 
         tier={tier}
         isLoggedIn={authenticated}
@@ -202,7 +202,7 @@ const Index = () => {
         embeddedWallet={embeddedWallet}
       />
       
-      <main className="flex-1 max-w-4xl mx-auto w-full">
+      <main className="flex-1 max-w-4xl mx-auto w-full px-0 overflow-x-hidden">
         {/* Chat area - always visible */}
         <div>
           {messages.length === 0 ? (

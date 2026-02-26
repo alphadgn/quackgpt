@@ -18,7 +18,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       {/* Universal background */}
-      <div className="fixed inset-0 z-0 pointer-events-none" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: '150%', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.15 }} />
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden" style={{ backgroundImage: `url(${heroBgDuck})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat', opacity: 0.15 }} />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
