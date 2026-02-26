@@ -122,13 +122,19 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
     return pairs;
   };
 
-  // Detect campaign from message content
+  // Detect campaign from message content — bracket tags first, then keyword fallback
   const detectCampaign = (preview: string): string | null => {
     const upper = (preview || "").toUpperCase();
+    // Strict bracket-tag detection
     if (upper.includes("[WALLCHAIN]")) return "wallchain";
     if (upper.includes("[IDOS NETWORK]") || upper.includes("[IDOS]")) return "idos";
     if (upper.includes("[BEYOND]")) return "beyond";
-    return null;
+    // Keyword fallback for older entries without bracket tags
+    if (upper.includes("WALLCHAIN") || upper.includes("WALL CHAIN") || upper.includes("INFOFI") || upper.includes("QUACK")) return "wallchain";
+    if (upper.includes("IDOS") || upper.includes("IDOS NETWORK")) return "idos";
+    if (upper.includes("BEYOND")) return "beyond";
+    // Default to wallchain for legacy entries (pre-campaign-selector)
+    return "wallchain";
   };
 
   // Campaign color mapping
@@ -190,16 +196,15 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
         const pairs = getQAPairs(session.messages);
         const isExpanded = expandedSession === session.session_id;
         const detectedCampaign = detectCampaign(session.preview);
-        const borderClass = detectedCampaign ? campaignBorderColor[detectedCampaign] : "";
         const labelColor = detectedCampaign ? campaignTextColor[detectedCampaign] : "";
         const label = detectedCampaign ? campaignLabel[detectedCampaign] : "";
+        const campaignStyles: Record<string, React.CSSProperties> = {
+          wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' },
+          idos: { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' },
+          beyond: { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' },
+        };
         return (
-          <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={
-            detectedCampaign === 'wallchain' ? { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' }
-            : detectedCampaign === 'idos' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' }
-            : detectedCampaign === 'beyond' ? { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' }
-            : { backgroundColor: 'var(--card)', opacity: 0.6 }
-          }>
+          <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={campaignStyles[detectedCampaign] || campaignStyles.wallchain}>
             <button
               className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors"
               onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
@@ -226,15 +231,13 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
                 {pairs.map((pair, i) => {
                   const fbType = getFeedbackForQuery(pair.user.content);
                   const pairCampaign = detectCampaign(pair.user.content);
-                  const pairStyle: React.CSSProperties | undefined = pairCampaign === 'wallchain'
-                    ? { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' }
-                    : pairCampaign === 'idos'
-                    ? { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' }
-                    : pairCampaign === 'beyond'
-                    ? { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' }
-                    : undefined;
+                  const pairStyles: Record<string, React.CSSProperties> = {
+                    wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' },
+                    idos: { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' },
+                    beyond: { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' },
+                  };
                   return (
-                    <div key={i} className="rounded-md border border-border/30 p-2.5 space-y-1.5" style={pairStyle || { backgroundColor: 'var(--card)', opacity: 0.6 }}>
+                    <div key={i} className="rounded-md border border-border/30 p-2.5 space-y-1.5" style={pairStyles[pairCampaign] || pairStyles.wallchain}>
                       <div className="text-xs">
                         <span className="font-semibold text-primary">You:</span>{" "}
                         <span className="text-foreground/90">{pair.user.content}</span>
