@@ -74,12 +74,14 @@ const Index = () => {
     usageLoaded,
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken, tierOverride, isSuperAdmin });
 
+  // Only scroll to latest message when a NEW message arrives (not on every re-render)
+  const prevMsgCount = useRef(0);
   useEffect(() => {
-    // Gentle scroll — don't hijack full-page scroll position
-    if (chatEndRef.current) {
+    if (messages.length > prevMsgCount.current && chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [messages, isTyping]);
+    prevMsgCount.current = messages.length;
+  }, [messages.length]);
 
   const handlePrefillConsumed = useCallback(() => {
     setPrefillMessage("");
