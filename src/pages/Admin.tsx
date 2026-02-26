@@ -1200,7 +1200,13 @@ export default function Admin() {
                                   const fbKey = pair.user.content?.trim().toLowerCase() || "";
                                   const fb = fbKey ? historyFeedbackMap[fbKey] : null;
                                   return (
-                                    <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
+                                    <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={(() => {
+                                      const c = (pair.user.content || '').toUpperCase();
+                                      if (c.includes('[WALLCHAIN]') || c.includes('WALLCHAIN') || c.includes('INFOFI') || c.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                                      if (c.includes('[IDOS') || c.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                                      if (c.includes('[BEYOND]') || c.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                                      return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                                    })()}>
                                       <div className="text-xs">
                                         <span className="font-semibold text-primary">User:</span>{' '}
                                         <span className="text-foreground/90">{pair.user.content}</span>
