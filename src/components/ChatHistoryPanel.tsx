@@ -133,7 +133,13 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
               const pairs = getQAPairs(session.messages);
               const isExpanded = expandedSession === session.session_id;
               return (
-                <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
+                  const p = (session.preview || '').toUpperCase();
+                  if (p.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                  if (p.includes('[IDOS') || p.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                  if (p.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                  return { backgroundColor: 'var(--card)', opacity: 0.6 };
+                })()}>
                   <button
                     className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
                     onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
@@ -172,13 +178,13 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
                          {pairs.map((pair, i) => {
                           const feedback = pair.assistant ? getFeedbackForMessage(pair.assistant.content) : null;
                           // Detect campaign from user message content
-                          const content = pair.user.content.toLowerCase();
+                          const content = (pair.user.content || '').toUpperCase();
                           const campaignStyle: React.CSSProperties | undefined =
-                            content.includes('[wallchain]') || content.includes('wallchain')
-                              ? { backgroundColor: 'rgba(245, 158, 11, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' }
-                            : content.includes('[idos') || content.includes('idos')
+                            content.includes('[WALLCHAIN]')
+                              ? { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' }
+                            : content.includes('[IDOS') || content.includes('[IDOS NETWORK]')
                               ? { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' }
-                            : content.includes('[beyond]') || content.includes('beyond')
+                            : content.includes('[BEYOND]')
                               ? { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' }
                             : undefined;
                           return (

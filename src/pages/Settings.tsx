@@ -443,7 +443,13 @@ export default function Settings() {
                       }
                     }
                     return (
-                      <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                      <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
+                        const p = (session.preview || '').toUpperCase();
+                        if (p.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                        if (p.includes('[IDOS') || p.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                        if (p.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                        return { backgroundColor: 'var(--card)', opacity: 0.6 };
+                      })()}>
                         <button
                           className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
                           onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
@@ -461,7 +467,13 @@ export default function Settings() {
                             {pairs.map((pair, i) => {
                               const fb = pair.assistant ? feedbackMap[pair.assistant.content?.substring(0, 100) || ""] : null;
                               return (
-                                <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-1">
+                                <div key={i} className="rounded-md border border-border/30 p-3 space-y-1" style={(() => {
+                                  const c = (pair.user.content || '').toUpperCase();
+                                  if (c.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                                  if (c.includes('[IDOS') || c.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                                  if (c.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                                  return { backgroundColor: 'var(--card)', opacity: 0.6 };
+                                })()}>
                                   <div className="text-xs">
                                     <span className="font-semibold text-primary">You:</span>{" "}
                                     <span className="text-foreground/90">{pair.user.content}</span>
