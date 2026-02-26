@@ -64,7 +64,7 @@ export function CampaignSelector({ campaign, onCampaignChange, className }: Camp
   return (
     <div className={cn("space-y-1.5", className)}>
       <p className="text-[10px] text-muted-foreground uppercase tracking-wider text-center font-semibold">Select Ecosystem</p>
-      <div className="flex flex-wrap sm:flex-nowrap gap-2">
+      <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-center">
         {campaigns.map((c) => {
           const isActive = campaign === c.id;
           return (

@@ -175,11 +175,11 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
                           const content = pair.user.content.toLowerCase();
                           const campaignStyle: React.CSSProperties | undefined =
                             content.includes('[wallchain]') || content.includes('wallchain')
-                              ? { backgroundColor: 'rgba(245, 158, 11, 0.15)', borderLeft: '3px solid rgb(251, 191, 36)' }
+                              ? { backgroundColor: 'rgba(245, 158, 11, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' }
                             : content.includes('[idos') || content.includes('idos')
-                              ? { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '3px solid rgb(52, 211, 153)' }
+                              ? { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' }
                             : content.includes('[beyond]') || content.includes('beyond')
-                              ? { backgroundColor: 'rgba(249, 115, 22, 0.15)', borderLeft: '3px solid rgb(251, 146, 60)' }
+                              ? { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' }
                             : undefined;
                           return (
                             <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={campaignStyle || { backgroundColor: 'var(--card)', opacity: 0.6 }}>
