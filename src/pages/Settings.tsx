@@ -448,7 +448,10 @@ export default function Settings() {
                         if (p.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
                         if (p.includes('[IDOS') || p.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
                         if (p.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                        return { backgroundColor: 'var(--card)', opacity: 0.6 };
+                        if (p.includes('WALLCHAIN') || p.includes('WALL CHAIN') || p.includes('INFOFI') || p.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                        if (p.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                        if (p.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                        return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
                       })()}>
                         <button
                           className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
@@ -472,7 +475,10 @@ export default function Settings() {
                                   if (c.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
                                   if (c.includes('[IDOS') || c.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
                                   if (c.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                                  return { backgroundColor: 'var(--card)', opacity: 0.6 };
+                                  if (c.includes('WALLCHAIN') || c.includes('WALL CHAIN') || c.includes('INFOFI') || c.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                                  if (c.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                                  if (c.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                                  return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
                                 })()}>
                                   <div className="text-xs">
                                     <span className="font-semibold text-primary">You:</span>{" "}
