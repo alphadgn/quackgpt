@@ -1265,7 +1265,12 @@ export default function Admin() {
                     const isExpanded = expandedAdminAudit === audit.id;
                     const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
                     return (
-                      <div key={audit.id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                      <div key={audit.id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
+                          const t = (audit.tweet_text || '').toUpperCase();
+                          if (t.includes('IDOS') || t.includes('IDOS NETWORK')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                          if (t.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                        })()}>
                         <button
                           className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
                           onClick={() => setExpandedAdminAudit(isExpanded ? null : audit.id)}
