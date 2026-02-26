@@ -190,10 +190,13 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       // Scrape context
       let context = '';
       try {
+        const campaignForScrape = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
+        const ecoMap: Record<string, string> = { 'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond' };
+        const scrapeCampaign = campaignForScrape ? ecoMap[campaignForScrape[1].toLowerCase()] : undefined;
         const scrapeResponse = await fetch(SCRAPE_URL, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ query: content }),
+          body: JSON.stringify({ query: content, campaign: scrapeCampaign }),
         });
         
         if (scrapeResponse.ok) {
