@@ -60,10 +60,24 @@ const campaigns = [
   },
 ];
 
-export function CampaignSelector({ campaign, onCampaignChange, className }: CampaignSelectorProps) {
+export function CampaignSelector({ campaign, onCampaignChange, className, showPointers = false }: CampaignSelectorProps & { showPointers?: boolean }) {
   return (
     <div className={cn("space-y-1.5", className)}>
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wider text-center font-semibold">Select Ecosystem</p>
+      <div className="flex items-center justify-center gap-2">
+        {showPointers && (
+          <span
+            className="text-xl"
+            style={{ animation: 'horizontal-bounce-right 0.7s ease-in-out infinite' }}
+          >👉</span>
+        )}
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider text-center font-semibold">Select Ecosystem</p>
+        {showPointers && (
+          <span
+            className="text-xl"
+            style={{ animation: 'horizontal-bounce-left 0.7s ease-in-out infinite' }}
+          >👈</span>
+        )}
+      </div>
       <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-center">
         {campaigns.map((c) => {
           const isActive = campaign === c.id;
