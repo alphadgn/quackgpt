@@ -133,15 +133,15 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
 
   // Campaign color mapping
   const campaignBorderColor: Record<string, string> = {
-    wallchain: "border-l-amber-400",
-    idos: "border-l-emerald-400",
-    beyond: "border-l-orange-400",
+    wallchain: "border-l-yellow-500",
+    idos: "border-l-emerald-500",
+    beyond: "border-l-red-500",
   };
 
   const campaignTextColor: Record<string, string> = {
-    wallchain: "text-amber-400",
-    idos: "text-emerald-400",
-    beyond: "text-orange-400",
+    wallchain: "text-yellow-500",
+    idos: "text-emerald-500",
+    beyond: "text-red-500",
   };
 
   const campaignLabel: Record<string, string> = {
@@ -194,7 +194,12 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
         const labelColor = detectedCampaign ? campaignTextColor[detectedCampaign] : "";
         const label = detectedCampaign ? campaignLabel[detectedCampaign] : "";
         return (
-          <div key={session.session_id} className={`rounded-lg border border-border/50 bg-card/50 overflow-hidden ${borderClass ? `border-l-2 ${borderClass}` : ""}`}>
+          <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={
+            detectedCampaign === 'wallchain' ? { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' }
+            : detectedCampaign === 'idos' ? { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' }
+            : detectedCampaign === 'beyond' ? { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' }
+            : { backgroundColor: 'var(--card)', opacity: 0.6 }
+          }>
             <button
               className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors"
               onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
@@ -221,9 +226,15 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
                 {pairs.map((pair, i) => {
                   const fbType = getFeedbackForQuery(pair.user.content);
                   const pairCampaign = detectCampaign(pair.user.content);
-                  const pairBorder = pairCampaign ? campaignBorderColor[pairCampaign] : "";
+                  const pairStyle: React.CSSProperties | undefined = pairCampaign === 'wallchain'
+                    ? { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' }
+                    : pairCampaign === 'idos'
+                    ? { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' }
+                    : pairCampaign === 'beyond'
+                    ? { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' }
+                    : undefined;
                   return (
-                    <div key={i} className={`rounded-md bg-card/60 border border-border/30 p-2.5 space-y-1.5 ${pairBorder ? `border-l-2 ${pairBorder}` : ""}`}>
+                    <div key={i} className="rounded-md border border-border/30 p-2.5 space-y-1.5" style={pairStyle || { backgroundColor: 'var(--card)', opacity: 0.6 }}>
                       <div className="text-xs">
                         <span className="font-semibold text-primary">You:</span>{" "}
                         <span className="text-foreground/90">{pair.user.content}</span>

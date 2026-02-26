@@ -15,7 +15,7 @@ import { MessageSquare, Search, Shield, Bird } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Send } from "lucide-react";
 import { useChat } from "@/hooks/useChat";
 import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
@@ -213,25 +213,39 @@ const Index = () => {
           {authenticated && (
             <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
               {/* Step 1: Always show mode selector */}
-              <div className="w-full animate-fade-in">
+              <div className="w-full animate-fade-in flex flex-col items-center">
                 <p className={`text-[10px] text-center uppercase tracking-wider font-semibold mb-1.5 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
                   {chatMode ? 'Search Mode' : '① Select a search mode'}
                 </p>
-                <ChatModeSelector mode={chatMode} onModeChange={setChatMode} />
+                <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />
               </div>
               {/* Step 2: Campaign selector - animated in after mode selected */}
-              <div className={`w-full transition-all duration-500 ${chatMode ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-2 pointer-events-none'}`}>
+              <div className={`w-full transition-all duration-500 flex flex-col items-center ${chatMode ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-2 pointer-events-none'}`}>
                 {chatMode && !campaign && (
                   <p className="text-[10px] text-center uppercase tracking-wider font-semibold mb-1.5 text-primary animate-pulse">
                     ② Select an ecosystem
                   </p>
                 )}
-                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} />
+                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} className="w-full" />
               </div>
             </div>
           )}
           {authenticated ? (
-            usageLoaded && queriesRemaining <= 0 ? (
+            !selectionComplete ? (
+              <div className="max-w-3xl mx-auto w-full">
+                <div className="relative flex items-end gap-2 p-2 rounded-2xl border border-border/30 bg-secondary/10 opacity-60 cursor-not-allowed">
+                  <textarea
+                    disabled
+                    rows={1}
+                    placeholder="Select a search mode & ecosystem above to begin..."
+                    className="flex-1 bg-transparent resize-none border-0 outline-none text-foreground placeholder:text-primary/50 px-3 py-2 text-sm leading-relaxed opacity-50 cursor-not-allowed"
+                  />
+                  <Button variant="send" size="icon" disabled className="shrink-0 opacity-50">
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ) : usageLoaded && queriesRemaining <= 0 ? (
               <div className="max-w-3xl mx-auto w-full">
                 <div
                   className="relative flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-2xl border border-destructive/40 bg-destructive/5 cursor-pointer hover:border-destructive/60 transition-colors"
