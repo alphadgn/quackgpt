@@ -189,7 +189,7 @@ const Index = () => {
         walletAddress={walletAddress}
         email={email}
         onLogin={login}
-        onLogout={logout}
+        onLogout={handleLogout}
         nftCheckLoading={nftCheckLoading}
         linkedWallets={linkedWallets}
         onLinkWallet={linkWallet}
