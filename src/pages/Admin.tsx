@@ -1158,7 +1158,13 @@ export default function Admin() {
                         }
                       }
                       return (
-                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30 bg-destructive/5' : 'border-border/50 bg-card/50'}`}>
+                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30' : 'border-border/50'}`} style={(() => {
+                          const p = (session.preview || '').toUpperCase();
+                          if (p.includes('[WALLCHAIN]') || p.includes('WALLCHAIN') || p.includes('INFOFI') || p.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                          if (p.includes('[IDOS') || p.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                          if (p.includes('[BEYOND]') || p.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                        })()}>
                           <div className="flex items-center gap-2 p-3">
                             <button
                               className="flex-1 flex items-center gap-2 text-left"
@@ -1194,7 +1200,13 @@ export default function Admin() {
                                   const fbKey = pair.user.content?.trim().toLowerCase() || "";
                                   const fb = fbKey ? historyFeedbackMap[fbKey] : null;
                                   return (
-                                    <div key={i} className="rounded-md bg-card/60 border border-border/30 p-3 space-y-2">
+                                    <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={(() => {
+                                      const c = (pair.user.content || '').toUpperCase();
+                                      if (c.includes('[WALLCHAIN]') || c.includes('WALLCHAIN') || c.includes('INFOFI') || c.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                                      if (c.includes('[IDOS') || c.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                                      if (c.includes('[BEYOND]') || c.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                                      return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                                    })()}>
                                       <div className="text-xs">
                                         <span className="font-semibold text-primary">User:</span>{' '}
                                         <span className="text-foreground/90">{pair.user.content}</span>
@@ -1253,7 +1265,12 @@ export default function Admin() {
                     const isExpanded = expandedAdminAudit === audit.id;
                     const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
                     return (
-                      <div key={audit.id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                      <div key={audit.id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
+                          const t = (audit.tweet_text || '').toUpperCase();
+                          if (t.includes('IDOS') || t.includes('IDOS NETWORK')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
+                          if (t.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
+                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
+                        })()}>
                         <button
                           className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
                           onClick={() => setExpandedAdminAudit(isExpanded ? null : audit.id)}

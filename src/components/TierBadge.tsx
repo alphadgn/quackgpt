@@ -44,7 +44,7 @@ export function TierBadge({ tier, showLimits = false, className }: TierBadgeProp
       {showLimits && (
         <div className="text-xs text-muted-foreground space-y-0.5 pl-1">
           <p>{limits.maxQueries} query/day</p>
-          <p>{limits.maxCharacters} chars max</p>
+          <p>{limits.maxCharacters} characters max/query</p>
           {limits.maxImages > 0 && <p>{limits.maxImages} images/day</p>}
         </div>
       )}

@@ -190,10 +190,13 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       // Scrape context
       let context = '';
       try {
+        const campaignForScrape = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
+        const ecoMap: Record<string, string> = { 'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond' };
+        const scrapeCampaign = campaignForScrape ? ecoMap[campaignForScrape[1].toLowerCase()] : undefined;
         const scrapeResponse = await fetch(SCRAPE_URL, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ query: content }),
+          body: JSON.stringify({ query: content, campaign: scrapeCampaign }),
         });
         
         if (scrapeResponse.ok) {
@@ -211,6 +214,15 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
         content: msg.content,
       }));
       
+      // Extract mode and ecosystem from message content for routing
+      const modeMatch = content.match(/\[QUACK CHECK\]/i);
+      const campaignMatch = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
+      const campaignToEcosystem: Record<string, string> = {
+        'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond',
+      };
+      const detectedEcosystem = campaignMatch ? campaignToEcosystem[campaignMatch[1].toLowerCase()] : undefined;
+      const detectedMode = modeMatch ? 'quack-check' : 'search';
+
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const response = await fetch(CHAT_URL, {
         method: 'POST',
@@ -218,6 +230,8 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
           context,
+          mode: detectedMode,
+          ecosystem: detectedEcosystem,
           ...(isSuperAdmin && tierOverride ? { tierOverride } : {}),
         }),
       });
