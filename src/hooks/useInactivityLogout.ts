@@ -2,6 +2,8 @@ import { useEffect, useCallback, useRef } from 'react';
 
 const INACTIVITY_TIMEOUT_MS = 3 * 60 * 1000; // 3 minutes
 
+// Also scroll to top when inactivity logout fires
+
 export function useInactivityLogout(isAuthenticated: boolean, logout: () => void) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
