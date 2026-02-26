@@ -295,11 +295,6 @@ const Index = () => {
             )
           ) : null}
           
-          <p className="text-center text-xs text-muted-foreground mt-12 mb-12 max-w-xl mx-auto">
-            QuackGPT provides information only. Not financial advice. 
-            Data sourced from Wallchain & other official channels.
-          </p>
-
           {/* Query History - below input area */}
           {authenticated && messages.length === 0 && (
             <div className="max-w-3xl mx-auto mt-6">
@@ -313,6 +308,11 @@ const Index = () => {
               </div>
             </div>
           )}
+
+          <p className="text-center text-xs text-muted-foreground mt-6 mb-12 max-w-xl mx-auto">
+            QuackGPT provides information only. Not financial advice. 
+            Data sourced from Wallchain &amp; other official channels.
+          </p>
         </div>
       </main>
       <Footer />
