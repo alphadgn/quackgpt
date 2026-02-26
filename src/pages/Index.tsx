@@ -222,7 +222,7 @@ const Index = () => {
               {/* Step 2: Campaign selector - animated in after mode selected */}
               <div className={`w-full transition-all duration-500 flex flex-col items-center ${chatMode ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-2 pointer-events-none'}`}>
                 {/* Horizontal pointing hands are rendered inside CampaignSelector */}
-                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} className="w-full" />
+                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} className="w-full" showPointers={!!chatMode && !campaign} />
               </div>
             </div>
           )}
