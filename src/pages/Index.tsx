@@ -41,26 +41,28 @@ const Index = () => {
 
   useInactivityLogout(authenticated, handleLogout);
 
-  // Always scroll to top & reset search criteria when user signs in
-  const prevAuth = useRef(false);
+  // Always scroll to top & reset search criteria when user signs in or out
+  const prevAuth = useRef<boolean | null>(null);
   useEffect(() => {
-    if (authenticated && !prevAuth.current) {
-      // User just signed in — reset criteria, navigate home, scroll to top
+    // Skip the very first render where prevAuth is null (initial mount)
+    if (prevAuth.current === null) {
+      prevAuth.current = authenticated;
+      return;
+    }
+    if (authenticated !== prevAuth.current) {
+      // Auth state changed — reset criteria
       setChatMode(null);
       setCampaign(null);
       setHistoryFilter("all");
-      if (window.location.pathname !== '/') {
+      if (authenticated && window.location.pathname !== '/') {
         navigate('/');
       }
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      // Delay scroll to ensure DOM has settled after auth state change
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      });
+      prevAuth.current = authenticated;
     }
-    if (!authenticated && prevAuth.current) {
-      // User just signed out — reset criteria
-      setChatMode(null);
-      setCampaign(null);
-      setHistoryFilter("all");
-    }
-    prevAuth.current = authenticated;
   }, [authenticated, navigate]);
   
   const { 
@@ -74,12 +76,14 @@ const Index = () => {
     usageLoaded,
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken, tierOverride, isSuperAdmin });
 
+  // Only scroll to latest message when a NEW message arrives (not on every re-render)
+  const prevMsgCount = useRef(0);
   useEffect(() => {
-    // Gentle scroll — don't hijack full-page scroll position
-    if (chatEndRef.current) {
+    if (messages.length > prevMsgCount.current && chatEndRef.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [messages, isTyping]);
+    prevMsgCount.current = messages.length;
+  }, [messages.length]);
 
   const handlePrefillConsumed = useCallback(() => {
     setPrefillMessage("");

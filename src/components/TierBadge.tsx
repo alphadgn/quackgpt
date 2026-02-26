@@ -32,9 +32,9 @@ export function TierBadge({ tier, showLimits = false, className }: TierBadgeProp
   const Icon = config.icon;
 
   return (
-    <div className={cn("flex flex-col gap-1", className)}>
+    <div className={cn("flex flex-col items-center gap-1", className)}>
       <div className={cn(
-        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border",
+        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border w-fit",
         config.className
       )}>
         <Icon className="w-3.5 h-3.5" />
@@ -42,7 +42,7 @@ export function TierBadge({ tier, showLimits = false, className }: TierBadgeProp
       </div>
       
       {showLimits && (
-        <div className="text-xs text-muted-foreground space-y-0.5 pl-1">
+        <div className="text-xs text-muted-foreground space-y-0.5 text-center">
           <p>{limits.maxQueries} query/day</p>
           <p>{limits.maxCharacters} characters max/query</p>
           {limits.maxImages > 0 && <p>{limits.maxImages} images/day</p>}
