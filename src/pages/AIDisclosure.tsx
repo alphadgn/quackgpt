@@ -7,7 +7,7 @@ import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 
 const AIDisclosure = () => {
   return (
-    <div className="min-h-screen relative z-10">
+    <div className="min-h-screen relative z-10 overflow-x-hidden">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between px-4">
