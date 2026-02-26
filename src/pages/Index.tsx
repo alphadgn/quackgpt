@@ -31,17 +31,34 @@ const Index = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  useInactivityLogout(authenticated, logout);
+  // Wrap logout to also reset search criteria
+  const handleLogout = useCallback(() => {
+    setChatMode(null);
+    setCampaign(null);
+    setHistoryFilter("all");
+    logout();
+  }, [logout]);
 
-  // Always scroll to top of welcome page when user signs in
+  useInactivityLogout(authenticated, handleLogout);
+
+  // Always scroll to top & reset search criteria when user signs in
   const prevAuth = useRef(false);
   useEffect(() => {
     if (authenticated && !prevAuth.current) {
-      // User just signed in — navigate home and scroll to top
+      // User just signed in — reset criteria, navigate home, scroll to top
+      setChatMode(null);
+      setCampaign(null);
+      setHistoryFilter("all");
       if (window.location.pathname !== '/') {
         navigate('/');
       }
       window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+    if (!authenticated && prevAuth.current) {
+      // User just signed out — reset criteria
+      setChatMode(null);
+      setCampaign(null);
+      setHistoryFilter("all");
     }
     prevAuth.current = authenticated;
   }, [authenticated, navigate]);
