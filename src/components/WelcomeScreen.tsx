@@ -287,10 +287,9 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       </p>
       
       {/* User tier with pointing hands */}
-      <div className="mb-8 flex items-center justify-center gap-3">
-        <span className="text-2xl animate-point-down">👇</span>
+      <div className="mb-8 flex flex-col items-center gap-1">
         <TierBadge tier={tier} showLimits />
-        <span className="text-2xl animate-point-down" style={{ transform: 'scaleX(-1)' }}>👇</span>
+        <span className="text-2xl animate-point-down">👇</span>
       </div>
       
       {/* Features grid */}
