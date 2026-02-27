@@ -205,11 +205,20 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           onClick={isDepleted ? handleDepletedClick : handleSubmit}
           disabled={!isDepleted && (isDisabled || !value.trim() || isBlocked)}
           className={cn(
-            "shrink-0 transition-all duration-200",
+            "shrink-0 transition-all duration-200 rounded-full overflow-hidden p-0",
             !isDepleted && (!value.trim() || isBlocked) && "opacity-50"
           )}
         >
-          <Send className="w-4 h-4" />
+          {profilePictureUrl ? (
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={profilePictureUrl} alt="Send" />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                <Send className="w-4 h-4" />
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
         </Button>
       </div>
       

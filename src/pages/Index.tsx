@@ -339,6 +339,7 @@ const Index = () => {
                 cooldownUntil={cooldownUntil}
                 privyUserId={user?.id ?? null}
                 selectionComplete={selectionComplete}
+                profilePictureUrl={profilePictureUrl}
               />
             )
           ) : null}
