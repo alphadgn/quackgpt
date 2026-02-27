@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
 import { Message } from "@/types";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useNavigate } from "react-router-dom";
@@ -46,15 +46,17 @@ const Index = () => {
   useInactivityLogout(authenticated, handleLogout);
 
   // Always scroll to top & reset search criteria when user signs in or out
+  // Track whether we just signed in so we can force scroll-to-top synchronously
+  const justSignedIn = useRef(false);
   const prevAuth = useRef<boolean | null>(null);
   useEffect(() => {
-    // Skip the very first render where prevAuth is null (initial mount)
     if (prevAuth.current === null) {
       prevAuth.current = authenticated;
+      // If page loads already authenticated, force top immediately
+      if (authenticated) justSignedIn.current = true;
       return;
     }
     if (authenticated !== prevAuth.current) {
-      // Auth state changed — reset criteria
       setChatMode(null);
       setCampaign(null);
       setHistoryFilter("all");
@@ -62,17 +64,19 @@ const Index = () => {
         navigate('/');
       }
       prevAuth.current = authenticated;
-      // On sign-in: scroll to top once after DOM settles, no repeated attempts
-      if (authenticated) {
-        requestAnimationFrame(() => {
-          document.documentElement.style.scrollBehavior = 'auto';
-          window.scrollTo(0, 0);
-          document.documentElement.style.scrollBehavior = '';
-        });
-      }
-      // On sign-out: do nothing — let the page stay where it is
+      if (authenticated) justSignedIn.current = true;
     }
   }, [authenticated, navigate]);
+
+  // Use useLayoutEffect to scroll BEFORE paint — prevents any visible jump
+  useLayoutEffect(() => {
+    if (justSignedIn.current) {
+      justSignedIn.current = false;
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+      document.documentElement.style.scrollBehavior = '';
+    }
+  });
   
   const { 
     messages, 
