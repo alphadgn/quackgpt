@@ -278,7 +278,7 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       <h1 className="text-2xl md:text-3xl font-display font-bold text-center mb-3">
         <span className="text-gradient">Wallchain & InfoFi</span>
         <br />
-        <span className="text-foreground/80">Campaign Alignment Engine</span>
+        <span className="text-foreground/80">Campaign Alignment</span>
       </h1>
       
       <p className="text-muted-foreground text-center max-w-md mb-8">
