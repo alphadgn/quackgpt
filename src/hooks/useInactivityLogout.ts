@@ -12,9 +12,12 @@ export function useInactivityLogout(isAuthenticated: boolean, logout: () => void
     if (!isAuthenticated) return;
     timerRef.current = setTimeout(() => {
       logout();
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      });
+      // Multiple scroll attempts to ensure it fires after auth state settles
+      const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      scrollToTop();
+      setTimeout(scrollToTop, 100);
+      setTimeout(scrollToTop, 300);
+      setTimeout(scrollToTop, 600);
     }, INACTIVITY_TIMEOUT_MS);
   }, [isAuthenticated, logout]);
 
