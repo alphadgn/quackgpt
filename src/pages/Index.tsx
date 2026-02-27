@@ -61,16 +61,16 @@ const Index = () => {
       if (authenticated && window.location.pathname !== '/') {
         navigate('/');
       }
-      // Force scroll to top with repeated attempts over 3 seconds to ensure it
-      // fires AFTER all async re-renders (Privy auth, usage checks, query history
-      // fetch, profile loads, etc.) complete and cause layout shifts.
-      const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      scrollToTop();
-      const timers = [50, 150, 300, 500, 800, 1200, 1800, 2500, 3000].map(
-        (ms) => setTimeout(scrollToTop, ms)
-      );
       prevAuth.current = authenticated;
-      return () => { timers.forEach(clearTimeout); };
+      // On sign-in: scroll to top once after DOM settles, no repeated attempts
+      if (authenticated) {
+        requestAnimationFrame(() => {
+          document.documentElement.style.scrollBehavior = 'auto';
+          window.scrollTo(0, 0);
+          document.documentElement.style.scrollBehavior = '';
+        });
+      }
+      // On sign-out: do nothing — let the page stay where it is
     }
   }, [authenticated, navigate]);
   
@@ -266,7 +266,7 @@ const Index = () => {
             <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
               {/* Step 1: Always show mode selector */}
               <div className="w-full animate-fade-in flex flex-col items-center">
-              <p className={`text-[52px] sm:text-[64px] leading-tight text-center uppercase tracking-wider font-bold mb-3 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
+              <p className={`text-[17px] sm:text-[21px] leading-tight text-center uppercase tracking-wider font-bold mb-3 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
                   {chatMode ? 'Search Mode' : '① Select a search mode'}
                 </p>
                 <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />
