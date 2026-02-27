@@ -252,6 +252,12 @@ export default function Settings() {
           </div>
         ) : (
           <ScrollBendContainer className="space-y-6">
+            {/* User Profile */}
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">My Profile</h2>
+              <UserProfileCard getAuthHeaders={getAuthHeaders} />
+            </section>
+
             {/* Current Tier */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Current Plan</h2>
