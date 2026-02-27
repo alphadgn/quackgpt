@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Send, AlertCircle, Loader2 } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Send, AlertCircle, Loader2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
 import { toast } from "sonner";
@@ -17,9 +18,10 @@ interface ChatInputProps {
   cooldownUntil?: number | null;
   privyUserId?: string | null;
   selectionComplete?: boolean;
+  profilePictureUrl?: string | null;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true, profilePictureUrl }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
@@ -203,11 +205,20 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           onClick={isDepleted ? handleDepletedClick : handleSubmit}
           disabled={!isDepleted && (isDisabled || !value.trim() || isBlocked)}
           className={cn(
-            "shrink-0 transition-all duration-200",
+            "shrink-0 transition-all duration-200 rounded-full overflow-hidden p-0",
             !isDepleted && (!value.trim() || isBlocked) && "opacity-50"
           )}
         >
-          <Send className="w-4 h-4" />
+          {profilePictureUrl ? (
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={profilePictureUrl} alt="Send" />
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                <Send className="w-4 h-4" />
+              </AvatarFallback>
+            </Avatar>
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
         </Button>
       </div>
       

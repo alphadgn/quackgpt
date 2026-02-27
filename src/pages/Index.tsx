@@ -21,6 +21,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { toast } from "sonner";
 
+interface UserProfileBasic {
+  profile_picture_url: string | null;
+}
+
 const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
@@ -57,15 +61,16 @@ const Index = () => {
       if (authenticated && window.location.pathname !== '/') {
         navigate('/');
       }
-      // Force scroll to top with multiple attempts to ensure it fires after
-      // all async re-renders (Privy auth, usage checks, etc.) complete
+      // Force scroll to top with repeated attempts over 3 seconds to ensure it
+      // fires AFTER all async re-renders (Privy auth, usage checks, query history
+      // fetch, profile loads, etc.) complete and cause layout shifts.
       const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       scrollToTop();
-      const t1 = setTimeout(scrollToTop, 100);
-      const t2 = setTimeout(scrollToTop, 300);
-      const t3 = setTimeout(scrollToTop, 600);
+      const timers = [50, 150, 300, 500, 800, 1200, 1800, 2500, 3000].map(
+        (ms) => setTimeout(scrollToTop, ms)
+      );
       prevAuth.current = authenticated;
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+      return () => { timers.forEach(clearTimeout); };
     }
   }, [authenticated, navigate]);
   
@@ -101,6 +106,28 @@ const Index = () => {
       ...(token ? { 'x-privy-token': token } : {}),
     };
   }, [getAccessToken]);
+
+  // Fetch user profile picture for send button avatar
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (!authenticated) { setProfilePictureUrl(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const headers = await getAuthHeaders();
+        if (!headers['x-privy-token']) return;
+        const resp = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-profile?action=get`,
+          { headers }
+        );
+        const data = await resp.json();
+        if (!cancelled && data.profile?.profile_picture_url) {
+          setProfilePictureUrl(data.profile.profile_picture_url);
+        }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [authenticated, getAuthHeaders]);
 
   const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
   const campaignLabel = campaign ? (campaignLabels[campaign] || campaign) : '';
@@ -239,7 +266,7 @@ const Index = () => {
             <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
               {/* Step 1: Always show mode selector */}
               <div className="w-full animate-fade-in flex flex-col items-center">
-              <p className={`text-[13px] sm:text-base text-center uppercase tracking-wider font-bold mb-2 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
+              <p className={`text-[52px] sm:text-[64px] leading-tight text-center uppercase tracking-wider font-bold mb-3 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
                   {chatMode ? 'Search Mode' : '① Select a search mode'}
                 </p>
                 <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />
@@ -312,6 +339,7 @@ const Index = () => {
                 cooldownUntil={cooldownUntil}
                 privyUserId={user?.id ?? null}
                 selectionComplete={selectionComplete}
+                profilePictureUrl={profilePictureUrl}
               />
             )
           ) : null}
