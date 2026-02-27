@@ -61,16 +61,16 @@ const Index = () => {
       if (authenticated && window.location.pathname !== '/') {
         navigate('/');
       }
-      // Force scroll to top with repeated attempts over 3 seconds to ensure it
-      // fires AFTER all async re-renders (Privy auth, usage checks, query history
-      // fetch, profile loads, etc.) complete and cause layout shifts.
-      const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      scrollToTop();
-      const timers = [50, 150, 300, 500, 800, 1200, 1800, 2500, 3000].map(
-        (ms) => setTimeout(scrollToTop, ms)
-      );
       prevAuth.current = authenticated;
-      return () => { timers.forEach(clearTimeout); };
+      // On sign-in: scroll to top once after DOM settles, no repeated attempts
+      if (authenticated) {
+        requestAnimationFrame(() => {
+          document.documentElement.style.scrollBehavior = 'auto';
+          window.scrollTo(0, 0);
+          document.documentElement.style.scrollBehavior = '';
+        });
+      }
+      // On sign-out: do nothing — let the page stay where it is
     }
   }, [authenticated, navigate]);
   
