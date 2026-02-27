@@ -21,6 +21,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import { toast } from "sonner";
 
+interface UserProfileBasic {
+  profile_picture_url: string | null;
+}
+
 const Index = () => {
   const { authenticated, login, logout, tier, walletAddress, email, nftCheckLoading, linkedWallets, linkWallet, unlinkWallet, user, isSuperAdmin, embeddedWallet, getAccessToken, tierOverride } = useAuth();
   const [prefillMessage, setPrefillMessage] = useState("");
