@@ -1314,11 +1314,26 @@ export default function Admin() {
               )}
             </div>
 
-            {/* User Accounts */}
+            {/* User Profiles Management */}
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <User className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground text-center flex-1">User Accounts</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">User Profiles</h2>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                  Manage
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                View, edit, ban, or delete user profiles. Users can set their own display name and profile picture from their Settings page.
+              </p>
+              <AdminUserManager getAuthHeaders={getAuthHeaders} />
+            </div>
+
+            {/* Legacy User Accounts (tier/usage) */}
+            <div className="border-y border-border/50 bg-card/30 p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <User className="w-5 h-5 text-primary" />
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">User Accounts (Tiers)</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                   {accounts.length} total
                 </span>
@@ -1357,6 +1372,24 @@ export default function Admin() {
                           </td>
                           <td className="py-3 px-2">
                             <div className="flex items-center justify-end gap-1 flex-wrap">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-xs h-7 px-2"
+                                disabled={actionLoading === `tier-${account.external_user_id}`}
+                                onClick={() => {
+                                  const tiers = ['free', 'paid', 'nft_holder'];
+                                  const currentIndex = tiers.indexOf(account.tier);
+                                  const nextTier = tiers[(currentIndex + 1) % tiers.length];
+                                  if (account.external_user_id) handleUpdateTier(account.external_user_id, nextTier);
+                                }}
+                              >
+                                {actionLoading === `tier-${account.external_user_id}` ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  account.tier
+                                )}
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
