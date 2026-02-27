@@ -33,7 +33,7 @@ const features = [
   {
     icon: Database,
     title: "🔎 Search Mode",
-    description: "Source-bound ecosystem intelligence from verified Wallchain channels.",
+    description: "Source-bound ecosystem intelligence from verified sources.",
   },
   {
     icon: Shield,
