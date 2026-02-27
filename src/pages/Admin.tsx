@@ -1,6 +1,7 @@
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
+import { AdminUserManager } from "@/components/AdminUserManager";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
