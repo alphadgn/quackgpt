@@ -45,28 +45,6 @@ const Index = () => {
 
   useInactivityLogout(authenticated, handleLogout);
 
-  // Fetch user profile picture for send button avatar
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
-  useEffect(() => {
-    if (!authenticated) { setProfilePictureUrl(null); return; }
-    let cancelled = false;
-    (async () => {
-      try {
-        const headers = await getAuthHeaders();
-        if (!headers['x-privy-token']) return;
-        const resp = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/user-profile?action=get`,
-          { headers }
-        );
-        const data = await resp.json();
-        if (!cancelled && data.profile?.profile_picture_url) {
-          setProfilePictureUrl(data.profile.profile_picture_url);
-        }
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [authenticated, getAuthHeaders]);
-
   // Always scroll to top & reset search criteria when user signs in or out
   const prevAuth = useRef<boolean | null>(null);
   useEffect(() => {
