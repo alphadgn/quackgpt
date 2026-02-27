@@ -57,11 +57,15 @@ const Index = () => {
       if (authenticated && window.location.pathname !== '/') {
         navigate('/');
       }
-      // Delay scroll to ensure DOM has settled after auth state change
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      });
+      // Force scroll to top with multiple attempts to ensure it fires after
+      // all async re-renders (Privy auth, usage checks, etc.) complete
+      const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      scrollToTop();
+      const t1 = setTimeout(scrollToTop, 100);
+      const t2 = setTimeout(scrollToTop, 300);
+      const t3 = setTimeout(scrollToTop, 600);
       prevAuth.current = authenticated;
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
   }, [authenticated, navigate]);
   
