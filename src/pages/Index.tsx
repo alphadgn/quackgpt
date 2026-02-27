@@ -57,11 +57,15 @@ const Index = () => {
       if (authenticated && window.location.pathname !== '/') {
         navigate('/');
       }
-      // Delay scroll to ensure DOM has settled after auth state change
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      });
+      // Force scroll to top with multiple attempts to ensure it fires after
+      // all async re-renders (Privy auth, usage checks, etc.) complete
+      const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      scrollToTop();
+      const t1 = setTimeout(scrollToTop, 100);
+      const t2 = setTimeout(scrollToTop, 300);
+      const t3 = setTimeout(scrollToTop, 600);
       prevAuth.current = authenticated;
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }
   }, [authenticated, navigate]);
   
@@ -235,7 +239,7 @@ const Index = () => {
             <div className="flex flex-col items-center gap-3 mb-3 max-w-3xl mx-auto">
               {/* Step 1: Always show mode selector */}
               <div className="w-full animate-fade-in flex flex-col items-center">
-                <p className={`text-[10px] text-center uppercase tracking-wider font-semibold mb-1.5 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
+              <p className={`text-[13px] sm:text-base text-center uppercase tracking-wider font-bold mb-2 transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary animate-pulse'}`}>
                   {chatMode ? 'Search Mode' : '① Select a search mode'}
                 </p>
                 <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />

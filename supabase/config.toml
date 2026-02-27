@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.ingest-sources]
 verify_jwt = false
+
+[functions.user-profile]
+verify_jwt = false

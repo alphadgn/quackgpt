@@ -23,6 +23,7 @@ export type Database = {
           id: string
           is_banned: boolean
           notes: string | null
+          profile_picture_url: string | null
           updated_at: string
         }
         Insert: {
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           is_banned?: boolean
           notes?: string | null
+          profile_picture_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -43,6 +45,7 @@ export type Database = {
           id?: string
           is_banned?: boolean
           notes?: string | null
+          profile_picture_url?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -2,6 +2,7 @@ import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/Header";
 import { TierBadge } from "@/components/TierBadge";
+import { UserProfileCard } from "@/components/UserProfileCard";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { TIER_LIMITS, UserTier } from "@/types";
@@ -251,6 +252,12 @@ export default function Settings() {
           </div>
         ) : (
           <ScrollBendContainer className="space-y-6">
+            {/* User Profile */}
+            <section className="border-y border-border/50 bg-card/50 p-6">
+              <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">My Profile</h2>
+              <UserProfileCard getAuthHeaders={getAuthHeaders} />
+            </section>
+
             {/* Current Tier */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <h2 className="text-lg font-display font-semibold text-foreground mb-4 text-center">Current Plan</h2>
