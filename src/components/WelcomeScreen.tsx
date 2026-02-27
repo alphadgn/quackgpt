@@ -286,10 +286,11 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         Ask questions, verify facts, & audit posts—no content creation, just solid, reliable information.
       </p>
       
-      {/* User tier with pointing hand */}
-      <div className="mb-8 flex items-center gap-2">
+      {/* User tier with pointing hands */}
+      <div className="mb-8 flex items-center justify-center gap-3">
         <span className="text-2xl animate-point-down">👇</span>
         <TierBadge tier={tier} showLimits />
+        <span className="text-2xl animate-point-down" style={{ transform: 'scaleX(-1)' }}>👇</span>
       </div>
       
       {/* Features grid */}

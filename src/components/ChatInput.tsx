@@ -199,27 +199,33 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
           )}
         />
         
-        <Button
-          variant="send"
-          size="icon"
-          onClick={isDepleted ? handleDepletedClick : handleSubmit}
-          disabled={!isDepleted && (isDisabled || !value.trim() || isBlocked)}
-          className={cn(
-            "shrink-0 transition-all duration-200 rounded-full overflow-hidden p-0",
-            !isDepleted && (!value.trim() || isBlocked) && "opacity-50"
-          )}
-        >
-          {profilePictureUrl ? (
-            <Avatar className="w-8 h-8">
-              <AvatarImage src={profilePictureUrl} alt="Send" />
-              <AvatarFallback className="bg-primary text-primary-foreground">
-                <Send className="w-4 h-4" />
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
-        </Button>
+        {(() => {
+          const buttonDisabled = !isDepleted && (isDisabled || !value.trim() || isBlocked);
+          const isActive = !buttonDisabled;
+          return (
+            <Button
+              variant="send"
+              size="icon"
+              onClick={isDepleted ? handleDepletedClick : handleSubmit}
+              disabled={buttonDisabled}
+              className={cn(
+                "shrink-0 transition-all duration-200 rounded-full overflow-hidden p-0",
+                !isActive && "opacity-100"
+              )}
+            >
+              {profilePictureUrl ? (
+                <Avatar className={cn("w-8 h-8 transition-all duration-200", isActive ? "opacity-100 saturate-100" : "opacity-40 saturate-0")}>
+                  <AvatarImage src={profilePictureUrl} alt="Send" className="object-cover" />
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    <Send className="w-4 h-4" />
+                  </AvatarFallback>
+                </Avatar>
+              ) : (
+                <Send className={cn("w-4 h-4", !isActive && "opacity-50")} />
+              )}
+            </Button>
+          );
+        })()}
       </div>
       
       {/* Character and query info */}
