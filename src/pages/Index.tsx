@@ -129,6 +129,7 @@ const Index = () => {
     return () => { cancelled = true; };
   }, [authenticated, getAuthHeaders]);
 
+  const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
   const campaignLabel = campaign ? (campaignLabels[campaign] || campaign) : '';
   const selectionComplete = chatMode !== null && campaign !== null;
 
