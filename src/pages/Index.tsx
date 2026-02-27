@@ -46,14 +46,13 @@ const Index = () => {
   useInactivityLogout(authenticated, handleLogout);
 
   // Always scroll to top & reset search criteria when user signs in or out
-  // Track whether we just signed in so we can force scroll-to-top synchronously
-  const justSignedIn = useRef(false);
+  // Lock scroll to top after sign-in until async content settles
+  const scrollLockUntil = useRef<number>(0);
   const prevAuth = useRef<boolean | null>(null);
   useEffect(() => {
     if (prevAuth.current === null) {
       prevAuth.current = authenticated;
-      // If page loads already authenticated, force top immediately
-      if (authenticated) justSignedIn.current = true;
+      if (authenticated) scrollLockUntil.current = Date.now() + 3000;
       return;
     }
     if (authenticated !== prevAuth.current) {
@@ -64,19 +63,29 @@ const Index = () => {
         navigate('/');
       }
       prevAuth.current = authenticated;
-      if (authenticated) justSignedIn.current = true;
+      if (authenticated) scrollLockUntil.current = Date.now() + 3000;
     }
   }, [authenticated, navigate]);
 
-  // Use useLayoutEffect to scroll BEFORE paint — prevents any visible jump
+  // Force scroll to top on every render while lock is active
   useLayoutEffect(() => {
-    if (justSignedIn.current) {
-      justSignedIn.current = false;
-      document.documentElement.style.scrollBehavior = 'auto';
+    if (Date.now() < scrollLockUntil.current) {
       window.scrollTo(0, 0);
-      document.documentElement.style.scrollBehavior = '';
     }
   });
+
+  // Also use a periodic check to catch async layout shifts during the lock window
+  useEffect(() => {
+    if (scrollLockUntil.current <= Date.now()) return;
+    const id = setInterval(() => {
+      if (Date.now() < scrollLockUntil.current) {
+        window.scrollTo(0, 0);
+      } else {
+        clearInterval(id);
+      }
+    }, 100);
+    return () => clearInterval(id);
+  }, [authenticated]);
   
   const { 
     messages, 
