@@ -278,7 +278,7 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       <h1 className="text-2xl md:text-3xl font-display font-bold text-center mb-3">
         <span className="text-gradient">Wallchain & InfoFi</span>
         <br />
-        <span className="text-foreground/80">Campaign Alignment Engine</span>
+        <span className="text-foreground/80">Campaign Alignment</span>
       </h1>
       
       <p className="text-muted-foreground text-center max-w-md mb-8">
@@ -287,10 +287,9 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       </p>
       
       {/* User tier with pointing hands */}
-      <div className="mb-8 flex items-center justify-center gap-3">
-        <span className="text-2xl animate-point-down">👇</span>
+      <div className="mb-8 flex flex-col items-center gap-1">
         <TierBadge tier={tier} showLimits />
-        <span className="text-2xl animate-point-down" style={{ transform: 'scaleX(-1)' }}>👇</span>
+        <span className="text-2xl animate-point-down">👇</span>
       </div>
       
       {/* Features grid */}

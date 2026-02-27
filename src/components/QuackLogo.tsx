@@ -59,11 +59,6 @@ export function QuackLogo({ className, showText = true, size = 'md' }: QuackLogo
           )}>
             quackGPT
           </span>
-          {size !== 'sm' && (
-            <span className="text-xs text-muted-foreground tracking-wider uppercase">
-              Campaign Intelligence Engine
-            </span>
-          )}
         </div>
       )}
     </div>
