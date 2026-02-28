@@ -740,11 +740,18 @@ export default function Admin() {
                   ) : (
                     <div className="space-y-3">
                       {securityScans[0]?.summary && (
-                        <p className="text-xs font-medium text-foreground p-3 rounded-lg border border-border/30 bg-card/50">{securityScans[0].summary}</p>
+                        <div className="p-3 rounded-lg border border-border/30 bg-card/50">
+                          <p className="text-xs font-medium text-foreground">{securityScans[0].summary}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {new Date(securityScans[0].started_at).toLocaleDateString()} · {new Date(securityScans[0].started_at).toLocaleTimeString()}
+                          </p>
+                        </div>
                       )}
                       {securityScans[0]?.findings && (
                         <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
-                          {securityScans[0].findings.map((f, fi) => (
+                          {securityScans[0].findings
+                            .filter(f => f.severity !== "ok")
+                            .map((f, fi) => (
                             <div key={fi} className={`text-xs rounded-md px-3 py-2 ${
                               f.severity === "critical" ? "bg-destructive/10 border border-destructive/20"
                               : f.severity === "high" ? "bg-destructive/5 border border-destructive/10"
@@ -781,6 +788,11 @@ export default function Admin() {
                               ) : null}
                             </div>
                           ))}
+                          {securityScans[0].findings.filter(f => f.severity !== "ok").length === 0 && (
+                            <div className="text-center py-4">
+                              <p className="text-sm text-primary">✅ All clear — no active issues</p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
