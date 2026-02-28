@@ -11,6 +11,7 @@ import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatModeSelector, ChatMode } from "@/components/ChatModeSelector";
 import { CampaignSelector, Campaign } from "@/components/CampaignSelector";
 import { InlineQueryHistory } from "@/components/WelcomeScreen";
+import { GlowBracket } from "@/components/GlowBracket";
 import { MessageSquare, Search, Shield, Bird } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
