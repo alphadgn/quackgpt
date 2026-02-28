@@ -65,19 +65,15 @@ export function CampaignSelector({ campaign, onCampaignChange, className, showPo
   return (
     <div className={cn("space-y-1", className)}>
       <div className="flex items-center justify-center gap-2">
-        {showPointers && (
-          <span
-            className="text-xl"
-            style={{ animation: 'horizontal-bounce-right 0.7s ease-in-out infinite' }}
-          >👉</span>
-        )}
+        <span
+          className={`text-xl transition-all duration-500 ${showPointers ? 'opacity-100 w-7' : 'opacity-0 w-0'}`}
+          style={{ animation: showPointers ? 'horizontal-bounce-right 0.7s ease-in-out infinite' : 'none', overflow: 'hidden' }}
+        >👉</span>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider text-center font-semibold">Select Ecosystem</p>
-        {showPointers && (
-          <span
-            className="text-xl"
-            style={{ animation: 'horizontal-bounce-left 0.7s ease-in-out infinite' }}
-          >👈</span>
-        )}
+        <span
+          className={`text-xl transition-all duration-500 ${showPointers ? 'opacity-100 w-7' : 'opacity-0 w-0'}`}
+          style={{ animation: showPointers ? 'horizontal-bounce-left 0.7s ease-in-out infinite' : 'none', overflow: 'hidden' }}
+        >👈</span>
       </div>
       <GlowBracket visible={showPointers} />
       <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-center">

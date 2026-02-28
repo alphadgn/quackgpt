@@ -28,11 +28,15 @@ export function GlowBracket({ visible }: GlowBracketProps) {
 
   return (
     <div
-      className={`w-full flex justify-center transition-opacity duration-500 ${
-        visible ? "opacity-100" : "opacity-0"
-      }`}
+      className="w-full flex justify-center"
       aria-hidden="true"
-      style={{ margin: "4px 0" }}
+      style={{
+        margin: "4px 0",
+        transition: "opacity 500ms ease, max-height 500ms ease",
+        opacity: visible ? 1 : 0,
+        maxHeight: visible ? "60px" : "0px",
+        overflow: "hidden",
+      }}
     >
       <svg
         viewBox="0 0 300 52"
