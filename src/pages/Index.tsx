@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Message } from "@/types";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useNavigate } from "react-router-dom";
