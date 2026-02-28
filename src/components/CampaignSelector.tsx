@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { GlowBracket } from "@/components/GlowBracket";
 
 export type Campaign = "wallchain" | "idos" | "beyond";
 
@@ -62,7 +63,7 @@ const campaigns = [
 
 export function CampaignSelector({ campaign, onCampaignChange, className, showPointers = false }: CampaignSelectorProps & { showPointers?: boolean }) {
   return (
-    <div className={cn("space-y-1.5", className)}>
+    <div className={cn("space-y-1", className)}>
       <div className="flex items-center justify-center gap-2">
         {showPointers && (
           <span
@@ -78,6 +79,7 @@ export function CampaignSelector({ campaign, onCampaignChange, className, showPo
           >👈</span>
         )}
       </div>
+      <GlowBracket visible={showPointers} />
       <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-center">
         {campaigns.map((c) => {
           const isActive = campaign === c.id;
