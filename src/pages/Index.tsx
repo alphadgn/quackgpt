@@ -47,13 +47,10 @@ const Index = () => {
   useInactivityLogout(authenticated, handleLogout);
 
   // Always scroll to top & reset search criteria when user signs in or out
-  // Lock scroll to top after sign-in until async content settles
-  const scrollLockUntil = useRef<number>(0);
   const prevAuth = useRef<boolean | null>(null);
   useEffect(() => {
     if (prevAuth.current === null) {
       prevAuth.current = authenticated;
-      if (authenticated) scrollLockUntil.current = Date.now() + 3000;
       return;
     }
     if (authenticated !== prevAuth.current) {
@@ -64,29 +61,9 @@ const Index = () => {
         navigate('/');
       }
       prevAuth.current = authenticated;
-      if (authenticated) scrollLockUntil.current = Date.now() + 3000;
-    }
-  }, [authenticated, navigate]);
-
-  // Force scroll to top on every render while lock is active
-  useLayoutEffect(() => {
-    if (Date.now() < scrollLockUntil.current) {
       window.scrollTo(0, 0);
     }
-  });
-
-  // Also use a periodic check to catch async layout shifts during the lock window
-  useEffect(() => {
-    if (scrollLockUntil.current <= Date.now()) return;
-    const id = setInterval(() => {
-      if (Date.now() < scrollLockUntil.current) {
-        window.scrollTo(0, 0);
-      } else {
-        clearInterval(id);
-      }
-    }, 100);
-    return () => clearInterval(id);
-  }, [authenticated]);
+  }, [authenticated, navigate]);
   
   const { 
     messages, 
