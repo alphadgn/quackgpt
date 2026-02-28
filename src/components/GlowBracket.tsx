@@ -10,7 +10,7 @@
  * A traveling glow pulse sweeps top→bottom continuously.
  */
 
-import { useEffect, useState, useId } from "react";
+import { useId } from "react";
 
 interface GlowBracketProps {
   visible: boolean;
