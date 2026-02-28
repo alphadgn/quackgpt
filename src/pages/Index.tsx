@@ -281,22 +281,17 @@ const Index = () => {
               {/* Step 1: Always show mode selector */}
               <div className="w-full animate-fade-in flex flex-col items-center">
               <div className="flex items-center justify-center gap-2 mb-1">
-                {!chatMode && (
-                  <span className="text-xl" style={{ animation: 'horizontal-bounce-right 0.7s ease-in-out infinite' }}>👉</span>
-                )}
-                <p className={`text-[17px] sm:text-[21px] leading-tight text-center uppercase tracking-wider font-bold transition-colors duration-300 ${chatMode ? 'text-muted-foreground' : 'text-primary'}`}>
-                  {chatMode ? 'Search Mode' : 'Select a search mode'}
+                <span className={`text-xl transition-all duration-500 ${!chatMode ? 'opacity-100 w-7' : 'opacity-0 w-0'}`} style={{ animation: !chatMode ? 'horizontal-bounce-right 0.7s ease-in-out infinite' : 'none', overflow: 'hidden' }}>👉</span>
+                <p className={`text-[17px] sm:text-[21px] leading-tight text-center uppercase tracking-wider font-bold transition-colors duration-500 ${chatMode ? 'text-muted-foreground' : 'text-primary'}`}>
+                  Select a search mode
                 </p>
-                {!chatMode && (
-                  <span className="text-xl" style={{ animation: 'horizontal-bounce-left 0.7s ease-in-out infinite' }}>👈</span>
-                )}
+                <span className={`text-xl transition-all duration-500 ${!chatMode ? 'opacity-100 w-7' : 'opacity-0 w-0'}`} style={{ animation: !chatMode ? 'horizontal-bounce-left 0.7s ease-in-out infinite' : 'none', overflow: 'hidden' }}>👈</span>
               </div>
                 <GlowBracket visible={!chatMode} />
                 <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />
               </div>
               {/* Step 2: Campaign selector - animated in after mode selected */}
-              <div className={`w-full transition-all duration-500 flex flex-col items-center ${chatMode ? 'opacity-100 translate-y-0' : 'opacity-30 translate-y-2 pointer-events-none'}`}>
-                {/* Horizontal pointing hands are rendered inside CampaignSelector */}
+              <div className={`w-full transition-all duration-500 ease-in-out flex flex-col items-center ${chatMode ? 'opacity-100 max-h-40 translate-y-0' : 'opacity-0 max-h-0 translate-y-2 pointer-events-none overflow-hidden'}`}>
                 <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} className="w-full" showPointers={!!chatMode && !campaign} />
               </div>
             </div>

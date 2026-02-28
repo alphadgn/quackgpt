@@ -10,25 +10,14 @@
  * A traveling glow pulse sweeps top→bottom continuously.
  */
 
-import { useEffect, useState, useId } from "react";
+import { useId } from "react";
 
 interface GlowBracketProps {
   visible: boolean;
 }
 
 export function GlowBracket({ visible }: GlowBracketProps) {
-  const [mounted, setMounted] = useState(visible);
   const uid = useId().replace(/:/g, "");
-
-  useEffect(() => {
-    if (visible) setMounted(true);
-    else {
-      const t = setTimeout(() => setMounted(false), 500);
-      return () => clearTimeout(t);
-    }
-  }, [visible]);
-
-  if (!mounted) return null;
 
   const glowId = `bracketGlow${uid}`;
   const travelId = `travelGlow${uid}`;
@@ -39,11 +28,15 @@ export function GlowBracket({ visible }: GlowBracketProps) {
 
   return (
     <div
-      className={`w-full flex justify-center transition-opacity duration-500 ${
-        visible ? "opacity-100" : "opacity-0"
-      }`}
+      className="w-full flex justify-center"
       aria-hidden="true"
-      style={{ margin: "4px 0" }}
+      style={{
+        margin: "4px 0",
+        transition: "opacity 500ms ease, max-height 500ms ease",
+        opacity: visible ? 1 : 0,
+        maxHeight: visible ? "60px" : "0px",
+        overflow: "hidden",
+      }}
     >
       <svg
         viewBox="0 0 300 52"
