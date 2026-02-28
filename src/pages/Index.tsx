@@ -291,6 +291,7 @@ const Index = () => {
                   <span className="text-xl" style={{ animation: 'horizontal-bounce-left 0.7s ease-in-out infinite' }}>👈</span>
                 )}
               </div>
+                <GlowBracket visible={!chatMode} />
                 <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />
               </div>
               {/* Step 2: Campaign selector - animated in after mode selected */}
