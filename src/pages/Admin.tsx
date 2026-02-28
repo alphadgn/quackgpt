@@ -935,7 +935,7 @@ export default function Admin() {
                               {scan.summary && (
                                 <p className="text-xs font-medium text-foreground mb-2">{scan.summary}</p>
                               )}
-                              {scan.findings.map((f, fi) => (
+                              {scan.findings.filter(f => f.severity !== "ok").map((f, fi) => (
                                 <div key={fi} className={`text-xs rounded-md px-3 py-2 ${
                                   f.severity === "critical"
                                     ? "bg-destructive/10 border border-destructive/20"
@@ -959,6 +959,9 @@ export default function Admin() {
                                   <p className="text-muted-foreground mt-0.5">{f.detail}</p>
                                 </div>
                               ))}
+                              {scan.findings.filter(f => f.severity !== "ok").length === 0 && (
+                                <p className="text-sm text-primary text-center py-3">✅ All clear — no issues in this scan</p>
+                              )}
                             </div>
                           )}
                         </details>
