@@ -674,6 +674,22 @@ serve(async (req) => {
         .eq("id", scanRecord.id);
 
       // Persist individual findings to security_findings table
+      // First, collect titles of all "ok" findings from this scan — these are resolved issues
+      const resolvedTitles = results.findings
+        .filter(f => f.severity === "ok")
+        .map(f => f.title);
+
+      // Auto-close any previously open findings whose title matches a now-ok result
+      if (resolvedTitles.length > 0) {
+        for (const title of resolvedTitles) {
+          await supabase
+            .from("security_findings")
+            .update({ status: "resolved" })
+            .eq("status", "open")
+            .eq("title", title);
+        }
+      }
+
       const findingsToInsert = results.findings
         .filter(f => f.severity !== "ok")
         .map(f => ({
@@ -696,14 +712,16 @@ serve(async (req) => {
         await supabase.from("security_findings").insert(findingsToInsert);
       }
 
-      // Clean up old scans (keep only last 48)
+      // Clean up old scans (keep only last 24)
       const { data: allScans } = await supabase
         .from("security_scans")
         .select("id")
         .order("started_at", { ascending: false });
 
-      if (allScans && allScans.length > 48) {
-        const toDelete = allScans.slice(48).map((s: any) => s.id);
+      if (allScans && allScans.length > 24) {
+        const toDelete = allScans.slice(24).map((s: any) => s.id);
+        // Also clean up findings tied to deleted scans
+        await supabase.from("security_findings").delete().in("scan_id", toDelete);
         await supabase.from("security_scans").delete().in("id", toDelete);
       }
 
