@@ -34,14 +34,14 @@ export function GlowBracket({ visible }: GlowBracketProps) {
         margin: "4px 0",
         transition: "opacity 500ms ease, max-height 500ms ease",
         opacity: visible ? 1 : 0,
-        maxHeight: visible ? "60px" : "0px",
+        maxHeight: visible ? "80px" : "0px",
         overflow: "hidden",
       }}
     >
       <svg
-        viewBox="0 0 300 52"
+        viewBox="0 0 300 62"
         className="w-full h-auto"
-        style={{ maxWidth: "100%", minHeight: "36px", overflow: "visible" }}
+        style={{ maxWidth: "100%", minHeight: "40px", overflow: "visible" }}
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -93,28 +93,28 @@ export function GlowBracket({ visible }: GlowBracketProps) {
           <line x1="40" y1="14" x2="260" y2="14"
             stroke={yellow} strokeWidth={sw} strokeLinecap="round" />
 
-          {/* Left vertical drop */}
-          <line x1="40" y1="14" x2="40" y2="38"
+          {/* Left vertical drop — from bar down to arrow tip */}
+          <line x1="40" y1="14" x2="40" y2="48"
             stroke={`url(#${travelId})`} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Center vertical drop */}
-          <line x1="150" y1="14" x2="150" y2="38"
+          <line x1="150" y1="14" x2="150" y2="48"
             stroke={`url(#${travelId})`} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Right vertical drop */}
-          <line x1="260" y1="14" x2="260" y2="38"
+          <line x1="260" y1="14" x2="260" y2="48"
             stroke={`url(#${travelId})`} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Left arrow chevron */}
-          <polyline points="32,30 40,42 48,30"
+          <polyline points="32,40 40,52 48,40"
             stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
 
           {/* Center arrow chevron */}
-          <polyline points="142,30 150,42 158,30"
+          <polyline points="142,40 150,52 158,40"
             stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
 
           {/* Right arrow chevron */}
-          <polyline points="252,30 260,42 268,30"
+          <polyline points="252,40 260,52 268,40"
             stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
       </svg>

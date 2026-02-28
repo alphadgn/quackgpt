@@ -31,9 +31,14 @@ export function Footer() {
     <footer className="border-t border-border/50 bg-background/50 backdrop-blur-sm">
       <div className="container max-w-4xl mx-auto px-4 py-6">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-muted-foreground">
-            All rights reserved QuackGPT 2026
-          </p>
+          <div className="flex flex-col items-center sm:items-start gap-0.5">
+            <p className="text-xs text-muted-foreground">
+              Not affiliated with Wallchain Inc.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              All rights reserved QuackGPT 2026
+            </p>
+          </div>
           
           <nav className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
             <a 
