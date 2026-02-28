@@ -17,18 +17,7 @@ interface GlowBracketProps {
 }
 
 export function GlowBracket({ visible }: GlowBracketProps) {
-  const [mounted, setMounted] = useState(visible);
   const uid = useId().replace(/:/g, "");
-
-  useEffect(() => {
-    if (visible) setMounted(true);
-    else {
-      const t = setTimeout(() => setMounted(false), 500);
-      return () => clearTimeout(t);
-    }
-  }, [visible]);
-
-  if (!mounted) return null;
 
   const glowId = `bracketGlow${uid}`;
   const travelId = `travelGlow${uid}`;
