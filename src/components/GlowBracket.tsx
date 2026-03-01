@@ -1,5 +1,5 @@
 /**
- * GlowBracket – yellow bracket-and-arrows SVG overlay.
+ * GlowBracket – yellow bracket-and-arrows SVG overlay with heartbeat pulse.
  *
  * Shape:
  *        |              (vertical stem from top center)
@@ -7,7 +7,12 @@
  *   |    |    |         (three vertical drops)
  *   ↓    ↓    ↓         (arrow tips)
  *
- * A single light-ball travels: top stem → splits at bar → three drops simultaneously.
+ * A single heartbeat pulse travels:
+ *   Phase 1 (0%–20%):   Down the center stem to the junction
+ *   Phase 2 (20%–45%):  Splits left & right along bar to edges
+ *   Phase 3 (45%–90%):  All three drops travel down simultaneously to arrow tips
+ *   Phase 4 (90%–100%): Fade out, reset
+ *
  * One full cycle = 0.7s, synced with the pointing-finger bounce.
  */
 
@@ -21,23 +26,94 @@ export function GlowBracket({ visible }: GlowBracketProps) {
   const uid = useId().replace(/:/g, "");
 
   const yellow = "hsl(42, 92%, 58%)";
-  const yellowBright = "hsl(42, 100%, 85%)";
   const sw = 2.5;
-  const dur = "0.7s";
-
-  // Unique IDs for this instance
-  const glowId = `glow${uid}`;
-  const ballStem = `ballStem${uid}`;
-  const ballBarL = `ballBarL${uid}`;
-  const ballBarR = `ballBarR${uid}`;
-  const ballDropL = `ballDropL${uid}`;
-  const ballDropC = `ballDropC${uid}`;
-  const ballDropR = `ballDropR${uid}`;
 
   // Geometry
   const cx = 150, barY = 14, stemTop = 2;
   const lx = 40, rx = 260;
-  const dropEnd = 48, chevronTip = 52;
+  const dropEnd = 46, chevronTip = 54;
+
+  // Unique filter/gradient IDs
+  const glowId = `glow${uid}`;
+  const pulseGrad = `pulse${uid}`;
+
+  // CSS keyframe animation names scoped by uid
+  const stemAnim = `stem${uid}`;
+  const barLAnim = `barL${uid}`;
+  const barRAnim = `barR${uid}`;
+  const dropLAnim = `dropL${uid}`;
+  const dropCAnim = `dropC${uid}`;
+  const dropRAnim = `dropR${uid}`;
+
+  const dur = "0.7s";
+
+  // Keyframes CSS for the heartbeat pulse
+  const keyframesCSS = `
+    @keyframes ${stemAnim} {
+      0%   { offset-distance: 0%; opacity: 1; }
+      20%  { offset-distance: 100%; opacity: 1; }
+      21%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes ${barLAnim} {
+      0%   { offset-distance: 0%; opacity: 0; }
+      19%  { opacity: 0; }
+      20%  { offset-distance: 0%; opacity: 1; }
+      45%  { offset-distance: 100%; opacity: 1; }
+      46%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes ${barRAnim} {
+      0%   { offset-distance: 0%; opacity: 0; }
+      19%  { opacity: 0; }
+      20%  { offset-distance: 0%; opacity: 1; }
+      45%  { offset-distance: 100%; opacity: 1; }
+      46%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes ${dropLAnim} {
+      0%   { offset-distance: 0%; opacity: 0; }
+      44%  { opacity: 0; }
+      45%  { offset-distance: 0%; opacity: 1; }
+      90%  { offset-distance: 100%; opacity: 1; }
+      95%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes ${dropCAnim} {
+      0%   { offset-distance: 0%; opacity: 0; }
+      44%  { opacity: 0; }
+      45%  { offset-distance: 0%; opacity: 1; }
+      90%  { offset-distance: 100%; opacity: 1; }
+      95%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+    @keyframes ${dropRAnim} {
+      0%   { offset-distance: 0%; opacity: 0; }
+      44%  { opacity: 0; }
+      45%  { offset-distance: 0%; opacity: 1; }
+      90%  { offset-distance: 100%; opacity: 1; }
+      95%  { opacity: 0; }
+      100% { opacity: 0; }
+    }
+  `;
+
+  const ballSize = 8;
+  const ballStyle = (animName: string, path: string): React.CSSProperties => ({
+    position: "absolute" as const,
+    width: ballSize,
+    height: ballSize,
+    borderRadius: "50%",
+    background: "radial-gradient(circle, hsl(42,100%,85%) 0%, hsl(42,100%,85%,0) 70%)",
+    boxShadow: "0 0 6px 2px hsl(42,100%,75%,0.6)",
+    offsetPath: `path("${path}")`,
+    offsetRotate: "0deg",
+    animation: `${animName} ${dur} ease-in-out infinite`,
+    pointerEvents: "none" as const,
+  });
+
+  // SVG path strings for each segment (in SVG viewBox coords, scaled via transform)
+  // We'll use absolutely positioned divs with offset-path instead
+  // But offset-path works better with the SVG coordinate system, so let's use SVG circles with SMIL
 
   return (
     <div
@@ -51,6 +127,7 @@ export function GlowBracket({ visible }: GlowBracketProps) {
         overflow: "hidden",
       }}
     >
+      <style>{keyframesCSS}</style>
       <svg
         viewBox="0 0 300 62"
         className="w-full h-auto"
@@ -66,16 +143,22 @@ export function GlowBracket({ visible }: GlowBracketProps) {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-
-          {/* Radial glow ball */}
-          <radialGradient id={`ball${uid}`} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor={yellowBright} stopOpacity="1" />
-            <stop offset="100%" stopColor={yellowBright} stopOpacity="0" />
+          <radialGradient id={pulseGrad} cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="hsl(42,100%,85%)" stopOpacity="1" />
+            <stop offset="100%" stopColor="hsl(42,100%,85%)" stopOpacity="0" />
           </radialGradient>
+
+          {/* Paths for the heartbeat pulse to follow */}
+          <path id={`pathStem${uid}`} d={`M${cx},${stemTop} L${cx},${barY}`} />
+          <path id={`pathBarL${uid}`} d={`M${cx},${barY} L${lx},${barY}`} />
+          <path id={`pathBarR${uid}`} d={`M${cx},${barY} L${rx},${barY}`} />
+          <path id={`pathDropL${uid}`} d={`M${lx},${barY} L${lx},${chevronTip}`} />
+          <path id={`pathDropC${uid}`} d={`M${cx},${barY} L${cx},${chevronTip}`} />
+          <path id={`pathDropR${uid}`} d={`M${rx},${barY} L${rx},${chevronTip}`} />
         </defs>
 
         <g filter={`url(#${glowId})`}>
-          {/* === Static bracket structure in base yellow === */}
+          {/* === Static bracket structure === */}
 
           {/* Top vertical stem */}
           <line x1={cx} y1={stemTop} x2={cx} y2={barY}
@@ -110,60 +193,54 @@ export function GlowBracket({ visible }: GlowBracketProps) {
             stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
 
-        {/* === Animated light balls === */}
+        {/* === Heartbeat pulse balls using SMIL animateMotion === */}
 
-        {/* Ball traveling down center stem (phase 1: 0% → 20%) */}
-        <circle r="5" fill={`url(#ball${uid})`} opacity="0">
-          <animate attributeName="cx" values={`${cx};${cx}`} dur={dur} repeatCount="indefinite" />
-          <animate attributeName="cy" values={`${stemTop};${barY}`} dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.2" keySplines="0.4 0 0.2 1" calcMode="spline" />
-          <animate attributeName="opacity" values="1;1;0;0" dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.18;0.22;1" calcMode="linear" />
+        {/* Phase 1: Down the center stem */}
+        <circle r="5" fill={`url(#${pulseGrad})`}>
+          <animateMotion dur={dur} repeatCount="indefinite" keyTimes="0;0.2;0.201;1" keyPoints="0;1;1;1" calcMode="linear">
+            <mpath href={`#pathStem${uid}`} />
+          </animateMotion>
+          <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.19;0.21;1" dur={dur} repeatCount="indefinite" />
         </circle>
 
-        {/* Ball splitting left along bar (phase 2: 20% → 40%) */}
-        <circle r="5" fill={`url(#ball${uid})`} opacity="0">
-          <animate attributeName="cx" values={`${cx};${lx}`} dur={dur} repeatCount="indefinite"
-            keyTimes="0.2;0.4" keySplines="0.4 0 0.2 1" calcMode="spline" />
-          <animate attributeName="cy" values={`${barY};${barY}`} dur={dur} repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0;1;1;0;0" dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.2;0.38;0.42;1" calcMode="linear" />
+        {/* Phase 2: Split left along bar */}
+        <circle r="5" fill={`url(#${pulseGrad})`}>
+          <animateMotion dur={dur} repeatCount="indefinite" keyTimes="0;0.2;0.45;1" keyPoints="0;0;1;1" calcMode="linear">
+            <mpath href={`#pathBarL${uid}`} />
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.19;0.2;0.44;0.46;1" dur={dur} repeatCount="indefinite" />
         </circle>
 
-        {/* Ball splitting right along bar (phase 2: 20% → 40%) */}
-        <circle r="5" fill={`url(#ball${uid})`} opacity="0">
-          <animate attributeName="cx" values={`${cx};${rx}`} dur={dur} repeatCount="indefinite"
-            keyTimes="0.2;0.4" keySplines="0.4 0 0.2 1" calcMode="spline" />
-          <animate attributeName="cy" values={`${barY};${barY}`} dur={dur} repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0;1;1;0;0" dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.2;0.38;0.42;1" calcMode="linear" />
+        {/* Phase 2: Split right along bar */}
+        <circle r="5" fill={`url(#${pulseGrad})`}>
+          <animateMotion dur={dur} repeatCount="indefinite" keyTimes="0;0.2;0.45;1" keyPoints="0;0;1;1" calcMode="linear">
+            <mpath href={`#pathBarR${uid}`} />
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.19;0.2;0.44;0.46;1" dur={dur} repeatCount="indefinite" />
         </circle>
 
-        {/* Left drop ball (phase 3: 40% → 85%) */}
-        <circle r="5" fill={`url(#ball${uid})`} opacity="0">
-          <animate attributeName="cx" values={`${lx};${lx}`} dur={dur} repeatCount="indefinite" />
-          <animate attributeName="cy" values={`${barY};${chevronTip}`} dur={dur} repeatCount="indefinite"
-            keyTimes="0.4;0.85" keySplines="0.4 0 0.2 1" calcMode="spline" />
-          <animate attributeName="opacity" values="0;0;1;1;0;0" dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.38;0.42;0.83;0.87;1" calcMode="linear" />
+        {/* Phase 3: Left drop */}
+        <circle r="5" fill={`url(#${pulseGrad})`}>
+          <animateMotion dur={dur} repeatCount="indefinite" keyTimes="0;0.45;0.9;1" keyPoints="0;0;1;1" calcMode="linear">
+            <mpath href={`#pathDropL${uid}`} />
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.44;0.45;0.89;0.92;1" dur={dur} repeatCount="indefinite" />
         </circle>
 
-        {/* Center drop ball (phase 3: 40% → 85%) */}
-        <circle r="5" fill={`url(#ball${uid})`} opacity="0">
-          <animate attributeName="cx" values={`${cx};${cx}`} dur={dur} repeatCount="indefinite" />
-          <animate attributeName="cy" values={`${barY};${chevronTip}`} dur={dur} repeatCount="indefinite"
-            keyTimes="0.4;0.85" keySplines="0.4 0 0.2 1" calcMode="spline" />
-          <animate attributeName="opacity" values="0;0;1;1;0;0" dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.38;0.42;0.83;0.87;1" calcMode="linear" />
+        {/* Phase 3: Center drop */}
+        <circle r="5" fill={`url(#${pulseGrad})`}>
+          <animateMotion dur={dur} repeatCount="indefinite" keyTimes="0;0.45;0.9;1" keyPoints="0;0;1;1" calcMode="linear">
+            <mpath href={`#pathDropC${uid}`} />
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.44;0.45;0.89;0.92;1" dur={dur} repeatCount="indefinite" />
         </circle>
 
-        {/* Right drop ball (phase 3: 40% → 85%) */}
-        <circle r="5" fill={`url(#ball${uid})`} opacity="0">
-          <animate attributeName="cx" values={`${rx};${rx}`} dur={dur} repeatCount="indefinite" />
-          <animate attributeName="cy" values={`${barY};${chevronTip}`} dur={dur} repeatCount="indefinite"
-            keyTimes="0.4;0.85" keySplines="0.4 0 0.2 1" calcMode="spline" />
-          <animate attributeName="opacity" values="0;0;1;1;0;0" dur={dur} repeatCount="indefinite"
-            keyTimes="0;0.38;0.42;0.83;0.87;1" calcMode="linear" />
+        {/* Phase 3: Right drop */}
+        <circle r="5" fill={`url(#${pulseGrad})`}>
+          <animateMotion dur={dur} repeatCount="indefinite" keyTimes="0;0.45;0.9;1" keyPoints="0;0;1;1" calcMode="linear">
+            <mpath href={`#pathDropR${uid}`} />
+          </animateMotion>
+          <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.44;0.45;0.89;0.92;1" dur={dur} repeatCount="indefinite" />
         </circle>
       </svg>
     </div>
