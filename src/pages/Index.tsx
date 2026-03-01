@@ -51,6 +51,10 @@ const Index = () => {
   useEffect(() => {
     if (prevAuth.current === null) {
       prevAuth.current = authenticated;
+      // On initial mount, if already authenticated, scroll to top
+      if (authenticated) {
+        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      }
       return;
     }
     if (authenticated !== prevAuth.current) {
@@ -61,7 +65,10 @@ const Index = () => {
         navigate('/');
       }
       prevAuth.current = authenticated;
-      window.scrollTo(0, 0);
+      // Force scroll to top immediately and again after a brief delay to override any async layout shifts
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }));
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }), 100);
     }
   }, [authenticated, navigate]);
   
