@@ -65,12 +65,17 @@ const Index = () => {
         navigate('/');
       }
       prevAuth.current = authenticated;
+      // Suppress chat auto-scroll for a brief window after auth change
+      justAuthChanged.current = true;
       // Force scroll to top immediately and again after a brief delay to override any async layout shifts
       window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
       requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }));
       setTimeout(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }), 100);
+      setTimeout(() => { justAuthChanged.current = false; }, 500);
     }
   }, [authenticated, navigate]);
+
+  const justAuthChanged = useRef(false);
   
   const { 
     messages, 
