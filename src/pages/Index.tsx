@@ -91,7 +91,7 @@ const Index = () => {
   // Only scroll to latest message when a NEW message arrives (not on every re-render)
   const prevMsgCount = useRef(0);
   useEffect(() => {
-    if (messages.length > prevMsgCount.current && chatEndRef.current) {
+    if (messages.length > prevMsgCount.current && chatEndRef.current && !justAuthChanged.current) {
       chatEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
     prevMsgCount.current = messages.length;
