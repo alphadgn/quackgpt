@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, AlertCircle, Loader2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
+import type { Campaign } from "@/components/CampaignSelector";
 import { toast } from "sonner";
 
 interface ChatInputProps {
@@ -19,9 +20,10 @@ interface ChatInputProps {
   privyUserId?: string | null;
   selectionComplete?: boolean;
   profilePictureUrl?: string | null;
+  campaign?: Campaign | null;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true, profilePictureUrl }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true, profilePictureUrl, campaign }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
