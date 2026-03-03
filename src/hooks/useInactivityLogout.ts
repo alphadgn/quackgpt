@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 const INACTIVITY_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -9,52 +9,63 @@ export function useInactivityLogout(isAuthenticated: boolean, logout: () => void
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const warningFiredRef = useRef(false);
-
-  const clearAllTimers = useCallback(() => {
-    if (mainTimerRef.current) clearTimeout(mainTimerRef.current);
-    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
-    if (countdownRef.current) clearInterval(countdownRef.current);
-    warningFiredRef.current = false;
-  }, []);
-
-  const resetTimer = useCallback(() => {
-    clearAllTimers();
-    if (!isAuthenticated) return;
-
-    // Warning fires 10s before logout
-    warningTimerRef.current = setTimeout(() => {
-      warningFiredRef.current = true;
-      let secondsLeft = 10;
-      const toastId = 'inactivity-warning';
-      toast.warning(`Signing out in ${secondsLeft}s due to inactivity…`, {
-        id: toastId,
-        duration: WARNING_BEFORE_MS + 1000,
-      });
-      countdownRef.current = setInterval(() => {
-        secondsLeft -= 1;
-        if (secondsLeft > 0) {
-          toast.warning(`Signing out in ${secondsLeft}s due to inactivity…`, {
-            id: toastId,
-            duration: WARNING_BEFORE_MS + 1000,
-          });
-        }
-      }, 1000);
-    }, INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS);
-
-    // Actual logout
-    mainTimerRef.current = setTimeout(() => {
-      clearAllTimers();
-      toast.dismiss('inactivity-warning');
-      logout();
-    }, INACTIVITY_TIMEOUT_MS);
-  }, [isAuthenticated, logout, clearAllTimers]);
+  // Store logout in a ref so timer callbacks always use the latest without causing re-renders
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+  const authRef = useRef(isAuthenticated);
+  authRef.current = isAuthenticated;
 
   useEffect(() => {
-    if (!isAuthenticated) { clearAllTimers(); return; }
+    if (!isAuthenticated) {
+      // Clear all timers when not authenticated
+      if (mainTimerRef.current) clearTimeout(mainTimerRef.current);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      warningFiredRef.current = false;
+      return;
+    }
 
-    const events = ['mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    function clearAllTimers() {
+      if (mainTimerRef.current) clearTimeout(mainTimerRef.current);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+      if (countdownRef.current) clearInterval(countdownRef.current);
+      warningFiredRef.current = false;
+    }
+
+    function resetTimer() {
+      clearAllTimers();
+      if (!authRef.current) return;
+
+      // Warning fires 10s before logout
+      warningTimerRef.current = setTimeout(() => {
+        warningFiredRef.current = true;
+        let secondsLeft = 10;
+        const toastId = 'inactivity-warning';
+        toast.warning(`Signing out in ${secondsLeft}s due to inactivity…`, {
+          id: toastId,
+          duration: WARNING_BEFORE_MS + 1000,
+        });
+        countdownRef.current = setInterval(() => {
+          secondsLeft -= 1;
+          if (secondsLeft > 0) {
+            toast.warning(`Signing out in ${secondsLeft}s due to inactivity…`, {
+              id: toastId,
+              duration: WARNING_BEFORE_MS + 1000,
+            });
+          }
+        }, 1000);
+      }, INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS);
+
+      // Actual logout
+      mainTimerRef.current = setTimeout(() => {
+        clearAllTimers();
+        toast.dismiss('inactivity-warning');
+        logoutRef.current();
+      }, INACTIVITY_TIMEOUT_MS);
+    }
+
+    const events = ['mousemove', 'keydown', 'touchstart', 'click'] as const;
     const handler = () => {
-      // If user interacts during warning countdown, dismiss & reset
       if (warningFiredRef.current) {
         toast.dismiss('inactivity-warning');
       }
@@ -67,5 +78,5 @@ export function useInactivityLogout(isAuthenticated: boolean, logout: () => void
       clearAllTimers();
       events.forEach(e => window.removeEventListener(e, handler));
     };
-  }, [isAuthenticated, resetTimer, clearAllTimers]);
+  }, [isAuthenticated]); // Only re-run when auth state changes
 }

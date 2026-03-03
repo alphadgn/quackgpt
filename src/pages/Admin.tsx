@@ -328,10 +328,7 @@ export default function Admin() {
     } catch { toast.error("Failed to review feedback"); }
   };
 
-  // Initialize tierOverride
-  useEffect(() => {
-    if (isSuperAdmin && !tierOverride) setTierOverride('free');
-  }, [isSuperAdmin, tierOverride, setTierOverride]);
+  // No auto-initialization of tierOverride — it stays null (Live mode) until explicitly toggled
 
   // Chat history functions
   const fetchHistoryUsers = useCallback(async () => {
