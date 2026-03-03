@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useLayoutEffect } from "react";
 import { Message } from "@/types";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 import { useNavigate } from "react-router-dom";
@@ -48,12 +48,15 @@ const Index = () => {
 
   // Always scroll to top & reset search criteria when user signs in or out
   const prevAuth = useRef<boolean | null>(null);
-  useEffect(() => {
+  const justAuthChanged = useRef(false);
+  const scrollLockInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useLayoutEffect(() => {
     if (prevAuth.current === null) {
       prevAuth.current = authenticated;
-      // On initial mount, if already authenticated, scroll to top
       if (authenticated) {
-        window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+        window.scrollTo(0, 0);
+        document.documentElement.style.scrollBehavior = 'auto';
       }
       return;
     }
@@ -65,17 +68,39 @@ const Index = () => {
         navigate('/');
       }
       prevAuth.current = authenticated;
-      // Suppress chat auto-scroll for a brief window after auth change
       justAuthChanged.current = true;
-      // Force scroll to top immediately and again after a brief delay to override any async layout shifts
-      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
-      requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }));
-      setTimeout(() => window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior }), 100);
-      setTimeout(() => { justAuthChanged.current = false; }, 500);
+
+      // Force scroll-to-top with periodic enforcement for 3 seconds
+      document.documentElement.style.scrollBehavior = 'auto';
+      window.scrollTo(0, 0);
+
+      // Clear any existing interval
+      if (scrollLockInterval.current) clearInterval(scrollLockInterval.current);
+
+      // Enforce scroll position every 50ms for 3 seconds
+      scrollLockInterval.current = setInterval(() => {
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0);
+        }
+      }, 50);
+
+      setTimeout(() => {
+        if (scrollLockInterval.current) {
+          clearInterval(scrollLockInterval.current);
+          scrollLockInterval.current = null;
+        }
+        justAuthChanged.current = false;
+        document.documentElement.style.scrollBehavior = '';
+      }, 3000);
     }
   }, [authenticated, navigate]);
 
-  const justAuthChanged = useRef(false);
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollLockInterval.current) clearInterval(scrollLockInterval.current);
+    };
+  }, []);
   
   const { 
     messages, 
@@ -347,6 +372,7 @@ const Index = () => {
                 privyUserId={user?.id ?? null}
                 selectionComplete={selectionComplete}
                 profilePictureUrl={profilePictureUrl}
+                campaign={campaign}
               />
             )
           ) : null}
