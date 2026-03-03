@@ -73,7 +73,7 @@ export function ScrollBendContainer({
           child.style.transition = "transform 0.12s linear, opacity 0.12s linear";
           child.style.willChange = "transform, opacity";
           child.style.transformOrigin = "center center";
-          child.style.contain = "layout style";
+          child.style.contain = "style";
         }
       });
     };

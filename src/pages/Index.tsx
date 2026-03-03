@@ -114,17 +114,14 @@ const Index = () => {
   } = useChat({ tier, isAuthenticated: authenticated, privyUserId: user?.id, getAccessToken, tierOverride, isSuperAdmin });
 
   // Only scroll to latest message when a NEW message arrives (not on every re-render)
-  // Use window.scrollTo instead of scrollIntoView to avoid trapping scroll context
+  // Use scrollIntoView on the chatEnd ref but never lock scroll position
   const prevMsgCount = useRef(0);
   useEffect(() => {
     if (messages.length > prevMsgCount.current && chatEndRef.current && !justAuthChanged.current) {
-      requestAnimationFrame(() => {
-        if (chatEndRef.current) {
-          const rect = chatEndRef.current.getBoundingClientRect();
-          const targetY = window.scrollY + rect.top - window.innerHeight + 100;
-          window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
-        }
-      });
+      // Use a short delay so layout settles, then gently scroll the new message into view
+      setTimeout(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
     }
     prevMsgCount.current = messages.length;
   }, [messages.length]);
