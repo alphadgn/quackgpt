@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Send, AlertCircle, Loader2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
+import type { Campaign } from "@/components/CampaignSelector";
 import { toast } from "sonner";
 
 interface ChatInputProps {
@@ -19,9 +20,10 @@ interface ChatInputProps {
   privyUserId?: string | null;
   selectionComplete?: boolean;
   profilePictureUrl?: string | null;
+  campaign?: Campaign | null;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true, profilePictureUrl }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true, profilePictureUrl, campaign }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
   const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
@@ -149,8 +151,31 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
             ? "border-destructive/50 bg-destructive/5 cursor-pointer"
             : isBlocked || isOnCooldown
               ? "border-destructive/50 bg-destructive/5" 
-              : "border-primary/30 bg-secondary/30 animate-search-glow focus-within:border-primary/50 focus-within:bg-secondary/50 focus-within:shadow-[0_0_30px_hsl(42_92%_58%_/_0.15)] focus-within:animate-none"
-      )}>
+              : "border-primary/30 bg-secondary/30 focus-within:bg-secondary/50 focus-within:animate-none"
+      )}
+        style={!selectionComplete || isDepleted || isBlocked || isOnCooldown ? undefined : (() => {
+          const glowColors: Record<string, { border: string; shadow: string }> = {
+            wallchain: {
+              border: 'hsl(42 92% 58% / 0.5)',
+              shadow: '0 0 12px hsl(42 92% 58% / 0.35), 0 0 30px hsl(42 92% 58% / 0.2), 0 0 50px hsl(42 92% 58% / 0.08)',
+            },
+            idos: {
+              border: 'hsl(160 70% 40% / 0.5)',
+              shadow: '0 0 12px hsl(160 70% 40% / 0.35), 0 0 30px hsl(160 70% 40% / 0.2), 0 0 50px hsl(160 70% 40% / 0.08)',
+            },
+            beyond: {
+              border: 'hsl(24 95% 55% / 0.5)',
+              shadow: '0 0 12px hsl(24 95% 55% / 0.35), 0 0 30px hsl(24 95% 55% / 0.2), 0 0 50px hsl(24 95% 55% / 0.08)',
+            },
+          };
+          const colors = campaign ? glowColors[campaign] : glowColors.wallchain;
+          if (!colors) return undefined;
+          return {
+            borderColor: colors.border,
+            boxShadow: colors.shadow,
+          } as React.CSSProperties;
+        })()}
+      >
         {/* Depleted overlay notification */}
         {showDepletedOverlay && isDepleted && (
           <div className="absolute inset-0 z-10 flex items-center justify-between px-4 rounded-2xl bg-destructive/95 backdrop-blur-sm animate-fade-in">
