@@ -118,7 +118,7 @@ export default function Admin() {
   const [negativeFeedback, setNegativeFeedback] = useState<FeedbackItem[]>([]);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [overrideText, setOverrideText] = useState<Record<string, string>>({});
-
+  const [expandedFeedback, setExpandedFeedback] = useState<Record<string, boolean>>({});
   // Chat history state
   const [historyUsers, setHistoryUsers] = useState<string[]>([]);
   const [historySessions, setHistorySessions] = useState<HistorySession[]>([]);
@@ -1097,8 +1097,10 @@ export default function Admin() {
                           <p className="text-sm text-foreground/80 bg-muted/30 rounded px-2 py-1">{item.user_query}</p>
                         </div>
                       )}
-                      <p className="text-xs text-muted-foreground mb-1">quackGPT responded:</p>
-                      <p className="text-sm text-foreground/80 mb-3 line-clamp-4">{item.message_content}</p>
+                      <p className="text-xs text-muted-foreground mb-1 cursor-pointer flex items-center gap-1" onClick={() => setExpandedFeedback(prev => ({ ...prev, [item.id]: !prev[item.id] }))}>
+                        quackGPT responded: <span className="text-[10px] text-primary ml-1">{expandedFeedback[item.id] ? '▼ collapse' : '▶ expand full'}</span>
+                      </p>
+                      <p className={`text-sm text-foreground/80 mb-3 ${expandedFeedback[item.id] ? '' : 'line-clamp-4'} cursor-pointer`} onClick={() => setExpandedFeedback(prev => ({ ...prev, [item.id]: !prev[item.id] }))}>{item.message_content}</p>
                       <p className="text-[10px] text-muted-foreground mb-3">
                         {new Date(item.created_at).toLocaleString()} • {shortenId(item.external_user_id)}
                       </p>
