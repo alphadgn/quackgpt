@@ -570,37 +570,52 @@ export default function Admin() {
                 <div className="flex items-center gap-3 mb-4">
                   <FlaskConical className="w-5 h-5 text-primary" />
                   <h2 className="text-lg font-semibold text-foreground text-center flex-1">Profile Testing Mode</h2>
-                  {tierOverride && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-primary/20 text-primary font-medium">
-                      Active: {tierOverride === 'nft_holder' ? 'NFT Holder' : tierOverride === 'paid' ? 'Paid' : 'Free'}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{tierOverride ? 'Test' : 'Live'}</span>
+                    <Switch
+                      checked={!!tierOverride}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setTierOverride('free');
+                          toast.success('Test mode enabled — simulating Free tier');
+                        } else {
+                          setTierOverride(null);
+                          toast.success('Test mode disabled — using real subscription/NFT status');
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-5">
-                  Toggle to simulate different user tiers. Your account will behave as the selected tier across the entire app.
+                  {tierOverride 
+                    ? "Test mode active — simulating different user tiers. Your account will behave as the selected tier across the entire app."
+                    : "Test mode off — using your real subscription and NFT verification status."
+                  }
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {testingTiers.map(({ key, label, icon: Icon, description }) => {
-                    const isActive = tierOverride === key;
-                    return (
-                      <div
-                        key={key}
-                        className={`flex items-center justify-between rounded-lg border p-4 transition-all ${
-                          isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-border/50 bg-card/50 hover:border-border'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                          <div>
-                            <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{label}</p>
-                            <p className="text-xs text-muted-foreground">{description}</p>
+                {tierOverride && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    {testingTiers.map(({ key, label, icon: Icon, description }) => {
+                      const isActive = tierOverride === key;
+                      return (
+                        <div
+                          key={key}
+                          className={`flex items-center justify-between rounded-lg border p-4 transition-all ${
+                            isActive ? 'border-primary bg-primary/10 shadow-sm' : 'border-border/50 bg-card/50 hover:border-border'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                            <div>
+                              <p className={`text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>{label}</p>
+                              <p className="text-xs text-muted-foreground">{description}</p>
+                            </div>
                           </div>
+                          <Switch checked={isActive} onCheckedChange={() => handleTierSwitch(key)} />
                         </div>
-                        <Switch checked={isActive} onCheckedChange={() => handleTierSwitch(key)} />
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
 
@@ -988,14 +1003,14 @@ export default function Admin() {
               {/* Campaign tabs */}
               <div className="flex gap-1 mb-4 rounded-lg bg-muted/30 p-1">
                 {([
-                  { key: "wallchain" as const, label: "Wallchain" },
-                  { key: "idos" as const, label: "idOS Network" },
-                  { key: "beyond" as const, label: "Beyond" },
+                  { key: "wallchain" as const, label: "Wallchain", activeClass: "bg-yellow-500/20 text-yellow-400" },
+                  { key: "idos" as const, label: "idOS Network", activeClass: "bg-emerald-500/20 text-emerald-400" },
+                  { key: "beyond" as const, label: "Beyond", activeClass: "bg-orange-500/20 text-orange-400" },
                 ] as const).map(tab => (
                   <button
                     key={tab.key}
-                    className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors ${
-                      sourcesCampaign === tab.key ? "bg-primary/20 text-primary font-medium" : "text-muted-foreground hover:text-foreground"
+                    className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors font-medium ${
+                      sourcesCampaign === tab.key ? tab.activeClass : "text-muted-foreground hover:text-foreground"
                     }`}
                     onClick={() => { setSourcesCampaign(tab.key); fetchSources(tab.key); }}
                   >
@@ -1008,8 +1023,14 @@ export default function Admin() {
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
               ) : (
                 <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto rounded-lg border border-border/30 p-2">
-                  {sources.map(source => (
-                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50 bg-card/50' : 'border-border/30 bg-muted/20 opacity-60'}`}>
+                  {sources.map(source => {
+                    const sourceContainerStyles: Record<string, React.CSSProperties> = {
+                      wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.1)', borderLeft: '3px solid rgb(234, 179, 8)' },
+                      idos: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '3px solid rgb(16, 185, 129)' },
+                      beyond: { backgroundColor: 'rgba(249, 115, 22, 0.1)', borderLeft: '3px solid rgb(249, 115, 22)' },
+                    };
+                    return (
+                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50' : 'border-border/30 opacity-60'}`} style={sourceContainerStyles[sourcesCampaign] || sourceContainerStyles.wallchain}>
                       <Switch checked={source.is_active} onCheckedChange={(checked) => handleToggleSource(source.id, checked)} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{source.label}</p>
@@ -1019,7 +1040,8 @@ export default function Admin() {
                         <Trash2 className="w-3.5 h-3.5" />
                       </Button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 

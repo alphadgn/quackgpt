@@ -237,6 +237,12 @@
   }
 }
 
+/* Campaign-specific glow pulse for search bar - applied via inline style + this animation */
+@keyframes search-glow-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 @keyframes search-text-pulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 0.8; }
