@@ -2,8 +2,8 @@ import { useState, useCallback, useEffect } from "react";
 import { ScrollBendContainer } from "./ScrollBendContainer";
 import { QuackLogo } from "./QuackLogo";
 import { TierBadge } from "./TierBadge";
-import { UserTier, WHITELISTED_SOURCES } from "@/types";
-import { Database, Shield, Zap, ChevronRight, Loader2, Trash2, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
+import { UserTier } from "@/types";
+import { Database, Shield, FileCheck, ChevronRight, Loader2, Trash2, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatMessage {
@@ -32,29 +32,29 @@ interface WelcomeScreenProps {
 const features = [
   {
     icon: Database,
-    title: "🔎 Search Mode",
-    description: "Source-bound ecosystem intelligence from verified sources.",
+    title: "🔎 Search",
+    description: "Information about Ugly Duck Society, drawn only from its official sources.",
   },
   {
     icon: Shield,
     title: "🦆 Quack Check",
-    description: "Fact-check claims with structured verdicts: TRUE, FALSE, UNVERIFIED.",
+    description: "Check a claim against published evidence: true, false, partly true, unverified or outdated.",
   },
   {
-    icon: Zap,
-    title: "🐦 Tweet Audit",
-    description: "Score your tweets 0-100 on relevancy, correctness, honesty, authenticity & brand alignment.",
+    icon: FileCheck,
+    title: "📄 Verify text",
+    description: "Paste any text and see which claims the official sources support, with corrections and citations.",
   },
 ];
 
 const exampleQueries = [
-  "What is Wallchain?",
-  "Explain InfoFi",
-  "How do Quacks work?",
-  "What are Quack Heads NFTs?",
+  "What is Ugly Duck Society?",
+  "What is the community's mission?",
+  "What has been announced recently?",
+  "Tell me about the NFT collection",
 ];
 
-export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { getAuthHeaders: () => Promise<Record<string, string>>; historyFilter?: "all" | "search" | "quack-check" | "tweet-audit" }) {
+export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { getAuthHeaders: () => Promise<Record<string, string>>; historyFilter?: "all" | "search" | "quack-check" | "verify-text" }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
@@ -122,38 +122,14 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
     return pairs;
   };
 
-  // Detect campaign from message content — bracket tags first, then keyword fallback
-  const detectCampaign = (preview: string): string | null => {
+  /**
+   * Legacy compatibility adapter: sessions recorded before the app became a
+   * dedicated Ugly Duck Society assistant are read-only and clearly marked.
+   * They are never re-labelled, and never routed to a current request.
+   */
+  const isLegacySession = (preview: string): boolean => {
     const upper = (preview || "").toUpperCase();
-    // Strict bracket-tag detection
-    if (upper.includes("[WALLCHAIN]")) return "wallchain";
-    if (upper.includes("[IDOS NETWORK]") || upper.includes("[IDOS]")) return "idos";
-    if (upper.includes("[BEYOND]")) return "beyond";
-    // Keyword fallback for older entries without bracket tags
-    if (upper.includes("WALLCHAIN") || upper.includes("WALL CHAIN") || upper.includes("INFOFI") || upper.includes("QUACK")) return "wallchain";
-    if (upper.includes("IDOS") || upper.includes("IDOS NETWORK")) return "idos";
-    if (upper.includes("BEYOND")) return "beyond";
-    // Default to wallchain for legacy entries (pre-campaign-selector)
-    return "wallchain";
-  };
-
-  // Campaign color mapping
-  const campaignBorderColor: Record<string, string> = {
-    wallchain: "border-l-yellow-500",
-    idos: "border-l-emerald-500",
-    beyond: "border-l-red-500",
-  };
-
-  const campaignTextColor: Record<string, string> = {
-    wallchain: "text-yellow-500",
-    idos: "text-emerald-500",
-    beyond: "text-red-500",
-  };
-
-  const campaignLabel: Record<string, string> = {
-    wallchain: "Wallchain",
-    idos: "idOS Network",
-    beyond: "Beyond",
+    return /WALLCHAIN|WALL CHAIN|INFOFI|IDOS|\[BEYOND\]/.test(upper);
   };
 
   if (loading) {
@@ -164,7 +140,10 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
     );
   }
 
-  if (sessions.length === 0) {
+  // Legacy sessions are hidden from the default history view.
+  const visibleSessions = sessions.filter((s) => !isLegacySession(s.preview));
+
+  if (visibleSessions.length === 0) {
     return (
       <div className="text-center py-4">
         <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
@@ -173,14 +152,15 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
     );
   }
 
-  const filteredSessions = sessions.filter((session) => {
+  const filteredSessions = visibleSessions.filter((session) => {
     if (historyFilter === "all") return true;
     const preview = (session.preview || "").toUpperCase();
-    if (historyFilter === "search") return !preview.includes("[QUACK CHECK]") && !preview.includes("[TWEET AUDIT");
+    if (historyFilter === "search") return !preview.includes("[QUACK CHECK]") && !preview.includes("[VERIFY TEXT]");
     if (historyFilter === "quack-check") return preview.includes("[QUACK CHECK]");
-    if (historyFilter === "tweet-audit") return preview.includes("[TWEET AUDIT");
+    if (historyFilter === "verify-text") return preview.includes("[VERIFY TEXT]");
     return true;
   });
+
   if (filteredSessions.length === 0) {
     return (
       <div className="text-center py-4">
@@ -195,26 +175,15 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
       {filteredSessions.map((session) => {
         const pairs = getQAPairs(session.messages);
         const isExpanded = expandedSession === session.session_id;
-        const detectedCampaign = detectCampaign(session.preview);
-        const labelColor = detectedCampaign ? campaignTextColor[detectedCampaign] : "";
-        const label = detectedCampaign ? campaignLabel[detectedCampaign] : "";
-        const campaignStyles: Record<string, React.CSSProperties> = {
-          wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' },
-          idos: { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' },
-          beyond: { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' },
-        };
         return (
-          <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={campaignStyles[detectedCampaign] || campaignStyles.wallchain}>
+          <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
             <button
               className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors"
               onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
             >
               <ChevronRight className={`w-3 h-3 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  {label && <span className={`text-[10px] font-semibold ${labelColor}`}>{label}</span>}
-                  <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
-                </div>
+                <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {new Date(session.created_at).toLocaleDateString()} • {pairs.length} {pairs.length === 1 ? "exchange" : "exchanges"}
                 </p>
@@ -230,14 +199,8 @@ export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { 
               <div className="border-t border-border/30 bg-muted/10 max-h-52 overflow-y-auto p-2.5 space-y-2">
                 {pairs.map((pair, i) => {
                   const fbType = getFeedbackForQuery(pair.user.content);
-                  const pairCampaign = detectCampaign(pair.user.content);
-                  const pairStyles: Record<string, React.CSSProperties> = {
-                    wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' },
-                    idos: { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' },
-                    beyond: { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' },
-                  };
                   return (
-                    <div key={i} className="rounded-md border border-border/30 p-2.5 space-y-1.5" style={pairStyles[pairCampaign] || pairStyles.wallchain}>
+                    <div key={i} className="rounded-md border border-border/30 bg-card/40 p-2.5 space-y-1.5">
                       <div className="text-xs">
                         <span className="font-semibold text-primary">You:</span>{" "}
                         <span className="text-foreground/90">{pair.user.content}</span>
@@ -276,14 +239,14 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
       
       {/* Tagline */}
       <h1 className="text-2xl md:text-3xl font-display font-bold text-center mb-3">
-        <span className="text-gradient">Wallchain & InfoFi</span>
+        <span className="text-gradient">Ugly Duck Society</span>
         <br />
-        <span className="text-foreground/80">Campaign Alignment</span>
+        <span className="text-foreground/80">Information Assistant</span>
       </h1>
       
       <p className="text-muted-foreground text-center max-w-md mb-8">
-        Get verified information about Wallchain campaigns. 
-        Ask questions, verify facts, & audit posts—no content creation, just solid, reliable information.
+        Ask anything about Ugly Duck Society — an NFT collection and community that exists to do good in the world.
+        Every answer comes from its official sources, with a link and a date. Nothing invented.
       </p>
       
       {/* User tier with pointing hands */}

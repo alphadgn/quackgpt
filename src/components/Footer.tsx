@@ -33,7 +33,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-col items-center sm:items-start gap-0.5">
             <p className="text-xs text-muted-foreground">
-              Not affiliated with Wallchain Inc.
+              An independent information tool. Not an official Ugly Duck Society channel.
             </p>
             <p className="text-xs text-muted-foreground">
               All rights reserved QuackGPT 2026
@@ -63,12 +63,12 @@ export function Footer() {
               AI Disclosure
             </a>
             <a 
-              href="https://docs.wallchain.xyz/intro"
+              href="https://uglyducksociety.tech"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors truncate max-w-[120px] sm:max-w-none whitespace-nowrap"
             >
-              Docs
+              Official site
             </a>
             <button
               onClick={() => setShowAbout(true)}

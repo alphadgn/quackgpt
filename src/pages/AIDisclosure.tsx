@@ -48,7 +48,7 @@ const AIDisclosure = () => {
             <ul className="space-y-3 text-foreground/80">
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
-                quackGPT is trained to provide information ONLY from verified Wallchain sources
+                quackGPT provides information ONLY from the official Ugly Duck Society sources (its website, official Instagram account and official X account)
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
@@ -97,7 +97,7 @@ const AIDisclosure = () => {
                 <strong className="text-foreground">No Guarantees:</strong> While we source information from official channels, we cannot guarantee 100% accuracy or timeliness of all information.
               </p>
               <p>
-                <strong className="text-foreground">NFT Ownership:</strong> Holding Quack Heads NFTs grants access privileges to quackGPT but does not constitute ownership of equity, profit rights, or any other financial interest in Wallchain or related entities.
+                <strong className="text-foreground">NFT Ownership:</strong> Holding Ugly Duck Society NFTs grants access privileges to quackGPT but does not constitute ownership of equity, profit rights, or any other financial interest in Ugly Duck Society or any related entity. quackGPT is an independent information tool and is not an official Ugly Duck Society channel or partner.
               </p>
               <p>
                 <strong className="text-foreground">Third-Party Links:</strong> References to external sources are provided for verification purposes. We are not responsible for content on third-party websites.
