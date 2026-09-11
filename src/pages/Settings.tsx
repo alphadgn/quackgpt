@@ -38,7 +38,7 @@ export default function Settings() {
   const [expandedSession, setExpandedSession] = useState<string | null>(null);
   const [feedbackMap, setFeedbackMap] = useState<Record<string, { type: string }>>({});
 
-  // Tweet audit history state
+  // Text verification history state
   const [audits, setAudits] = useState<any[]>([]);
   const [auditsLoading, setAuditsLoading] = useState(false);
   const [expandedAudit, setExpandedAudit] = useState<string | null>(null);
@@ -99,7 +99,7 @@ export default function Settings() {
     })();
   }, [user?.id, authenticated, searchParams]);
 
-  // Fetch query history and tweet audit history
+  // Fetch query history and text verification history
   useEffect(() => {
     if (!user?.id || !authenticated) return;
     let cancelled = false;
@@ -109,7 +109,7 @@ export default function Settings() {
         const [sessResp, fbResp, auditResp] = await Promise.all([
           fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions`, { headers }),
           fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-feedback`, { headers }),
-          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-audits`, { headers }),
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-verifications`, { headers }),
         ]);
         if (!cancelled) {
           const sessData = await sessResp.json();
@@ -126,7 +126,7 @@ export default function Settings() {
           }
 
           const auditData = await auditResp.json();
-          if (auditData.audits) setAudits(auditData.audits);
+          if (auditData.verifications) setAudits(auditData.verifications);
         }
       } catch (err) {
         console.error("Failed to fetch history:", err);
@@ -433,7 +433,7 @@ export default function Settings() {
               </div>
 
               {sessions.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No query history yet. Start a search, quack check, or tweet audit!</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No query history yet. Start a search, quack check, or text verification!</p>
               ) : (
                 <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
                   {sessions.map((session: any) => {
@@ -497,54 +497,62 @@ export default function Settings() {
               )}
             </section>
 
-            {/* Tweet Audit History */}
+            {/* Text Verification History */}
             <section className="border-y border-border/50 bg-card/50 p-6">
               <div className="flex items-center gap-2 mb-4 justify-center">
                 <Bird className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-display font-semibold text-foreground">Tweet Audit History</h2>
+                <h2 className="text-lg font-display font-semibold text-foreground">Text Verification History</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-2">
-                  {audits.length} audits
+                  {audits.length} checks
                 </span>
               </div>
 
               {audits.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No tweet audits yet. Try the Tweet Audit mode!</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No verifications yet. Try the Verify text mode!</p>
               ) : (
                 <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
-                  {audits.map((audit: any) => {
-                    const isExpanded = expandedAudit === audit.id;
-                    const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
+                  {audits.map((item: any) => {
+                    const isExpanded = expandedAudit === item.id;
+                    const claims: any[] = Array.isArray(item.claim_analysis) ? item.claim_analysis : [];
+                    const corrections: any[] = Array.isArray(item.corrections) ? item.corrections : [];
+                    const sources: any[] = Array.isArray(item.supporting_sources) ? item.supporting_sources : [];
                     return (
-                      <div key={audit.id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
+                      <div key={item.id} className="rounded-lg border border-border/50 bg-card/50 overflow-hidden">
                         <button
                           className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
-                          onClick={() => setExpandedAudit(isExpanded ? null : audit.id)}
+                          onClick={() => setExpandedAudit(isExpanded ? null : item.id)}
                         >
                           <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-foreground truncate">"{audit.tweet_text}"</p>
-                            <p className="text-[10px] text-muted-foreground">{new Date(audit.created_at).toLocaleString()}</p>
+                            <p className="text-xs text-foreground truncate">"{item.submitted_text}"</p>
+                            <p className="text-[10px] text-muted-foreground">{new Date(item.created_at).toLocaleString()}</p>
                           </div>
-                          <span className={`text-sm font-bold font-mono ${scoreColor}`}>{audit.composite_score}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{claims.length} {claims.length === 1 ? "claim" : "claims"}</span>
                         </button>
                         {isExpanded && (
                           <div className="border-t border-border/30 bg-muted/10 p-3 space-y-2">
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div><span className="text-muted-foreground">Relevancy:</span> <span className="font-mono font-semibold">{audit.relevancy_score}</span></div>
-                              <div><span className="text-muted-foreground">Correctness:</span> <span className="font-mono font-semibold">{audit.correctness_score}</span></div>
-                              <div><span className="text-muted-foreground">Honesty:</span> <span className="font-mono font-semibold">{audit.honesty_score}</span></div>
-                              <div><span className="text-muted-foreground">Brand Alignment:</span> <span className="font-mono font-semibold">{audit.brand_alignment_score}</span></div>
-                            </div>
-                            {audit.risk_flags?.length > 0 && (
-                              <div className="text-xs text-destructive">
-                                <p className="font-semibold mb-1">⚠️ Risk Flags:</p>
-                                {audit.risk_flags.map((f: string, i: number) => <p key={i}>• {f}</p>)}
+                            {claims.map((c: any, i: number) => (
+                              <div key={i} className="rounded border border-border/30 p-2 text-xs">
+                                <p className="text-foreground/90">{c.claim ?? String(c)}</p>
+                                {c.verdict && (
+                                  <p className="text-[10px] text-muted-foreground mt-1">
+                                    {c.verdict}{typeof c.confidence === "number" ? ` • ${c.confidence}% confidence` : ""}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                            {corrections.length > 0 && (
+                              <div className="text-xs text-primary">
+                                <p className="font-semibold mb-1">Corrections:</p>
+                                {corrections.map((c: any, i: number) => <p key={i}>• {typeof c === "string" ? c : c.correction ?? JSON.stringify(c)}</p>)}
                               </div>
                             )}
-                            {audit.suggested_improvements?.length > 0 && (
-                              <div className="text-xs text-primary">
-                                <p className="font-semibold mb-1">💡 Improvements:</p>
-                                {audit.suggested_improvements.map((s: string, i: number) => <p key={i}>• {s}</p>)}
+                            {sources.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                <p className="font-semibold mb-1">Sources:</p>
+                                {sources.map((sr: any, i: number) => (
+                                  <p key={i} className="truncate">• {typeof sr === "string" ? sr : sr.url ?? JSON.stringify(sr)}</p>
+                                ))}
                               </div>
                             )}
                           </div>
