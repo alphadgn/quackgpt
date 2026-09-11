@@ -385,18 +385,18 @@ export default function Admin() {
     if (isAdmin) fetchHistoryUsers();
   }, [isAdmin, fetchHistoryUsers]);
 
-  // Fetch all tweet audits for admin
+  // Fetch all text verifications for admin
   const fetchAdminAudits = useCallback(async () => {
     setAdminAuditsLoading(true);
     try {
       const headers = await getAuthHeaders();
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-list-audits`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-list-verifications`,
         { headers }
       );
       const data = await resp.json();
-      if (resp.ok && data.audits) setAdminAudits(data.audits);
-    } catch { console.error("Failed to fetch admin audits"); }
+      if (resp.ok && data.verifications) setAdminAudits(data.verifications);
+    } catch { console.error("Failed to fetch admin verifications"); }
     finally { setAdminAuditsLoading(false); }
   }, [getAuthHeaders]);
 
