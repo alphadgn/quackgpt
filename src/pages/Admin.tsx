@@ -141,7 +141,7 @@ export default function Admin() {
   const [resolvingFinding, setResolvingFinding] = useState<string | null>(null);
   const [resolveNotes, setResolveNotes] = useState<Record<string, string>>({});
 
-  // Tweet audit state
+  // Text verification state
   const [adminAudits, setAdminAudits] = useState<any[]>([]);
   const [adminAuditsLoading, setAdminAuditsLoading] = useState(false);
   const [expandedAdminAudit, setExpandedAdminAudit] = useState<string | null>(null);
