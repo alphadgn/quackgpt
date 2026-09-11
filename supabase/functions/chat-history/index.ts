@@ -212,22 +212,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // --- LIST TWEET AUDITS for current user ---
-    if (action === "list-audits") {
+    // --- LIST TEXT VERIFICATIONS for current user ---
+    if (action === "list-verifications") {
       const { data, error } = await supabase
-        .from("tweet_audits")
-        .select("id, tweet_text, composite_score, relevancy_score, honesty_score, correctness_score, brand_alignment_score, risk_flags, suggested_improvements, created_at")
+        .from("text_verifications")
+        .select("id, submitted_text, claim_analysis, corrections, supporting_sources, created_at")
         .eq("external_user_id", privyUserId)
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return new Response(JSON.stringify({ audits: data || [] }), {
+      return new Response(JSON.stringify({ verifications: data || [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // --- ADMIN LIST TWEET AUDITS for any user ---
-    if (action === "admin-list-audits") {
+    // --- ADMIN LIST TEXT VERIFICATIONS for any user ---
+    if (action === "admin-list-verifications") {
       const isAdmin = await isSuperAdmin(supabase, privyUserId);
       if (!isAdmin) {
         return new Response(JSON.stringify({ error: "Forbidden" }), {
@@ -236,8 +236,8 @@ Deno.serve(async (req) => {
       }
       const targetUser = url.searchParams.get("userId");
       let query = supabase
-        .from("tweet_audits")
-        .select("id, external_user_id, tweet_text, composite_score, relevancy_score, honesty_score, correctness_score, brand_alignment_score, risk_flags, suggested_improvements, created_at")
+        .from("text_verifications")
+        .select("id, external_user_id, submitted_text, claim_analysis, corrections, supporting_sources, created_at")
         .order("created_at", { ascending: false })
         .limit(100);
       if (targetUser) {
@@ -245,7 +245,7 @@ Deno.serve(async (req) => {
       }
       const { data, error } = await query;
       if (error) throw error;
-      return new Response(JSON.stringify({ audits: data || [] }), {
+      return new Response(JSON.stringify({ verifications: data || [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
