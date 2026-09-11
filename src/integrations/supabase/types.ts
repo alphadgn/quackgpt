@@ -381,6 +381,54 @@ export type Database = {
         }
         Relationships: []
       }
+      legacy_backup_tweet_audits: {
+        Row: {
+          brand_alignment_score: number | null
+          composite_score: number | null
+          correctness_score: number | null
+          created_at: string | null
+          detailed_breakdown: Json | null
+          external_user_id: string | null
+          honesty_score: number | null
+          id: string | null
+          relevancy_score: number | null
+          risk_flags: string[] | null
+          suggested_improvements: string[] | null
+          supporting_sources: string[] | null
+          tweet_text: string | null
+        }
+        Insert: {
+          brand_alignment_score?: number | null
+          composite_score?: number | null
+          correctness_score?: number | null
+          created_at?: string | null
+          detailed_breakdown?: Json | null
+          external_user_id?: string | null
+          honesty_score?: number | null
+          id?: string | null
+          relevancy_score?: number | null
+          risk_flags?: string[] | null
+          suggested_improvements?: string[] | null
+          supporting_sources?: string[] | null
+          tweet_text?: string | null
+        }
+        Update: {
+          brand_alignment_score?: number | null
+          composite_score?: number | null
+          correctness_score?: number | null
+          created_at?: string | null
+          detailed_breakdown?: Json | null
+          external_user_id?: string | null
+          honesty_score?: number | null
+          id?: string | null
+          relevancy_score?: number | null
+          risk_flags?: string[] | null
+          suggested_improvements?: string[] | null
+          supporting_sources?: string[] | null
+          tweet_text?: string | null
+        }
+        Relationships: []
+      }
       nft_token_bindings: {
         Row: {
           bound_at: string
@@ -668,54 +716,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      tweet_audits: {
-        Row: {
-          brand_alignment_score: number
-          composite_score: number
-          correctness_score: number
-          created_at: string
-          detailed_breakdown: Json
-          external_user_id: string
-          honesty_score: number
-          id: string
-          relevancy_score: number
-          risk_flags: string[] | null
-          suggested_improvements: string[] | null
-          supporting_sources: string[] | null
-          tweet_text: string
-        }
-        Insert: {
-          brand_alignment_score?: number
-          composite_score?: number
-          correctness_score?: number
-          created_at?: string
-          detailed_breakdown?: Json
-          external_user_id: string
-          honesty_score?: number
-          id?: string
-          relevancy_score?: number
-          risk_flags?: string[] | null
-          suggested_improvements?: string[] | null
-          supporting_sources?: string[] | null
-          tweet_text: string
-        }
-        Update: {
-          brand_alignment_score?: number
-          composite_score?: number
-          correctness_score?: number
-          created_at?: string
-          detailed_breakdown?: Json
-          external_user_id?: string
-          honesty_score?: number
-          id?: string
-          relevancy_score?: number
-          risk_flags?: string[] | null
-          suggested_improvements?: string[] | null
-          supporting_sources?: string[] | null
-          tweet_text?: string
-        }
-        Relationships: []
       }
       user_roles: {
         Row: {
