@@ -1267,66 +1267,73 @@ export default function Admin() {
               )}
             </div>
 
-            {/* Tweet Audit History (Admin) */}
+            {/* Text Verification History (Admin) */}
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Bird className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Tweet Audit History</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Text Verification History</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  {adminAudits.length} audits
+                  {adminAudits.length} checks
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-5">
-                All tweet audit results across all users. Each audit deducts one query from the user's account.
+                All submitted-text verifications across all users. Each check deducts one query from the user's account.
               </p>
 
               {adminAuditsLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
               ) : adminAudits.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No tweet audits yet.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No verifications yet.</p>
               ) : (
                 <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
-                  {adminAudits.map((audit: any) => {
-                    const isExpanded = expandedAdminAudit === audit.id;
-                    const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
+                  {adminAudits.map((item: any) => {
+                    const isExpanded = expandedAdminAudit === item.id;
+                    const claims: any[] = Array.isArray(item.claim_analysis) ? item.claim_analysis : [];
+                    const corrections: any[] = Array.isArray(item.corrections) ? item.corrections : [];
+                    const sources: any[] = Array.isArray(item.supporting_sources) ? item.supporting_sources : [];
                     return (
-                      <div key={audit.id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
-                          const t = (audit.tweet_text || '').toUpperCase();
-                          if (t.includes('IDOS') || t.includes('IDOS NETWORK')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                          if (t.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                        })()}>
+                      <div key={item.id} className="rounded-lg border border-border/50 overflow-hidden" style={{ backgroundColor: 'hsl(var(--card) / 0.4)', borderLeft: '4px solid hsl(var(--border))' }}>
                         <button
                           className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
-                          onClick={() => setExpandedAdminAudit(isExpanded ? null : audit.id)}
+                          onClick={() => setExpandedAdminAudit(isExpanded ? null : item.id)}
                         >
                           <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-foreground truncate">"{audit.tweet_text}"</p>
+                            <p className="text-xs text-foreground truncate">"{item.submitted_text}"</p>
                             <p className="text-[10px] text-muted-foreground">
-                              {new Date(audit.created_at).toLocaleString()} • {audit.external_user_id ? shortenId(audit.external_user_id) : "—"}
+                              {new Date(item.created_at).toLocaleString()} • {item.external_user_id ? shortenId(item.external_user_id) : "—"}
                             </p>
                           </div>
-                          <span className={`text-sm font-bold font-mono ${scoreColor}`}>{audit.composite_score}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{claims.length} {claims.length === 1 ? 'claim' : 'claims'}</span>
                         </button>
                         {isExpanded && (
                           <div className="border-t border-border/30 bg-muted/10 p-3 space-y-2">
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div><span className="text-muted-foreground">Relevancy:</span> <span className="font-mono font-semibold">{audit.relevancy_score}</span></div>
-                              <div><span className="text-muted-foreground">Correctness:</span> <span className="font-mono font-semibold">{audit.correctness_score}</span></div>
-                              <div><span className="text-muted-foreground">Honesty:</span> <span className="font-mono font-semibold">{audit.honesty_score}</span></div>
-                              <div><span className="text-muted-foreground">Brand Alignment:</span> <span className="font-mono font-semibold">{audit.brand_alignment_score}</span></div>
-                            </div>
-                            {audit.risk_flags?.length > 0 && (
-                              <div className="text-xs text-destructive">
-                                <p className="font-semibold mb-1">⚠️ Risk Flags:</p>
-                                {audit.risk_flags.map((f: string, i: number) => <p key={i}>• {f}</p>)}
+                            {claims.length > 0 && (
+                              <div className="space-y-1 text-xs">
+                                {claims.map((c: any, i: number) => (
+                                  <div key={i} className="rounded border border-border/30 p-2">
+                                    <p className="text-foreground/90">{c.claim ?? String(c)}</p>
+                                    {c.verdict && (
+                                      <p className="text-[10px] text-muted-foreground mt-1">
+                                        {c.verdict}{typeof c.confidence === "number" ? ` • ${c.confidence}% confidence` : ""}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             )}
-                            {audit.suggested_improvements?.length > 0 && (
+                            {corrections.length > 0 && (
                               <div className="text-xs text-primary">
-                                <p className="font-semibold mb-1">💡 Improvements:</p>
-                                {audit.suggested_improvements.map((s: string, i: number) => <p key={i}>• {s}</p>)}
+                                <p className="font-semibold mb-1">Corrections:</p>
+                                {corrections.map((c: any, i: number) => <p key={i}>• {typeof c === "string" ? c : c.correction ?? JSON.stringify(c)}</p>)}
+                              </div>
+                            )}
+                            {sources.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                <p className="font-semibold mb-1">Sources:</p>
+                                {sources.map((s: any, i: number) => (
+                                  <p key={i} className="truncate">• {typeof s === "string" ? s : s.url ?? JSON.stringify(s)}</p>
+                                ))}
                               </div>
                             )}
                           </div>
