@@ -33,6 +33,13 @@ export const TIER_LIMITS: Record<UserTier, TierLimits> = {
   },
 };
 
+export interface EvidenceSource {
+  canonicalUrl: string;
+  title?: string;
+  publishedAt?: string | null;
+  retrievedAt?: string | null;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -43,7 +50,10 @@ export interface Message {
   isTruncated?: boolean;
   userTier?: UserTier;
   maxCharacters?: number;
-  campaign?: 'wallchain' | 'idos' | 'beyond';
+  /** Canonical sources cited for this answer, with their timestamps. */
+  sources?: EvidenceSource[];
+  /** Retrieval timestamp for the evidence behind this answer. */
+  retrievedAt?: string | null;
 }
 
 export interface ChatSession {
@@ -52,19 +62,14 @@ export interface ChatSession {
   createdAt: Date;
 }
 
-// Whitelisted data sources
-export const WHITELISTED_SOURCES = [
-  'https://docs.wallchain.xyz/intro',
-  'https://news.wallchain.xyz/',
-  'https://app.wallchain.xyz/leaderboards',
-  '@wallchain (Twitter/X)',
-  'https://t.me/wallchain_xyz',
-  'https://www.instagram.com/wallchain_xyz/',
-  'https://www.linkedin.com/company/wallchainco/',
-  'https://m.youtube.com/@wallchain',
-  'https://www.tiktok.com/@wallchain.xyz',
-  'InfoFi datasets',
-  'Quack Heads / gQuack / quack.xyz ecosystem',
+/**
+ * The only official Ugly Duck Society sources. Nothing outside this list is
+ * ingested, retrieved or cited.
+ */
+export const APPROVED_SOURCES = [
+  'https://uglyducksociety.tech',
+  'https://www.instagram.com/uglyducksociety/',
+  'https://x.com/uglyducklabz',
 ] as const;
 
 // Content creation keywords to block
