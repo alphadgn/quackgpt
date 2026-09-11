@@ -263,7 +263,7 @@ async function runRlsAudit(supabase: ReturnType<typeof createClient>): Promise<F
 
   const sensitiveTablesExpectingDeny = [
     "user_roles", "app_users", "chat_history", "chat_feedback",
-    "security_scans", "scrape_sources", "scrape_jobs", "tweet_audits",
+    "security_scans", "scrape_sources", "scrape_jobs", "text_verifications",
     "indexed_sources", "security_findings", "incident_logs"
   ];
 

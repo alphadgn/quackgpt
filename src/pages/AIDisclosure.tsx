@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { QuackLogo } from "@/components/QuackLogo";
 import { Home, AlertTriangle, Shield, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { WHITELISTED_SOURCES } from "@/types";
+import { APPROVED_SOURCES } from "@/types";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
 
 const AIDisclosure = () => {
@@ -75,7 +75,7 @@ const AIDisclosure = () => {
               quackGPT only references information from these official sources:
             </p>
             <ul className="flex flex-col items-center gap-2 w-full">
-              {WHITELISTED_SOURCES.map((source) => (
+              {APPROVED_SOURCES.map((source) => (
                 <li 
                   key={source}
                   className="px-3 py-2 rounded-lg bg-secondary/50 text-sm text-foreground/80 font-mono w-full max-w-md text-center truncate overflow-hidden"

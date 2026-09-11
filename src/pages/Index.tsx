@@ -385,8 +385,8 @@ const Index = () => {
           )}
 
           <p className="text-center text-xs text-muted-foreground mt-6 mb-12 max-w-xl mx-auto">
-            QuackGPT provides information only. Not financial advice. 
-            Data sourced from Wallchain &amp; other official channels.
+            QuackGPT provides information only. Not financial advice.
+            Answers are drawn only from official Ugly Duck Society sources.
           </p>
         </div>
       </main>

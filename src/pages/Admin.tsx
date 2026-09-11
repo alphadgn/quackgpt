@@ -27,7 +27,7 @@ interface ScrapeSource {
   label: string;
   is_active: boolean;
   created_at: string;
-  campaign: string;
+  knowledge_domain?: string;
 }
 
 interface FeedbackItem {
@@ -112,7 +112,6 @@ export default function Admin() {
   const [newSourceUrl, setNewSourceUrl] = useState("");
   const [newSourceLabel, setNewSourceLabel] = useState("");
   const [addingSource, setAddingSource] = useState(false);
-  const [sourcesCampaign, setSourcesCampaign] = useState<"wallchain" | "idos" | "beyond">("wallchain");
 
   // Feedback state
   const [negativeFeedback, setNegativeFeedback] = useState<FeedbackItem[]>([]);
@@ -142,7 +141,7 @@ export default function Admin() {
   const [resolvingFinding, setResolvingFinding] = useState<string | null>(null);
   const [resolveNotes, setResolveNotes] = useState<Record<string, string>>({});
 
-  // Tweet audit state
+  // Text verification state
   const [adminAudits, setAdminAudits] = useState<any[]>([]);
   const [adminAuditsLoading, setAdminAuditsLoading] = useState(false);
   const [expandedAdminAudit, setExpandedAdminAudit] = useState<string | null>(null);
@@ -193,13 +192,12 @@ export default function Admin() {
     }
   }, [user?.id, getAccessToken]);
 
-  const fetchSources = useCallback(async (campaign?: string) => {
+  const fetchSources = useCallback(async () => {
     setSourcesLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const c = campaign || sourcesCampaign;
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list&campaign=${c}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list`,
         { headers }
       );
       const data = await resp.json();
@@ -209,7 +207,7 @@ export default function Admin() {
     } finally {
       setSourcesLoading(false);
     }
-  }, [getAuthHeaders, sourcesCampaign]);
+  }, [getAuthHeaders]);
 
   const fetchFeedback = useCallback(async () => {
     setFeedbackLoading(true);
@@ -277,7 +275,7 @@ export default function Admin() {
       const headers = await getAuthHeaders();
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=add`,
-        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim(), campaign: sourcesCampaign }) }
+        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim() }) }
       );
       if (resp.ok) {
         toast.success("Source added");
@@ -385,18 +383,18 @@ export default function Admin() {
     if (isAdmin) fetchHistoryUsers();
   }, [isAdmin, fetchHistoryUsers]);
 
-  // Fetch all tweet audits for admin
+  // Fetch all text verifications for admin
   const fetchAdminAudits = useCallback(async () => {
     setAdminAuditsLoading(true);
     try {
       const headers = await getAuthHeaders();
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-list-audits`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=admin-list-verifications`,
         { headers }
       );
       const data = await resp.json();
-      if (resp.ok && data.audits) setAdminAudits(data.audits);
-    } catch { console.error("Failed to fetch admin audits"); }
+      if (resp.ok && data.verifications) setAdminAudits(data.verifications);
+    } catch { console.error("Failed to fetch admin verifications"); }
     finally { setAdminAuditsLoading(false); }
   }, [getAuthHeaders]);
 
@@ -994,40 +992,16 @@ export default function Admin() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                These URLs are scraped by Firecrawl to build quackGPT's knowledge base per campaign. Toggle to enable/disable.
+                Only official Ugly Duck Society sources are ingested into the knowledge base. Toggle to enable/disable.
               </p>
-
-              {/* Campaign tabs */}
-              <div className="flex gap-1 mb-4 rounded-lg bg-muted/30 p-1">
-                {([
-                  { key: "wallchain" as const, label: "Wallchain", activeClass: "bg-yellow-500/20 text-yellow-400" },
-                  { key: "idos" as const, label: "idOS Network", activeClass: "bg-emerald-500/20 text-emerald-400" },
-                  { key: "beyond" as const, label: "Beyond", activeClass: "bg-orange-500/20 text-orange-400" },
-                ] as const).map(tab => (
-                  <button
-                    key={tab.key}
-                    className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors font-medium ${
-                      sourcesCampaign === tab.key ? tab.activeClass : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => { setSourcesCampaign(tab.key); fetchSources(tab.key); }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
 
               {sourcesLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
               ) : (
                 <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto rounded-lg border border-border/30 p-2">
                   {sources.map(source => {
-                    const sourceContainerStyles: Record<string, React.CSSProperties> = {
-                      wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.1)', borderLeft: '3px solid rgb(234, 179, 8)' },
-                      idos: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '3px solid rgb(16, 185, 129)' },
-                      beyond: { backgroundColor: 'rgba(249, 115, 22, 0.1)', borderLeft: '3px solid rgb(249, 115, 22)' },
-                    };
                     return (
-                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50' : 'border-border/30 opacity-60'}`} style={sourceContainerStyles[sourcesCampaign] || sourceContainerStyles.wallchain}>
+                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50' : 'border-border/30 opacity-60'}`} style={{ backgroundColor: 'hsl(var(--card) / 0.4)', borderLeft: '3px solid hsl(var(--border))' }}>
                       <Switch checked={source.is_active} onCheckedChange={(checked) => handleToggleSource(source.id, checked)} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{source.label}</p>
@@ -1195,13 +1169,7 @@ export default function Admin() {
                         }
                       }
                       return (
-                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30' : 'border-border/50'}`} style={(() => {
-                          const p = (session.preview || '').toUpperCase();
-                          if (p.includes('[WALLCHAIN]') || p.includes('WALLCHAIN') || p.includes('INFOFI') || p.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                          if (p.includes('[IDOS') || p.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                          if (p.includes('[BEYOND]') || p.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                        })()}>
+                        <div key={session.session_id} className={`rounded-lg border overflow-hidden ${session.user_deleted ? 'border-destructive/30' : 'border-border/50'}`} style={{ backgroundColor: 'hsl(var(--card) / 0.4)', borderLeft: '4px solid hsl(var(--border))' }}>
                           <div className="flex items-center gap-2 p-3">
                             <button
                               className="flex-1 flex items-center gap-2 text-left"
@@ -1237,13 +1205,7 @@ export default function Admin() {
                                   const fbKey = pair.user.content?.trim().toLowerCase() || "";
                                   const fb = fbKey ? historyFeedbackMap[fbKey] : null;
                                   return (
-                                    <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={(() => {
-                                      const c = (pair.user.content || '').toUpperCase();
-                                      if (c.includes('[WALLCHAIN]') || c.includes('WALLCHAIN') || c.includes('INFOFI') || c.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                                      if (c.includes('[IDOS') || c.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                                      if (c.includes('[BEYOND]') || c.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                                      return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                                    })()}>
+                                    <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={{ backgroundColor: 'hsl(var(--muted) / 0.4)', borderLeft: '4px solid hsl(var(--border))' }}>
                                       <div className="text-xs">
                                         <span className="font-semibold text-primary">User:</span>{' '}
                                         <span className="text-foreground/90">{pair.user.content}</span>
@@ -1279,66 +1241,73 @@ export default function Admin() {
               )}
             </div>
 
-            {/* Tweet Audit History (Admin) */}
+            {/* Text Verification History (Admin) */}
             <div className="border-y border-border/50 bg-card/30 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Bird className="w-5 h-5 text-primary" />
-                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Tweet Audit History</h2>
+                <h2 className="text-lg font-semibold text-foreground text-center flex-1">Text Verification History</h2>
                 <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  {adminAudits.length} audits
+                  {adminAudits.length} checks
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-5">
-                All tweet audit results across all users. Each audit deducts one query from the user's account.
+                All submitted-text verifications across all users. Each check deducts one query from the user's account.
               </p>
 
               {adminAuditsLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
               ) : adminAudits.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">No tweet audits yet.</p>
+                <p className="text-sm text-muted-foreground text-center py-4">No verifications yet.</p>
               ) : (
                 <div className="max-h-[400px] overflow-y-auto rounded-lg border border-border/30 p-2 space-y-2">
-                  {adminAudits.map((audit: any) => {
-                    const isExpanded = expandedAdminAudit === audit.id;
-                    const scoreColor = audit.composite_score >= 75 ? "text-primary" : audit.composite_score >= 50 ? "text-amber-500" : "text-destructive";
+                  {adminAudits.map((item: any) => {
+                    const isExpanded = expandedAdminAudit === item.id;
+                    const claims: any[] = Array.isArray(item.claim_analysis) ? item.claim_analysis : [];
+                    const corrections: any[] = Array.isArray(item.corrections) ? item.corrections : [];
+                    const sources: any[] = Array.isArray(item.supporting_sources) ? item.supporting_sources : [];
                     return (
-                      <div key={audit.id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
-                          const t = (audit.tweet_text || '').toUpperCase();
-                          if (t.includes('IDOS') || t.includes('IDOS NETWORK')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                          if (t.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                          return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                        })()}>
+                      <div key={item.id} className="rounded-lg border border-border/50 overflow-hidden" style={{ backgroundColor: 'hsl(var(--card) / 0.4)', borderLeft: '4px solid hsl(var(--border))' }}>
                         <button
                           className="w-full flex items-center gap-3 p-3 text-left hover:bg-muted/30 transition-colors"
-                          onClick={() => setExpandedAdminAudit(isExpanded ? null : audit.id)}
+                          onClick={() => setExpandedAdminAudit(isExpanded ? null : item.id)}
                         >
                           <ChevronRight className={`w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-foreground truncate">"{audit.tweet_text}"</p>
+                            <p className="text-xs text-foreground truncate">"{item.submitted_text}"</p>
                             <p className="text-[10px] text-muted-foreground">
-                              {new Date(audit.created_at).toLocaleString()} • {audit.external_user_id ? shortenId(audit.external_user_id) : "—"}
+                              {new Date(item.created_at).toLocaleString()} • {item.external_user_id ? shortenId(item.external_user_id) : "—"}
                             </p>
                           </div>
-                          <span className={`text-sm font-bold font-mono ${scoreColor}`}>{audit.composite_score}</span>
+                          <span className="text-[10px] text-muted-foreground shrink-0">{claims.length} {claims.length === 1 ? 'claim' : 'claims'}</span>
                         </button>
                         {isExpanded && (
                           <div className="border-t border-border/30 bg-muted/10 p-3 space-y-2">
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div><span className="text-muted-foreground">Relevancy:</span> <span className="font-mono font-semibold">{audit.relevancy_score}</span></div>
-                              <div><span className="text-muted-foreground">Correctness:</span> <span className="font-mono font-semibold">{audit.correctness_score}</span></div>
-                              <div><span className="text-muted-foreground">Honesty:</span> <span className="font-mono font-semibold">{audit.honesty_score}</span></div>
-                              <div><span className="text-muted-foreground">Brand Alignment:</span> <span className="font-mono font-semibold">{audit.brand_alignment_score}</span></div>
-                            </div>
-                            {audit.risk_flags?.length > 0 && (
-                              <div className="text-xs text-destructive">
-                                <p className="font-semibold mb-1">⚠️ Risk Flags:</p>
-                                {audit.risk_flags.map((f: string, i: number) => <p key={i}>• {f}</p>)}
+                            {claims.length > 0 && (
+                              <div className="space-y-1 text-xs">
+                                {claims.map((c: any, i: number) => (
+                                  <div key={i} className="rounded border border-border/30 p-2">
+                                    <p className="text-foreground/90">{c.claim ?? String(c)}</p>
+                                    {c.verdict && (
+                                      <p className="text-[10px] text-muted-foreground mt-1">
+                                        {c.verdict}{typeof c.confidence === "number" ? ` • ${c.confidence}% confidence` : ""}
+                                      </p>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             )}
-                            {audit.suggested_improvements?.length > 0 && (
+                            {corrections.length > 0 && (
                               <div className="text-xs text-primary">
-                                <p className="font-semibold mb-1">💡 Improvements:</p>
-                                {audit.suggested_improvements.map((s: string, i: number) => <p key={i}>• {s}</p>)}
+                                <p className="font-semibold mb-1">Corrections:</p>
+                                {corrections.map((c: any, i: number) => <p key={i}>• {typeof c === "string" ? c : c.correction ?? JSON.stringify(c)}</p>)}
+                              </div>
+                            )}
+                            {sources.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                <p className="font-semibold mb-1">Sources:</p>
+                                {sources.map((s: any, i: number) => (
+                                  <p key={i} className="truncate">• {typeof s === "string" ? s : s.url ?? JSON.stringify(s)}</p>
+                                ))}
                               </div>
                             )}
                           </div>

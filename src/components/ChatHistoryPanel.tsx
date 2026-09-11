@@ -133,19 +133,7 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
               const pairs = getQAPairs(session.messages);
               const isExpanded = expandedSession === session.session_id;
               return (
-              <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={(() => {
-                  const p = (session.preview || '').toUpperCase();
-                  // Bracket-tag detection first
-                  if (p.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                  if (p.includes('[IDOS') || p.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                  if (p.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                  // Keyword fallback for legacy entries
-                  if (p.includes('WALLCHAIN') || p.includes('WALL CHAIN') || p.includes('INFOFI') || p.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                  if (p.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.15)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                  if (p.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                  // Default legacy entries to wallchain yellow
-                  return { backgroundColor: 'rgba(234, 179, 8, 0.15)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                })()}>
+              <div key={session.session_id} className="rounded-lg border border-border/50 overflow-hidden" style={{ backgroundColor: 'hsl(var(--card) / 0.4)', borderLeft: '4px solid hsl(var(--border))' }}>
                   <button
                     className="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/30 transition-colors"
                     onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
@@ -183,20 +171,8 @@ export function ChatHistoryPanel({ getAuthHeaders, onLoadSession, isOpen, onClos
                       <div className="max-h-80 overflow-y-auto p-3 space-y-3">
                          {pairs.map((pair, i) => {
                           const feedback = pair.assistant ? getFeedbackForMessage(pair.assistant.content) : null;
-                          // Detect campaign from user message content
-                          const content = (pair.user.content || '').toUpperCase();
-                          const getCampaignStyle = (text: string): React.CSSProperties => {
-                            if (text.includes('[WALLCHAIN]')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                            if (text.includes('[IDOS') || text.includes('[IDOS NETWORK]')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                            if (text.includes('[BEYOND]')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                            if (text.includes('WALLCHAIN') || text.includes('WALL CHAIN') || text.includes('INFOFI') || text.includes('QUACK')) return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                            if (text.includes('IDOS')) return { backgroundColor: 'rgba(16, 185, 129, 0.25)', borderLeft: '4px solid rgb(16, 185, 129)' };
-                            if (text.includes('BEYOND')) return { backgroundColor: 'rgba(239, 68, 68, 0.25)', borderLeft: '4px solid rgb(239, 68, 68)' };
-                            return { backgroundColor: 'rgba(234, 179, 8, 0.25)', borderLeft: '4px solid rgb(234, 179, 8)' };
-                          };
-                          const campaignStyle = getCampaignStyle(content);
                           return (
-                            <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={campaignStyle}>
+                            <div key={i} className="rounded-md border border-border/30 p-3 space-y-2" style={{ backgroundColor: 'hsl(var(--muted) / 0.4)', borderLeft: '4px solid hsl(var(--border))' }}>
                               {/* User query */}
                               <div className="text-xs">
                                 <span className="font-semibold text-primary">You:</span>{" "}
