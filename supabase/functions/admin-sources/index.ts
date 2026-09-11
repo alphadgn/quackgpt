@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/index.ts";
+import { KNOWLEDGE_DOMAIN, checkUrl } from "../_shared/knowledge.ts";
 
 function isAllowedOrigin(origin: string): boolean {
   if (origin === "https://quackgpt.lovable.app") return true;
@@ -72,15 +73,11 @@ Deno.serve(async (req) => {
     const action = url.searchParams.get("action");
 
     if (action === "list") {
-      const campaignFilter = url.searchParams.get("campaign");
-      let query = supabase
+      const query = supabase
         .from("scrape_sources")
         .select("*")
+        .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
         .order("created_at", { ascending: true });
-      
-      if (campaignFilter) {
-        query = query.eq("campaign", campaignFilter);
-      }
 
       const { data, error } = await query;
 
@@ -91,14 +88,27 @@ Deno.serve(async (req) => {
     }
 
     if (action === "add" && req.method === "POST") {
-      const { url: sourceUrl, label, campaign: sourceCampaign } = await req.json();
+      const { url: sourceUrl, label } = await req.json();
       if (!sourceUrl || !label) {
         return new Response(JSON.stringify({ error: "URL and label required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      // Only URLs belonging to the three approved official sources may be added.
+      const check = checkUrl(sourceUrl);
+      if (!check.approved) {
+        console.error(JSON.stringify({ event: "source_rejected", url: sourceUrl, reason: check.reason }));
+        return new Response(JSON.stringify({ error: `This URL is not an approved official source (${check.reason}).` }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const { error } = await supabase.from("scrape_sources").insert({
-        url: sourceUrl, label, added_by: privyUserId, campaign: sourceCampaign || "wallchain",
+        url: sourceUrl,
+        label,
+        added_by: privyUserId,
+        knowledge_domain: KNOWLEDGE_DOMAIN,
+        normalized_url: check.normalized,
+        source_family: check.family,
       });
       if (error) {
         return new Response(JSON.stringify({ error: error.message }), {

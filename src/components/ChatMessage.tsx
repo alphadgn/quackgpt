@@ -1,7 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Message } from "@/types";
-import { QuackLogo } from "./QuackLogo";
-import { User, AlertTriangle, ThumbsUp, ThumbsDown } from "lucide-react";
+import { User, AlertTriangle, ThumbsUp, ThumbsDown, Link2 } from "lucide-react";
 import { useState } from "react";
 
 interface ChatMessageProps {
@@ -11,21 +10,10 @@ interface ChatMessageProps {
   previousUserMessage?: Message;
 }
 
-const campaignInlineStyles: Record<string, React.CSSProperties> = {
-  wallchain: { backgroundColor: 'rgba(245, 158, 11, 0.2)', borderLeft: '4px solid rgb(251, 191, 36)' },
-  idos: { backgroundColor: 'rgba(16, 185, 129, 0.2)', borderLeft: '4px solid rgb(52, 211, 153)' },
-  beyond: { backgroundColor: 'rgba(249, 115, 22, 0.2)', borderLeft: '4px solid rgb(251, 146, 60)' },
-};
-
 export function ChatMessage({ message, className, onFeedback, previousUserMessage }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isBlocked = message.isBlocked;
   const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
-
-  // Use campaign from message directly, or inherit from previous user message for assistant replies
-  const campaign = message.campaign || (!isUser ? previousUserMessage?.campaign : undefined);
-  const campaignStyle = campaign ? campaignInlineStyles[campaign] : undefined;
-
 
   const handleFeedback = (type: 'positive' | 'negative') => {
     if (feedback) return;
@@ -33,19 +21,15 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
     onFeedback?.(message.content, type, previousUserMessage?.content);
   };
 
-  // Build background: campaign style takes priority over defaults
-  const bgClass = campaignStyle
-    ? ""
-    : isUser ? "bg-transparent" : "bg-secondary/30";
+  const sources = message.sources || [];
 
   return (
     <div
       className={cn(
         "flex gap-4 py-6 px-4 animate-slide-up",
-        bgClass,
+        isUser ? "bg-transparent" : "bg-secondary/30",
         className
       )}
-      style={campaignStyle || undefined}
     >
       {/* Avatar */}
       <div className={cn(
@@ -107,6 +91,33 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
                 </span>
               )}
             </div>
+
+            {/* Citations: canonical source, publication time, retrieval time */}
+            {!isUser && sources.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border/30 space-y-1">
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Sources</p>
+                {sources.map((s) => (
+                  <div key={s.canonicalUrl} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+                    <Link2 className="w-3 h-3 mt-0.5 shrink-0" />
+                    <span className="min-w-0">
+                      <a
+                        href={s.canonicalUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline break-all"
+                      >
+                        {s.canonicalUrl}
+                      </a>
+                      <span className="block">
+                        Published: {s.publishedAt ? new Date(s.publishedAt).toLocaleString() : 'not stated'}
+                        {' · '}
+                        Retrieved: {s.retrievedAt ? new Date(s.retrievedAt).toLocaleString() : '—'}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
             
             {/* Feedback buttons - only on assistant messages */}
             {!isUser && message.content && (

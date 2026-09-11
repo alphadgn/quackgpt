@@ -110,7 +110,7 @@ export function useAuth() {
     return () => { cancelled = true; };
   }, [authenticated, user?.id]);
 
-  // Verify Quack Heads NFT ownership on Solana
+  // Verify Ugly Duck Society NFT ownership on Solana
   useEffect(() => {
     if (!authenticated || !solanaAddress) {
       setIsNftHolder(false);

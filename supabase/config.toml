@@ -39,7 +39,7 @@ verify_jwt = false
 [functions.security-scan]
 verify_jwt = false
 
-[functions.tweet-audit]
+[functions.verify-text]
 verify_jwt = false
 
 [functions.ingest-sources]

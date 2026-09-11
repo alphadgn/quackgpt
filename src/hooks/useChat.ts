@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from '@/types';
+import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS, EvidenceSource } from '@/types';
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
@@ -11,7 +11,7 @@ function generateSessionId(): string {
 
 function isContentCreationRequest(text: string): boolean {
   const lowerText = text.toLowerCase();
-  return BLOCKED_CONTENT_KEYWORDS.some(keyword => 
+  return BLOCKED_CONTENT_KEYWORDS.some(keyword =>
     lowerText.includes(keyword.toLowerCase())
   );
 }
@@ -21,12 +21,30 @@ function hasMultipleQuestions(text: string): boolean {
   return questionMarks > 1;
 }
 
-const SCRAPE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
+const RETRIEVE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
 const CHECK_USAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-usage`;
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
+const VERIFY_TEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-text`;
 
 const VIOLATION_WINDOW_MS = 5 * 60 * 1000;
 const COOLDOWN_DURATION_MS = 60 * 60 * 1000;
-const CYCLE_DURATION_MS = 24 * 60 * 60 * 1000;
+
+const UNAVAILABLE_MESSAGE =
+  'SOME INFORMATION IS UNVERIFIED. No verified Ugly Duck Society source is available right now, so I cannot answer this. Please try again later.';
+
+export type AssistantMode = 'search' | 'quack-check' | 'verify-text';
+
+interface RetrievedEvidence {
+  context: string;
+  evidence: {
+    retrievedCount: number;
+    sourcesChecked?: number;
+    rejectedCount?: number;
+    retrievedAt?: string;
+    newestSourceTimestamp?: string | null;
+    sources?: EvidenceSource[];
+  };
+}
 
 interface UseChatOptions {
   tier: UserTier;
@@ -47,7 +65,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
   const [usageLoaded, setUsageLoaded] = useState(false);
   const sessionIdRef = useRef<string>(generateSessionId());
 
-  // Helper to build auth headers (JWT only, no header fallback)
   const getAuthHeaders = useCallback(async () => {
     const token = getAccessToken ? await getAccessToken() : null;
     return {
@@ -72,7 +89,6 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       try {
         const token = getAccessToken ? await getAccessToken() : null;
         if (!token) {
-          // Token not ready yet — skip silently, will retry on next render
           if (!cancelled) setUsageLoaded(true);
           return;
         }
@@ -102,9 +118,9 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     })();
 
     return () => { cancelled = true; };
-  }, [isAuthenticated, privyUserId, getAuthHeaders, tierOverride, isSuperAdmin]);
+  }, [isAuthenticated, privyUserId, getAccessToken, tierOverride, isSuperAdmin]);
 
-  // Auto-reset queries when user's personal 24h countdown reaches zero
+  // Auto-reset queries when the user's personal 24h countdown reaches zero
   useEffect(() => {
     if (!resetTime) return;
     const interval = setInterval(() => {
@@ -120,9 +136,32 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
   const queriesRemaining = limits.maxQueries === -1 ? 999 : limits.maxQueries - queriesUsedToday;
   const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
 
-  const sendMessage = useCallback(async (content: string) => {
+  /**
+   * Retrieve evidence for the single approved knowledge domain.
+   * Returns null when no valid evidence exists — the caller must then fail
+   * closed and must never fall back to model memory or general web content.
+   */
+  const retrieveEvidence = useCallback(async (query: string): Promise<RetrievedEvidence | null> => {
+    try {
+      const headers = await getAuthHeaders();
+      const resp = await fetch(RETRIEVE_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query }),
+      });
+      if (!resp.ok) return null;
+      const data = await resp.json();
+      if (!data.success || !data.context) return null;
+      return { context: data.context, evidence: data.evidence || { retrievedCount: 0 } };
+    } catch (err) {
+      console.error('Evidence retrieval failed:', err);
+      return null;
+    }
+  }, [getAuthHeaders]);
+
+  const sendMessage = useCallback(async (content: string, mode: AssistantMode = 'search') => {
     if (!isAuthenticated || !privyUserId) {
-      setMessages(prev => [...prev, 
+      setMessages(prev => [...prev,
         { id: generateId(), role: 'user', content, timestamp: new Date() },
         { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
           blockReason: 'Please sign in to use quackGPT.' }
@@ -132,7 +171,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
 
     if (cooldownUntil && Date.now() < cooldownUntil) {
       const minutesLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
-      setMessages(prev => [...prev, 
+      setMessages(prev => [...prev,
         { id: generateId(), role: 'user', content, timestamp: new Date() },
         { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
           blockReason: `You are on a ${minutesLeft}-minute cooldown due to repeated multi-question violations.` }
@@ -141,14 +180,14 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     }
 
     if (queriesRemaining <= 0) return;
-    
+
     if (hasMultipleQuestions(content)) {
       const now = Date.now();
       const recentViolations = [...violations.filter(t => now - t < VIOLATION_WINDOW_MS), now];
       setViolations(recentViolations);
 
       const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
-      
+
       if (recentViolations.length >= 3) {
         setCooldownUntil(now + COOLDOWN_DURATION_MS);
         setMessages(prev => [...prev, userMessage, {
@@ -168,146 +207,113 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
       setMessages(prev => [...prev, userMessage, {
         id: generateId(), role: 'assistant', content: '', timestamp: new Date(),
-        isBlocked: true, blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from verified sources.',
+        isBlocked: true, blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from official Ugly Duck Society sources.',
       }]);
       return;
     }
-    
-    // Extract campaign from content prefix for color-coding
-    const campaignMatch = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
-    const campaignMap: Record<string, 'wallchain' | 'idos' | 'beyond'> = {
-      'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond',
-    };
-    const detectedCampaign = campaignMatch ? campaignMap[campaignMatch[1].toLowerCase()] : undefined;
 
-    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date(), campaign: detectedCampaign };
+    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
-    
+
     try {
       const headers = await getAuthHeaders();
-      
-      // Scrape context
-      let context = '';
-      try {
-        const campaignForScrape = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
-        const ecoMap: Record<string, string> = { 'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond' };
-        const scrapeCampaign = campaignForScrape ? ecoMap[campaignForScrape[1].toLowerCase()] : undefined;
-        const scrapeResponse = await fetch(SCRAPE_URL, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ query: content, campaign: scrapeCampaign }),
-        });
-        
-        if (scrapeResponse.ok) {
-          const scrapeData = await scrapeResponse.json();
-          if (scrapeData.success && scrapeData.context) {
-            context = scrapeData.context;
-          }
-        }
-      } catch (scrapeError) {
-        console.log('Scraping skipped:', scrapeError);
+
+      // Retrieve evidence FIRST — fail closed if there is none.
+      const retrieved = await retrieveEvidence(content);
+      if (!retrieved) {
+        setMessages(prev => [...prev, {
+          id: generateId(), role: 'assistant', content: UNAVAILABLE_MESSAGE, timestamp: new Date(),
+        }]);
+        return;
       }
-      
+
       const chatHistory = messages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
       }));
-      
-      // Extract mode and ecosystem from message content for routing
-      const modeMatch = content.match(/\[QUACK CHECK\]/i);
-      const campaignMatch = content.match(/\[(Wallchain|idOS Network|Beyond)\]/i);
-      const campaignToEcosystem: Record<string, string> = {
-        'wallchain': 'wallchain', 'idos network': 'idos', 'beyond': 'beyond',
-      };
-      const detectedEcosystem = campaignMatch ? campaignToEcosystem[campaignMatch[1].toLowerCase()] : undefined;
-      const detectedMode = modeMatch ? 'quack-check' : 'search';
 
-      const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
       const response = await fetch(CHAT_URL, {
         method: 'POST',
         headers,
         body: JSON.stringify({
           messages: [...chatHistory, { role: 'user', content }],
-          context,
-          mode: detectedMode,
-          ecosystem: detectedEcosystem,
+          context: retrieved.context,
+          evidence: retrieved.evidence,
+          mode,
           ...(isSuperAdmin && tierOverride ? { tierOverride } : {}),
         }),
       });
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         if (response.status === 401) {
           throw new Error('Please sign in to use quackGPT');
         }
+        if (response.status === 424) {
+          throw new Error(errorData.error || UNAVAILABLE_MESSAGE);
+        }
         if (response.status === 429) {
-          if (errorData.resetTime) {
-            setResetTime(errorData.resetTime);
-          }
-          if (errorData.queriesUsed) {
-            setQueriesUsedToday(errorData.queriesUsed);
-          }
+          if (errorData.resetTime) setResetTime(errorData.resetTime);
+          if (errorData.queriesUsed) setQueriesUsedToday(errorData.queriesUsed);
           throw new Error(errorData.error || 'Daily query limit reached');
         }
         throw new Error(errorData.error || 'Failed to get response');
       }
-      
+
       if (!response.body) throw new Error('No response body');
 
       const serverMaxChars = parseInt(response.headers.get('X-Max-Characters') || String(limits.maxCharacters));
       const serverQueriesUsed = parseInt(response.headers.get('X-Queries-Used') || '0');
       const serverTier = response.headers.get('X-User-Tier') || tier;
       const serverResetTime = response.headers.get('X-Reset-Time');
-      
-      if (serverResetTime) {
-        setResetTime(parseInt(serverResetTime));
-      }
-      
+
+      if (serverResetTime) setResetTime(parseInt(serverResetTime));
+
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = '';
       let textBuffer = '';
-      
+
       const assistantId = generateId();
       setMessages(prev => [...prev, {
-        id: assistantId, role: 'assistant', content: '', timestamp: new Date(), campaign: detectedCampaign,
+        id: assistantId, role: 'assistant', content: '', timestamp: new Date(),
+        sources: retrieved.evidence.sources || [],
+        retrievedAt: retrieved.evidence.retrievedAt ?? null,
       }]);
-      
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
+
         textBuffer += decoder.decode(value, { stream: true });
-        
+
         let newlineIndex: number;
         while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
           let line = textBuffer.slice(0, newlineIndex);
           textBuffer = textBuffer.slice(newlineIndex + 1);
-          
+
           if (line.endsWith('\r')) line = line.slice(0, -1);
           if (line.startsWith(':') || line.trim() === '') continue;
           if (!line.startsWith('data: ')) continue;
-          
+
           const jsonStr = line.slice(6).trim();
           if (jsonStr === '[DONE]') break;
-          
+
           try {
             const parsed = JSON.parse(jsonStr);
             const deltaContent = parsed.choices?.[0]?.delta?.content;
             if (deltaContent) {
               assistantContent += deltaContent;
-              
+
               let displayContent = assistantContent;
               if (displayContent.length > serverMaxChars) {
                 displayContent = displayContent.substring(0, serverMaxChars);
               }
-              
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === assistantId 
-                    ? { ...msg, content: displayContent }
-                    : msg
+
+              setMessages(prev =>
+                prev.map(msg =>
+                  msg.id === assistantId ? { ...msg, content: displayContent } : msg
                 )
               );
             }
@@ -316,18 +322,16 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
           }
         }
       }
-      
+
       let finalContent = assistantContent;
       const wasTruncated = finalContent.length > serverMaxChars;
-      if (wasTruncated) {
-        finalContent = finalContent.substring(0, serverMaxChars);
-      }
+      if (wasTruncated) finalContent = finalContent.substring(0, serverMaxChars);
 
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === assistantId 
-            ? { 
-                ...msg, 
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === assistantId
+            ? {
+                ...msg,
                 content: finalContent,
                 isTruncated: wasTruncated,
                 userTier: serverTier as UserTier,
@@ -336,7 +340,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
             : msg
         )
       );
-      
+
       if (serverQueriesUsed > 0) {
         setQueriesUsedToday(serverQueriesUsed);
       } else {
@@ -358,7 +362,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
       } catch (saveErr) {
         console.error('Failed to save chat history:', saveErr);
       }
-      
+
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, {
@@ -369,103 +373,108 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders, tierOverride, isSuperAdmin]);
+  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders, retrieveEvidence, tierOverride, isSuperAdmin]);
 
-  const sendTweetAudit = useCallback(async (tweetText: string, campaign: string = 'wallchain') => {
+  /**
+   * Verify the factual claims in submitted text. No scoring of any kind.
+   */
+  const sendVerifyText = useCallback(async (submittedText: string) => {
     if (!isAuthenticated || !privyUserId) return;
     if (queriesRemaining <= 0) return;
 
-    const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
-    const userMessage: Message = { id: generateId(), role: 'user', content: `[${campaignLabels[campaign] || campaign}] ${tweetText}`, timestamp: new Date(), campaign: campaign as 'wallchain' | 'idos' | 'beyond' };
+    const userMessage: Message = {
+      id: generateId(), role: 'user', content: `[VERIFY TEXT] ${submittedText}`, timestamp: new Date(),
+    };
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
     try {
       const headers = await getAuthHeaders();
 
-      // Scrape context filtered by campaign
-      let context = '';
-      try {
-        const scrapeResp = await fetch(SCRAPE_URL, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ query: tweetText, campaign }),
-        });
-        if (scrapeResp.ok) {
-          const scrapeData = await scrapeResp.json();
-          if (scrapeData.success && scrapeData.context) context = scrapeData.context;
-        }
-      } catch { /* skip */ }
+      const retrieved = await retrieveEvidence(submittedText);
+      if (!retrieved) {
+        setMessages(prev => [...prev, {
+          id: generateId(), role: 'assistant', content: UNAVAILABLE_MESSAGE, timestamp: new Date(),
+        }]);
+        return;
+      }
 
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tweet-audit`, {
+      const resp = await fetch(VERIFY_TEXT_URL, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ tweetText: tweetText.trim(), context, campaign }),
+        body: JSON.stringify({
+          submittedText: submittedText.trim(),
+          context: retrieved.context,
+          evidence: retrieved.evidence,
+        }),
       });
 
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || 'Audit failed');
+        throw new Error(err.error || 'Verification failed');
       }
 
       const data = await resp.json();
 
-      // Format result as markdown chat message
-      const scoreEmoji = (s: number) => s >= 75 ? '🟢' : s >= 50 ? '🟡' : '🔴';
-      let resultContent = `## 🦆 Tweet Integrity Score: ${scoreEmoji(data.composite_score)} ${data.composite_score}/100\n\n`;
+      const verdictIcon = (v: string) =>
+        v === 'SUPPORTED' ? '✅' : v === 'UNSUPPORTED' ? '❌' : v === 'OUTDATED' ? '🕓' : '❓';
+
+      let resultContent = `## 🦆 Text verification\n\n`;
       if (data.summary) resultContent += `${data.summary}\n\n`;
-      resultContent += `### Score Breakdown\n`;
-      resultContent += `- **Relevancy** (25%): ${data.relevancy_score}/100\n`;
-      resultContent += `- **Correctness** (30%): ${data.correctness_score}/100\n`;
-      resultContent += `- **Honesty** (25%): ${data.honesty_score}/100\n`;
-      resultContent += `- **Brand Alignment** (20%): ${data.brand_alignment_score}/100\n\n`;
 
       if (data.claim_analysis?.length > 0) {
-        resultContent += `### Claim Analysis\n`;
+        resultContent += `### Claims\n`;
         for (const c of data.claim_analysis) {
-          const icon = c.verdict === 'TRUE' ? '✅' : c.verdict === 'FALSE' ? '❌' : c.verdict === 'PARTIALLY_TRUE' ? '⚠️' : '❓';
-          resultContent += `${icon} **"${c.claim}"** — ${c.explanation}\n\n`;
+          resultContent += `${verdictIcon(c.verdict)} **"${c.claim}"** — ${c.verdict}: ${c.evidence}\n`;
+          if (c.source_url) {
+            resultContent += `   Source: ${c.source_url} · Published: ${c.published_at || 'not stated'}\n`;
+          }
+          resultContent += `\n`;
         }
       }
 
-      if (data.risk_flags?.length > 0) {
-        resultContent += `### ⚠️ Risk Flags\n`;
-        for (const f of data.risk_flags) resultContent += `- ${f}\n`;
-        resultContent += '\n';
+      if (data.corrections?.length > 0) {
+        resultContent += `### Factual corrections\n`;
+        for (const c of data.corrections) {
+          resultContent += `- "${c.incorrect_statement}" → ${c.correction}`;
+          if (c.source_url) resultContent += ` (Source: ${c.source_url}${c.published_at ? `, published ${c.published_at}` : ''})`;
+          resultContent += `\n`;
+        }
+        resultContent += `\n`;
       }
 
-      if (data.suggested_improvements?.length > 0) {
-        resultContent += `### 💡 Suggested Improvements\n`;
-        for (const imp of data.suggested_improvements) resultContent += `- ${imp}\n`;
+      if (data.supporting_sources?.length > 0) {
+        resultContent += `### Sources\n`;
+        for (const s of data.supporting_sources) {
+          resultContent += `- ${s.url}${s.published_at ? ` · Published: ${s.published_at}` : ''}\n`;
+        }
       }
 
-      // Apply character truncation for tweet audit just like search/quack check
-      let finalAuditContent = resultContent.trim();
-      const auditMaxChars = limits.maxCharacters;
-      const auditTruncated = finalAuditContent.length > auditMaxChars;
-      if (auditTruncated) {
-        finalAuditContent = finalAuditContent.substring(0, auditMaxChars);
-      }
+      let finalContent = resultContent.trim();
+      const maxChars = limits.maxCharacters;
+      const truncated = finalContent.length > maxChars;
+      if (truncated) finalContent = finalContent.substring(0, maxChars);
 
       setMessages(prev => [...prev, {
-        id: generateId(), role: 'assistant', content: finalAuditContent, timestamp: new Date(),
-        isTruncated: auditTruncated,
+        id: generateId(), role: 'assistant', content: finalContent, timestamp: new Date(),
+        isTruncated: truncated,
         userTier: tier,
-        maxCharacters: auditMaxChars,
-        campaign: campaign as 'wallchain' | 'idos' | 'beyond',
+        maxCharacters: maxChars,
+        sources: retrieved.evidence.sources || [],
+        retrievedAt: retrieved.evidence.retrievedAt ?? null,
       }]);
 
       setQueriesUsedToday(prev => prev + 1);
     } catch (error) {
       setMessages(prev => [...prev, {
         id: generateId(), role: 'assistant',
-        content: error instanceof Error ? error.message : 'Tweet audit failed. Please try again.',
+        content: error instanceof Error ? error.message : 'Verification failed. Please try again.',
         timestamp: new Date(),
       }]);
     } finally {
       setIsTyping(false);
     }
-  }, [isAuthenticated, privyUserId, queriesRemaining, getAuthHeaders]);
+  }, [isAuthenticated, privyUserId, queriesRemaining, getAuthHeaders, retrieveEvidence, limits.maxCharacters, tier]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -478,7 +487,7 @@ export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, ti
     queriesUsedToday,
     queriesRemaining,
     sendMessage,
-    sendTweetAudit,
+    sendVerifyText,
     clearMessages,
     cooldownUntil,
     isOnCooldown,

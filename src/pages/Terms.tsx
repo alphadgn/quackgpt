@@ -37,7 +37,7 @@ const Terms = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">2. Service Description</h2>
             <p className="text-foreground/80">
-              quackGPT is an information verification and summarization system that provides factual, source-bound information about Wallchain, InfoFi, Quack Heads, gQuack, and the quack.xyz ecosystem. The Service does NOT create content, including but not limited to tweets, articles, marketing copy, or promotional materials.
+              quackGPT is an information verification and summarization system that provides factual, source-bound information about Ugly Duck Society, an NFT collection and community that exists to do good in the world, drawn only from its official website, official Instagram account and official X account. quackGPT is an independent tool and is not an official Ugly Duck Society channel. The Service does NOT create content, including but not limited to tweets, articles, marketing copy, or promotional materials.
             </p>
           </section>
           
@@ -47,7 +47,7 @@ const Terms = () => {
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li><strong>Free Users:</strong> 1 query per 24 hours, 100 character response limit, no image generation</li>
               <li><strong>Paid Users ($1.49/week — trial offer):</strong> 3 queries per 24 hours, 300 character response limit, 3 images per day. This is a limited-time trial offer; prices are subject to change after the trial period ends.</li>
-              <li><strong>Quack Heads NFT Holders:</strong> 5 queries per 24 hours, 1000 character response limit, 5 images per day</li>
+              <li><strong>Ugly Duck Society NFT Holders:</strong> 5 queries per 24 hours, 1000 character response limit, 5 images per day</li>
             </ul>
           </section>
           

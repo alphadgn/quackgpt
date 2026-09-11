@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/index.ts";
+import {
+  KNOWLEDGE_DOMAIN,
+  checkUrl,
+  sanitizeRetrievedContent,
+} from "../_shared/knowledge.ts";
 
 function isAllowedOrigin(origin: string): boolean {
   if (origin === "https://quackgpt.lovable.app") return true;
@@ -44,21 +49,16 @@ async function isAdmin(supabase: any, userId: string): Promise<boolean> {
   return !!data;
 }
 
-// Simple content hash using Web Crypto API
 async function hashContent(content: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(content);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(content));
+  return Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// Chunk content into ~500-token segments (approx 2000 chars)
 function chunkContent(content: string, maxChunkChars = 2000): string[] {
   const chunks: string[] = [];
   const paragraphs = content.split(/\n\n+/);
   let current = "";
-
   for (const para of paragraphs) {
     if (current.length + para.length > maxChunkChars && current.length > 0) {
       chunks.push(current.trim());
@@ -71,15 +71,11 @@ function chunkContent(content: string, maxChunkChars = 2000): string[] {
   return chunks.length > 0 ? chunks : [content.substring(0, maxChunkChars)];
 }
 
-// Generate embedding via Lovable AI
 async function generateEmbedding(text: string, apiKey: string): Promise<number[] | null> {
   try {
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
@@ -97,11 +93,7 @@ async function generateEmbedding(text: string, apiKey: string): Promise<number[]
             parameters: {
               type: "object",
               properties: {
-                embedding: {
-                  type: "array",
-                  items: { type: "number" },
-                  description: "1536-dimensional embedding vector",
-                },
+                embedding: { type: "array", items: { type: "number" }, description: "1536-dimensional embedding vector" },
               },
               required: ["embedding"],
             },
@@ -115,15 +107,12 @@ async function generateEmbedding(text: string, apiKey: string): Promise<number[]
       console.error("Embedding generation failed:", response.status);
       return null;
     }
-
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) return null;
-
     const parsed = JSON.parse(toolCall.function.arguments);
     const emb = parsed.embedding;
-    if (Array.isArray(emb) && emb.length === 1536) return emb;
-    return null;
+    return Array.isArray(emb) && emb.length === 1536 ? emb : null;
   } catch (e) {
     console.error("Embedding generation error:", e);
     return null;
@@ -141,14 +130,12 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Determine trigger type
     let triggeredBy = "scheduled";
     const contentType = req.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
       const body = await req.json().catch(() => ({}));
       if (body.trigger === "manual") {
-        // Verify admin for manual trigger
         const privyUserId = await verifyPrivyToken(req);
         if (!privyUserId || !(await isAdmin(supabase, privyUserId))) {
           return new Response(JSON.stringify({ error: "Admin access required" }), {
@@ -160,45 +147,50 @@ serve(async (req) => {
     }
 
     if (!FIRECRAWL_API_KEY) {
+      console.error(JSON.stringify({ event: "ingestion_failed", reason: "scraper_not_configured", knowledge_domain: KNOWLEDGE_DOMAIN }));
       return new Response(JSON.stringify({ error: "Scraping service not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Create scrape job record
     const { data: job } = await supabase.from("scrape_jobs").insert({
       status: "running",
       triggered_by: triggeredBy,
     }).select("id").single();
-
     const jobId = job?.id;
 
-    // Load active sources
+    // ONLY active sources that belong to the Ugly Duck Society knowledge domain.
     const { data: sources } = await supabase
       .from("scrape_sources")
-      .select("url, label")
+      .select("url, label, source_family")
+      .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
       .eq("is_active", true);
 
-    const urls = sources?.map((s: any) => s.url) || [];
     let sourcesChecked = 0;
     let sourcesUpdated = 0;
+    let rejectedCount = 0;
     const errors: any[] = [];
 
-    for (const url of urls) {
+    for (const source of sources || []) {
+      const check = checkUrl(source.url);
+      if (!check.approved) {
+        rejectedCount++;
+        errors.push({ url: source.url, error: `rejected: ${check.reason}` });
+        console.error(JSON.stringify({ event: "source_rejected", url: source.url, reason: check.reason }));
+        continue;
+      }
+
       sourcesChecked++;
+      const url = source.url;
+      const normalizedUrl = check.normalized!;
+      const canonicalUrl = check.canonical!;
+      const sourceFamily = check.family!;
+
       try {
-        // Scrape the URL
         const scrapeResp = await fetch("https://api.firecrawl.dev/v1/scrape", {
           method: "POST",
-          headers: {
-            Authorization: `Bearer ${FIRECRAWL_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            url,
-            formats: ["markdown"],
-            onlyMainContent: true,
-          }),
+          headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
         });
 
         if (!scrapeResp.ok) {
@@ -207,58 +199,78 @@ serve(async (req) => {
         }
 
         const scrapeData = await scrapeResp.json();
-        const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+        const meta = scrapeData.data?.metadata || scrapeData.metadata || {};
+
+        // Reject redirects that leave the approved source.
+        const finalUrl = meta.sourceURL || meta.url || url;
+        const finalCheck = checkUrl(finalUrl);
+        if (!finalCheck.approved || finalCheck.family !== sourceFamily) {
+          rejectedCount++;
+          errors.push({ url, error: `redirect to unapproved destination: ${finalUrl}` });
+          console.error(JSON.stringify({ event: "redirect_rejected", from: url, to: finalUrl }));
+          continue;
+        }
+
+        const rawMarkdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+        const markdown = sanitizeRetrievedContent(rawMarkdown, 60000);
         if (!markdown || markdown.length < 50) {
           errors.push({ url, error: "Insufficient content" });
           continue;
         }
 
-        const title = scrapeData.data?.metadata?.title || scrapeData.metadata?.title || url;
+        const title = meta.title || source.label || canonicalUrl;
+        const author = meta.author || meta.ogSiteName || null;
+        const publishedAt = meta.publishedTime || meta.modifiedTime || null;
+        const retrievedAt = new Date().toISOString();
         const contentHash = await hashContent(markdown);
 
-        // Check if content has changed
+        // Idempotency: same normalized URL + same content hash => nothing to do.
         const { data: existing } = await supabase
           .from("indexed_sources")
           .select("id, content_hash, version")
-          .eq("source_url", url)
+          .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
+          .eq("normalized_url", normalizedUrl)
           .eq("is_current", true)
           .eq("chunk_index", 0)
           .maybeSingle();
 
         if (existing && existing.content_hash === contentHash) {
-          // No change — update last_scraped
           await supabase
             .from("indexed_sources")
-            .update({ last_scraped: new Date().toISOString() })
-            .eq("source_url", url)
+            .update({ last_scraped: retrievedAt, retrieved_at: retrievedAt })
+            .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
+            .eq("normalized_url", normalizedUrl)
             .eq("is_current", true);
           continue;
         }
 
-        // Content changed! Version old content
+        // Content changed: keep the previous version as history, insert a new one.
         const newVersion = (existing?.version || 0) + 1;
-
         if (existing) {
           await supabase
             .from("indexed_sources")
-            .update({ is_current: false, change_detected: true })
-            .eq("source_url", url)
+            .update({ is_current: false, change_detected: true, archived_at: retrievedAt })
+            .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
+            .eq("normalized_url", normalizedUrl)
             .eq("is_current", true);
         }
 
-        // Chunk and insert new content
         const chunks = chunkContent(markdown);
         for (let i = 0; i < chunks.length; i++) {
           const chunkHash = await hashContent(chunks[i]);
           let embedding: number[] | null = null;
+          if (LOVABLE_API_KEY) embedding = await generateEmbedding(chunks[i], LOVABLE_API_KEY);
 
-          if (LOVABLE_API_KEY) {
-            embedding = await generateEmbedding(chunks[i], LOVABLE_API_KEY);
-          }
-
-          await supabase.from("indexed_sources").insert({
+          const { error: insertErr } = await supabase.from("indexed_sources").insert({
             source_url: url,
+            normalized_url: normalizedUrl,
+            canonical_url: canonicalUrl,
+            source_family: sourceFamily,
+            knowledge_domain: KNOWLEDGE_DOMAIN,
             title,
+            author,
+            source_timestamp: publishedAt,
+            retrieved_at: retrievedAt,
             content: chunks[i],
             content_hash: chunkHash,
             version: newVersion,
@@ -268,17 +280,27 @@ serve(async (req) => {
             change_detected: !!existing,
             embedding: embedding ? `[${embedding.join(",")}]` : null,
           });
+          // Duplicate (same domain + url + chunk + version) is ignored: idempotent.
+          if (insertErr && !String(insertErr.message).includes("duplicate key")) {
+            errors.push({ url, error: insertErr.message });
+          }
         }
 
         sourcesUpdated++;
-        console.log(`[Ingest] ${url}: v${newVersion}, ${chunks.length} chunks`);
+        console.log(JSON.stringify({
+          event: "ingested",
+          knowledge_domain: KNOWLEDGE_DOMAIN,
+          source_family: sourceFamily,
+          canonical_url: canonicalUrl,
+          version: newVersion,
+          chunks: chunks.length,
+        }));
       } catch (e) {
-        console.error(`[Ingest] Error processing ${url}:`, e);
+        console.error(JSON.stringify({ event: "ingestion_error", url, error: String(e) }));
         errors.push({ url, error: String(e) });
       }
     }
 
-    // Update job record
     if (jobId) {
       await supabase.from("scrape_jobs").update({
         status: "completed",
@@ -289,14 +311,24 @@ serve(async (req) => {
       }).eq("id", jobId);
     }
 
+    console.log(JSON.stringify({
+      event: "ingestion_run_complete",
+      knowledge_domain: KNOWLEDGE_DOMAIN,
+      sources_checked: sourcesChecked,
+      sources_updated: sourcesUpdated,
+      rejected_url_count: rejectedCount,
+      ingestion_failures: errors.length,
+    }));
+
     return new Response(JSON.stringify({
       success: true,
+      knowledgeDomain: KNOWLEDGE_DOMAIN,
       sourcesChecked,
       sourcesUpdated,
+      rejectedCount,
       errors: errors.length,
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      errorDetails: errors,
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Ingest error:", error);
     return new Response(JSON.stringify({ error: "Internal server error" }), {

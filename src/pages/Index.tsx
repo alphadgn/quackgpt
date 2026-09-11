@@ -9,10 +9,9 @@ import { ChatInput } from "@/components/ChatInput";
 import { ChatMessage, TypingIndicator } from "@/components/ChatMessage";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { ChatModeSelector, ChatMode } from "@/components/ChatModeSelector";
-import { CampaignSelector, Campaign } from "@/components/CampaignSelector";
 import { InlineQueryHistory } from "@/components/WelcomeScreen";
 import { GlowBracket } from "@/components/GlowBracket";
-import { MessageSquare, Search, Shield, Bird } from "lucide-react";
+import { MessageSquare, Search, Shield, FileCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -31,15 +30,13 @@ const Index = () => {
   const [prefillMessage, setPrefillMessage] = useState("");
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode | null>(null);
-  const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [historyFilter, setHistoryFilter] = useState<"all" | "search" | "quack-check" | "tweet-audit">("all");
+  const [historyFilter, setHistoryFilter] = useState<"all" | "search" | "quack-check" | "verify-text">("all");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Wrap logout to also reset search criteria
   const handleLogout = useCallback(() => {
     setChatMode(null);
-    setCampaign(null);
     setHistoryFilter("all");
     logout();
   }, [logout]);
@@ -62,7 +59,6 @@ const Index = () => {
     }
     if (authenticated !== prevAuth.current) {
       setChatMode(null);
-      setCampaign(null);
       setHistoryFilter("all");
       if (authenticated && window.location.pathname !== '/') {
         navigate('/');
@@ -107,7 +103,7 @@ const Index = () => {
     isTyping, 
     queriesRemaining, 
     sendMessage,
-    sendTweetAudit,
+    sendVerifyText,
     cooldownUntil,
     resetTime,
     usageLoaded,
@@ -161,20 +157,18 @@ const Index = () => {
     return () => { cancelled = true; };
   }, [authenticated, getAuthHeaders]);
 
-  const campaignLabels: Record<string, string> = { wallchain: 'Wallchain', idos: 'idOS Network', beyond: 'Beyond' };
-  const campaignLabel = campaign ? (campaignLabels[campaign] || campaign) : '';
-  const selectionComplete = chatMode !== null && campaign !== null;
+  const selectionComplete = chatMode !== null;
 
   const handleSendMessage = useCallback((content: string) => {
-    if (!chatMode || !campaign) return;
-    if (chatMode === "tweet-audit") {
-      sendTweetAudit(content, campaign);
+    if (!chatMode) return;
+    if (chatMode === "verify-text") {
+      sendVerifyText(content);
     } else if (chatMode === "quack-check") {
-      sendMessage(`[QUACK CHECK] [${campaignLabel}] ${content}`);
+      sendMessage(`[QUACK CHECK] ${content}`, "quack-check");
     } else {
-      sendMessage(`[${campaignLabel}] ${content}`);
+      sendMessage(content, "search");
     }
-  }, [chatMode, campaign, campaignLabel, sendMessage, sendTweetAudit]);
+  }, [chatMode, sendMessage, sendVerifyText]);
 
   const handleFeedback = useCallback(async (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => {
     if (!user?.id) return;
@@ -225,7 +219,7 @@ const Index = () => {
     { id: "all" as const, label: "All", icon: MessageSquare },
     { id: "search" as const, label: "Search", icon: Search },
     { id: "quack-check" as const, label: "Quack Check", icon: Shield },
-    { id: "tweet-audit" as const, label: "Tweet Audit", icon: Bird },
+    { id: "verify-text" as const, label: "Verify text", icon: FileCheck },
   ];
 
   const HistoryModeTabs = () => (
@@ -308,10 +302,6 @@ const Index = () => {
                 <GlowBracket visible={!chatMode} />
                 <ChatModeSelector mode={chatMode} onModeChange={setChatMode} className="justify-center" />
               </div>
-              {/* Step 2: Campaign selector - animated in after mode selected */}
-              <div className={`w-full transition-all duration-500 ease-in-out flex flex-col items-center ${chatMode ? 'opacity-100 max-h-40 translate-y-0' : 'opacity-0 max-h-0 translate-y-2 pointer-events-none overflow-hidden'}`}>
-                <CampaignSelector campaign={campaign} onCampaignChange={setCampaign} className="w-full" showPointers={!!chatMode && !campaign} />
-              </div>
             </div>
           )}
           {authenticated ? (
@@ -321,7 +311,7 @@ const Index = () => {
                   <textarea
                     disabled
                     rows={1}
-                    placeholder="Select a search mode & ecosystem above to begin..."
+                    placeholder="Select a search mode above to begin..."
                     className="flex-1 bg-transparent resize-none border-0 outline-none text-foreground placeholder:text-primary/50 px-3 py-2 text-sm leading-relaxed opacity-50 cursor-not-allowed"
                   />
                   <Button variant="send" size="icon" disabled className="shrink-0 opacity-50">
@@ -339,7 +329,7 @@ const Index = () => {
                   <div className="flex-1 text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">Daily queries depleted.</span>{' '}
                     Subscribe or connect a wallet with{' '}
-                    <span className="text-primary font-semibold">Quack Heads NFT(s)</span> to unlock more.
+                    <span className="text-primary font-semibold">Ugly Duck Society NFT(s)</span> to unlock more.
                   </div>
                   <div className="shrink-0 flex flex-col items-stretch gap-1 w-full sm:w-auto">
                     <Tooltip>
@@ -376,7 +366,6 @@ const Index = () => {
                 privyUserId={user?.id ?? null}
                 selectionComplete={selectionComplete}
                 profilePictureUrl={profilePictureUrl}
-                campaign={campaign}
               />
             )
           ) : null}

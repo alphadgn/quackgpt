@@ -86,7 +86,7 @@ const Privacy = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">7. Contact</h2>
             <p className="text-foreground/80">
-              For privacy-related inquiries, please contact us through official Wallchain channels.
+              For privacy-related inquiries, please contact us through the contact options on quackgpt.info.
             </p>
           </section>
         </ScrollBendContainer>

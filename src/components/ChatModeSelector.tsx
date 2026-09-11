@@ -1,7 +1,7 @@
-import { Search, Shield, Bird } from "lucide-react";
+import { Search, Shield, FileCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type ChatMode = "search" | "quack-check" | "tweet-audit";
+export type ChatMode = "search" | "quack-check" | "verify-text";
 
 interface ChatModeSelectorProps {
   mode: ChatMode | null;
@@ -10,9 +10,9 @@ interface ChatModeSelectorProps {
 }
 
 const modes = [
-  { id: "search" as const, label: "Search", icon: Search, description: "Ecosystem intelligence" },
+  { id: "search" as const, label: "Search", icon: Search, description: "Information from official sources" },
   { id: "quack-check" as const, label: "Quack Check", icon: Shield, description: "Fact verification" },
-  { id: "tweet-audit" as const, label: "Tweet Audit", icon: Bird, description: "Tweet scoring" },
+  { id: "verify-text" as const, label: "Verify text", icon: FileCheck, description: "Check claims in a post" },
 ];
 
 export function ChatModeSelector({ mode, onModeChange, className }: ChatModeSelectorProps) {

@@ -15,7 +15,7 @@ import { toast } from "sonner";
 const tierInfo: Record<UserTier, { label: string; icon: typeof Crown; price: string }> = {
   free: { label: "Free", icon: Shield, price: "$0" },
   paid: { label: "Paid", icon: Zap, price: "$1.49/week (trial offer)" },
-  nft_holder: { label: "Quack Heads NFT", icon: Crown, price: "NFT Required" },
+  nft_holder: { label: "Ugly Duck Society NFT", icon: Crown, price: "NFT Required" },
 };
 
 function shortenAddress(address: string) {
