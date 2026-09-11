@@ -27,7 +27,7 @@ interface ScrapeSource {
   label: string;
   is_active: boolean;
   created_at: string;
-  campaign: string;
+  knowledge_domain?: string;
 }
 
 interface FeedbackItem {
@@ -112,7 +112,6 @@ export default function Admin() {
   const [newSourceUrl, setNewSourceUrl] = useState("");
   const [newSourceLabel, setNewSourceLabel] = useState("");
   const [addingSource, setAddingSource] = useState(false);
-  const [sourcesCampaign, setSourcesCampaign] = useState<"wallchain" | "idos" | "beyond">("wallchain");
 
   // Feedback state
   const [negativeFeedback, setNegativeFeedback] = useState<FeedbackItem[]>([]);
@@ -193,13 +192,12 @@ export default function Admin() {
     }
   }, [user?.id, getAccessToken]);
 
-  const fetchSources = useCallback(async (campaign?: string) => {
+  const fetchSources = useCallback(async () => {
     setSourcesLoading(true);
     try {
       const headers = await getAuthHeaders();
-      const c = campaign || sourcesCampaign;
       const resp = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list&campaign=${c}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=list`,
         { headers }
       );
       const data = await resp.json();
@@ -209,7 +207,7 @@ export default function Admin() {
     } finally {
       setSourcesLoading(false);
     }
-  }, [getAuthHeaders, sourcesCampaign]);
+  }, [getAuthHeaders]);
 
   const fetchFeedback = useCallback(async () => {
     setFeedbackLoading(true);
@@ -277,7 +275,7 @@ export default function Admin() {
       const headers = await getAuthHeaders();
       const resp = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-sources?action=add`,
-        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim(), campaign: sourcesCampaign }) }
+        { method: "POST", headers, body: JSON.stringify({ url: newSourceUrl.trim(), label: newSourceLabel.trim() }) }
       );
       if (resp.ok) {
         toast.success("Source added");
