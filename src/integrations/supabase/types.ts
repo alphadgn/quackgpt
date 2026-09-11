@@ -183,7 +183,9 @@ export type Database = {
       }
       indexed_sources: {
         Row: {
+          archived_at: string | null
           author: string | null
+          canonical_url: string | null
           change_detected: boolean
           chunk_index: number
           content: string
@@ -192,9 +194,13 @@ export type Database = {
           embedding: string | null
           id: string
           is_current: boolean
+          knowledge_domain: string
           last_scraped: string
+          normalized_url: string
           parent_source_id: string | null
           reliability_tier: number
+          retrieved_at: string
+          source_family: string | null
           source_timestamp: string | null
           source_url: string
           title: string | null
@@ -202,7 +208,9 @@ export type Database = {
           version: number
         }
         Insert: {
+          archived_at?: string | null
           author?: string | null
+          canonical_url?: string | null
           change_detected?: boolean
           chunk_index?: number
           content: string
@@ -211,9 +219,13 @@ export type Database = {
           embedding?: string | null
           id?: string
           is_current?: boolean
+          knowledge_domain?: string
           last_scraped?: string
+          normalized_url: string
           parent_source_id?: string | null
           reliability_tier?: number
+          retrieved_at?: string
+          source_family?: string | null
           source_timestamp?: string | null
           source_url: string
           title?: string | null
@@ -221,7 +233,9 @@ export type Database = {
           version?: number
         }
         Update: {
+          archived_at?: string | null
           author?: string | null
+          canonical_url?: string | null
           change_detected?: boolean
           chunk_index?: number
           content?: string
@@ -230,14 +244,140 @@ export type Database = {
           embedding?: string | null
           id?: string
           is_current?: boolean
+          knowledge_domain?: string
           last_scraped?: string
+          normalized_url?: string
           parent_source_id?: string | null
           reliability_tier?: number
+          retrieved_at?: string
+          source_family?: string | null
           source_timestamp?: string | null
           source_url?: string
           title?: string | null
           updated_at?: string
           version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indexed_sources_knowledge_domain_fkey"
+            columns: ["knowledge_domain"]
+            isOneToOne: false
+            referencedRelation: "knowledge_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_domains: {
+        Row: {
+          created_at: string
+          id: string
+          is_public: boolean
+          label: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_public?: boolean
+          label: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_public?: boolean
+          label?: string
+        }
+        Relationships: []
+      }
+      legacy_backup_indexed_sources: {
+        Row: {
+          author: string | null
+          change_detected: boolean | null
+          chunk_index: number | null
+          content: string | null
+          content_hash: string | null
+          created_at: string | null
+          embedding: string | null
+          id: string | null
+          is_current: boolean | null
+          last_scraped: string | null
+          parent_source_id: string | null
+          reliability_tier: number | null
+          source_timestamp: string | null
+          source_url: string | null
+          title: string | null
+          updated_at: string | null
+          version: number | null
+        }
+        Insert: {
+          author?: string | null
+          change_detected?: boolean | null
+          chunk_index?: number | null
+          content?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          id?: string | null
+          is_current?: boolean | null
+          last_scraped?: string | null
+          parent_source_id?: string | null
+          reliability_tier?: number | null
+          source_timestamp?: string | null
+          source_url?: string | null
+          title?: string | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Update: {
+          author?: string | null
+          change_detected?: boolean | null
+          chunk_index?: number | null
+          content?: string | null
+          content_hash?: string | null
+          created_at?: string | null
+          embedding?: string | null
+          id?: string | null
+          is_current?: boolean | null
+          last_scraped?: string | null
+          parent_source_id?: string | null
+          reliability_tier?: number | null
+          source_timestamp?: string | null
+          source_url?: string | null
+          title?: string | null
+          updated_at?: string | null
+          version?: number | null
+        }
+        Relationships: []
+      }
+      legacy_backup_scrape_sources: {
+        Row: {
+          added_by: string | null
+          campaign: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          label: string | null
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          added_by?: string | null
+          campaign?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          label?: string | null
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          added_by?: string | null
+          campaign?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          label?: string | null
+          updated_at?: string | null
+          url?: string | null
         }
         Relationships: []
       }
@@ -331,35 +471,52 @@ export type Database = {
       scrape_sources: {
         Row: {
           added_by: string | null
-          campaign: string
+          campaign: string | null
           created_at: string
           id: string
           is_active: boolean
+          knowledge_domain: string
           label: string
+          normalized_url: string
+          source_family: string | null
           updated_at: string
           url: string
         }
         Insert: {
           added_by?: string | null
-          campaign?: string
+          campaign?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
+          knowledge_domain: string
           label: string
+          normalized_url: string
+          source_family?: string | null
           updated_at?: string
           url: string
         }
         Update: {
           added_by?: string | null
-          campaign?: string
+          campaign?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
+          knowledge_domain?: string
           label?: string
+          normalized_url?: string
+          source_family?: string | null
           updated_at?: string
           url?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scrape_sources_knowledge_domain_fkey"
+            columns: ["knowledge_domain"]
+            isOneToOne: false
+            referencedRelation: "knowledge_domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       security_findings: {
         Row: {
@@ -471,6 +628,47 @@ export type Database = {
         }
         Relationships: []
       }
+      text_verifications: {
+        Row: {
+          claim_analysis: Json
+          corrections: Json
+          created_at: string
+          external_user_id: string
+          id: string
+          knowledge_domain: string
+          submitted_text: string
+          supporting_sources: Json
+        }
+        Insert: {
+          claim_analysis?: Json
+          corrections?: Json
+          created_at?: string
+          external_user_id: string
+          id?: string
+          knowledge_domain: string
+          submitted_text: string
+          supporting_sources?: Json
+        }
+        Update: {
+          claim_analysis?: Json
+          corrections?: Json
+          created_at?: string
+          external_user_id?: string
+          id?: string
+          knowledge_domain?: string
+          submitted_text?: string
+          supporting_sources?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "text_verifications_knowledge_domain_fkey"
+            columns: ["knowledge_domain"]
+            isOneToOne: false
+            referencedRelation: "knowledge_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tweet_audits: {
         Row: {
           brand_alignment_score: number
@@ -552,21 +750,46 @@ export type Database = {
         }
         Returns: boolean
       }
-      match_documents: {
-        Args: {
-          match_count?: number
-          match_threshold?: number
-          query_embedding: string
-        }
-        Returns: {
-          content: string
-          id: string
-          reliability_tier: number
-          similarity: number
-          source_url: string
-          title: string
-        }[]
-      }
+      match_documents:
+        | {
+            Args: {
+              match_count?: number
+              match_threshold?: number
+              query_embedding: string
+            }
+            Returns: {
+              content: string
+              id: string
+              reliability_tier: number
+              similarity: number
+              source_url: string
+              title: string
+            }[]
+          }
+        | {
+            Args: {
+              include_archived?: boolean
+              match_count?: number
+              match_threshold?: number
+              p_knowledge_domain: string
+              query_embedding: string
+            }
+            Returns: {
+              author: string
+              canonical_url: string
+              content: string
+              id: string
+              is_current: boolean
+              knowledge_domain: string
+              reliability_tier: number
+              retrieved_at: string
+              similarity: number
+              source_timestamp: string
+              source_url: string
+              title: string
+              version: number
+            }[]
+          }
     }
     Enums: {
       app_role: "admin" | "super_admin" | "user"
