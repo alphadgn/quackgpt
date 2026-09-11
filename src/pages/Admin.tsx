@@ -994,40 +994,16 @@ export default function Admin() {
                 </span>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                These URLs are scraped by Firecrawl to build quackGPT's knowledge base per campaign. Toggle to enable/disable.
+                Only official Ugly Duck Society sources are ingested into the knowledge base. Toggle to enable/disable.
               </p>
-
-              {/* Campaign tabs */}
-              <div className="flex gap-1 mb-4 rounded-lg bg-muted/30 p-1">
-                {([
-                  { key: "wallchain" as const, label: "Wallchain", activeClass: "bg-yellow-500/20 text-yellow-400" },
-                  { key: "idos" as const, label: "idOS Network", activeClass: "bg-emerald-500/20 text-emerald-400" },
-                  { key: "beyond" as const, label: "Beyond", activeClass: "bg-orange-500/20 text-orange-400" },
-                ] as const).map(tab => (
-                  <button
-                    key={tab.key}
-                    className={`flex-1 text-xs py-1.5 px-2 rounded-md transition-colors font-medium ${
-                      sourcesCampaign === tab.key ? tab.activeClass : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => { setSourcesCampaign(tab.key); fetchSources(tab.key); }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
 
               {sourcesLoading ? (
                 <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
               ) : (
                 <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto rounded-lg border border-border/30 p-2">
                   {sources.map(source => {
-                    const sourceContainerStyles: Record<string, React.CSSProperties> = {
-                      wallchain: { backgroundColor: 'rgba(234, 179, 8, 0.1)', borderLeft: '3px solid rgb(234, 179, 8)' },
-                      idos: { backgroundColor: 'rgba(16, 185, 129, 0.1)', borderLeft: '3px solid rgb(16, 185, 129)' },
-                      beyond: { backgroundColor: 'rgba(249, 115, 22, 0.1)', borderLeft: '3px solid rgb(249, 115, 22)' },
-                    };
                     return (
-                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50' : 'border-border/30 opacity-60'}`} style={sourceContainerStyles[sourcesCampaign] || sourceContainerStyles.wallchain}>
+                    <div key={source.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${source.is_active ? 'border-border/50' : 'border-border/30 opacity-60'}`} style={{ backgroundColor: 'hsl(var(--card) / 0.4)', borderLeft: '3px solid hsl(var(--border))' }}>
                       <Switch checked={source.is_active} onCheckedChange={(checked) => handleToggleSource(source.id, checked)} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{source.label}</p>
