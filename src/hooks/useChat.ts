@@ -1,36 +1,11 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { Message, UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS, EvidenceSource } from '@/types';
-
-function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
-}
-
-function generateSessionId(): string {
-  return crypto.randomUUID ? crypto.randomUUID() : `${generateId()}-${generateId()}-${Date.now()}`;
-}
-
-function isContentCreationRequest(text: string): boolean {
-  const lowerText = text.toLowerCase();
-  return BLOCKED_CONTENT_KEYWORDS.some(keyword =>
-    lowerText.includes(keyword.toLowerCase())
-  );
-}
-
-function hasMultipleQuestions(text: string): boolean {
-  const questionMarks = (text.match(/\?/g) || []).length;
-  return questionMarks > 1;
-}
+import { useCallback, useEffect, useState } from 'react';
+import { BLOCKED_CONTENT_KEYWORDS, EvidenceSource, MAX_RESPONSE_CHARACTERS, Message } from '@/types';
 
 const RETRIEVE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
-const CHECK_USAGE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-usage`;
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
 const VERIFY_TEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-text`;
-
-const VIOLATION_WINDOW_MS = 5 * 60 * 1000;
-const COOLDOWN_DURATION_MS = 60 * 60 * 1000;
-
-const UNAVAILABLE_MESSAGE =
-  'SOME INFORMATION IS UNVERIFIED. No verified Ugly Duck Society source is available right now, so I cannot answer this. Please try again later.';
+const STORAGE_KEY = 'quackgpt-local-chat';
+const UNAVAILABLE_MESSAGE = 'SOME INFORMATION IS UNVERIFIED. No verified Ugly Duck Society source is available right now, so I cannot answer this. Please try again later.';
 
 export type AssistantMode = 'search' | 'quack-check' | 'verify-text';
 
@@ -46,452 +21,194 @@ interface RetrievedEvidence {
   };
 }
 
-interface UseChatOptions {
-  tier: UserTier;
-  isAuthenticated: boolean;
-  privyUserId?: string;
-  getAccessToken?: () => Promise<string | null>;
-  tierOverride?: UserTier | null;
-  isSuperAdmin?: boolean;
+function generateId(): string {
+  return crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export function useChat({ tier, isAuthenticated, privyUserId, getAccessToken, tierOverride, isSuperAdmin }: UseChatOptions) {
-  const [messages, setMessages] = useState<Message[]>([]);
+function isContentCreationRequest(text: string): boolean {
+  const lower = text.toLowerCase();
+  return BLOCKED_CONTENT_KEYWORDS.some((keyword) => lower.includes(keyword.toLowerCase()));
+}
+
+function loadLocalMessages(): Message[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Array<Omit<Message, 'timestamp'> & { timestamp: string }>;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.slice(-60).map((message) => ({ ...message, timestamp: new Date(message.timestamp) }));
+  } catch {
+    return [];
+  }
+}
+
+const publicHeaders = {
+  'Content-Type': 'application/json',
+  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+};
+
+export function useChat() {
+  const [messages, setMessages] = useState<Message[]>(loadLocalMessages);
   const [isTyping, setIsTyping] = useState(false);
-  const [queriesUsedToday, setQueriesUsedToday] = useState(0);
-  const [violations, setViolations] = useState<number[]>([]);
-  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
-  const [resetTime, setResetTime] = useState<number | null>(null);
-  const [usageLoaded, setUsageLoaded] = useState(false);
-  const sessionIdRef = useRef<string>(generateSessionId());
 
-  const getAuthHeaders = useCallback(async () => {
-    const token = getAccessToken ? await getAccessToken() : null;
-    return {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-      ...(token ? { 'x-privy-token': token } : {}),
-    };
-  }, [getAccessToken]);
-
-  // Fetch current usage from server on mount and when user changes
   useEffect(() => {
-    if (!isAuthenticated || !privyUserId) {
-      setQueriesUsedToday(0);
-      setResetTime(null);
-      setUsageLoaded(false);
-      return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-60)));
+    } catch {
+      // Browser storage may be unavailable; the chat still works for this page view.
     }
+  }, [messages]);
 
-    let cancelled = false;
-
-    (async () => {
-      try {
-        const token = getAccessToken ? await getAccessToken() : null;
-        if (!token) {
-          if (!cancelled) setUsageLoaded(true);
-          return;
-        }
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          'x-privy-token': token,
-        };
-        const body = (isSuperAdmin && tierOverride) ? JSON.stringify({ tierOverride }) : undefined;
-        const resp = await fetch(CHECK_USAGE_URL, {
-          method: body ? 'POST' : 'GET',
-          headers,
-          ...(body ? { body } : {}),
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          if (!cancelled) {
-            setQueriesUsedToday(data.queriesUsed ?? 0);
-            setResetTime(data.resetTime ?? null);
-            setUsageLoaded(true);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to fetch usage:', err);
-        if (!cancelled) setUsageLoaded(true);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [isAuthenticated, privyUserId, getAccessToken, tierOverride, isSuperAdmin]);
-
-  // Auto-reset queries when the user's personal 24h countdown reaches zero
-  useEffect(() => {
-    if (!resetTime) return;
-    const interval = setInterval(() => {
-      if (Date.now() >= resetTime) {
-        setQueriesUsedToday(0);
-        setResetTime(null);
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [resetTime]);
-
-  const limits = TIER_LIMITS[tier];
-  const queriesRemaining = limits.maxQueries === -1 ? 999 : limits.maxQueries - queriesUsedToday;
-  const isOnCooldown = cooldownUntil !== null && Date.now() < cooldownUntil;
-
-  /**
-   * Retrieve evidence for the single approved knowledge domain.
-   * Returns null when no valid evidence exists — the caller must then fail
-   * closed and must never fall back to model memory or general web content.
-   */
   const retrieveEvidence = useCallback(async (query: string): Promise<RetrievedEvidence | null> => {
     try {
-      const headers = await getAuthHeaders();
-      const resp = await fetch(RETRIEVE_URL, {
+      const response = await fetch(RETRIEVE_URL, {
         method: 'POST',
-        headers,
+        headers: publicHeaders,
         body: JSON.stringify({ query }),
       });
-      if (!resp.ok) return null;
-      const data = await resp.json();
+      if (!response.ok) return null;
+      const data = await response.json();
       if (!data.success || !data.context) return null;
       return { context: data.context, evidence: data.evidence || { retrievedCount: 0 } };
-    } catch (err) {
-      console.error('Evidence retrieval failed:', err);
+    } catch {
       return null;
     }
-  }, [getAuthHeaders]);
+  }, []);
 
   const sendMessage = useCallback(async (content: string, mode: AssistantMode = 'search') => {
-    if (!isAuthenticated || !privyUserId) {
-      setMessages(prev => [...prev,
-        { id: generateId(), role: 'user', content, timestamp: new Date() },
-        { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: 'Please sign in to use quackGPT.' }
-      ]);
-      return;
-    }
-
-    if (cooldownUntil && Date.now() < cooldownUntil) {
-      const minutesLeft = Math.ceil((cooldownUntil - Date.now()) / 60000);
-      setMessages(prev => [...prev,
-        { id: generateId(), role: 'user', content, timestamp: new Date() },
-        { id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: `You are on a ${minutesLeft}-minute cooldown due to repeated multi-question violations.` }
-      ]);
-      return;
-    }
-
-    if (queriesRemaining <= 0) return;
-
-    if (hasMultipleQuestions(content)) {
-      const now = Date.now();
-      const recentViolations = [...violations.filter(t => now - t < VIOLATION_WINDOW_MS), now];
-      setViolations(recentViolations);
-
-      const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
-
-      if (recentViolations.length >= 3) {
-        setCooldownUntil(now + COOLDOWN_DURATION_MS);
-        setMessages(prev => [...prev, userMessage, {
-          id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: 'You have been placed on a 1-hour cooldown for repeatedly sending multiple questions at once.',
-        }]);
-      } else {
-        setMessages(prev => [...prev, userMessage, {
-          id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
-          blockReason: `Please ask only one question per query. (Warning ${recentViolations.length}/3)`,
-        }]);
-      }
-      return;
-    }
+    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
 
     if (isContentCreationRequest(content)) {
-      const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
-      setMessages(prev => [...prev, userMessage, {
-        id: generateId(), role: 'assistant', content: '', timestamp: new Date(),
-        isBlocked: true, blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from official Ugly Duck Society sources.',
+      setMessages((previous) => [...previous, userMessage, {
+        id: generateId(), role: 'assistant', content: '', timestamp: new Date(), isBlocked: true,
+        blockReason: 'Content creation requests are not supported. quackGPT only provides factual information from official Ugly Duck Society sources.',
       }]);
       return;
     }
 
-    const userMessage: Message = { id: generateId(), role: 'user', content, timestamp: new Date() };
-    setMessages(prev => [...prev, userMessage]);
+    const history = messages.slice(-12).map(({ role, content: messageContent }) => ({ role, content: messageContent }));
+    setMessages((previous) => [...previous, userMessage]);
     setIsTyping(true);
 
     try {
-      const headers = await getAuthHeaders();
-
-      // Retrieve evidence FIRST — fail closed if there is none.
       const retrieved = await retrieveEvidence(content);
       if (!retrieved) {
-        setMessages(prev => [...prev, {
-          id: generateId(), role: 'assistant', content: UNAVAILABLE_MESSAGE, timestamp: new Date(),
-        }]);
+        setMessages((previous) => [...previous, { id: generateId(), role: 'assistant', content: UNAVAILABLE_MESSAGE, timestamp: new Date() }]);
         return;
       }
-
-      const chatHistory = messages.map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-      }));
 
       const response = await fetch(CHAT_URL, {
         method: 'POST',
-        headers,
+        headers: publicHeaders,
         body: JSON.stringify({
-          messages: [...chatHistory, { role: 'user', content }],
+          messages: [...history, { role: 'user', content }],
           context: retrieved.context,
           evidence: retrieved.evidence,
           mode,
-          ...(isSuperAdmin && tierOverride ? { tierOverride } : {}),
         }),
       });
-
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        if (response.status === 401) {
-          throw new Error('Please sign in to use quackGPT');
-        }
-        if (response.status === 424) {
-          throw new Error(errorData.error || UNAVAILABLE_MESSAGE);
-        }
-        if (response.status === 429) {
-          if (errorData.resetTime) setResetTime(errorData.resetTime);
-          if (errorData.queriesUsed) setQueriesUsedToday(errorData.queriesUsed);
-          throw new Error(errorData.error || 'Daily query limit reached');
-        }
-        throw new Error(errorData.error || 'Failed to get response');
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || (response.status === 429 ? 'Too many requests. Please wait a moment.' : 'Unable to answer right now.'));
       }
+      if (!response.body) throw new Error('Unable to answer right now.');
 
-      if (!response.body) throw new Error('No response body');
-
-      const serverMaxChars = parseInt(response.headers.get('X-Max-Characters') || String(limits.maxCharacters));
-      const serverQueriesUsed = parseInt(response.headers.get('X-Queries-Used') || '0');
-      const serverTier = response.headers.get('X-User-Tier') || tier;
-      const serverResetTime = response.headers.get('X-Reset-Time');
-
-      if (serverResetTime) setResetTime(parseInt(serverResetTime));
+      const assistantId = generateId();
+      setMessages((previous) => [...previous, {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+        sources: retrieved.evidence.sources || [],
+        retrievedAt: retrieved.evidence.retrievedAt ?? null,
+      }]);
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let assistantContent = '';
       let textBuffer = '';
-
-      const assistantId = generateId();
-      setMessages(prev => [...prev, {
-        id: assistantId, role: 'assistant', content: '', timestamp: new Date(),
-        sources: retrieved.evidence.sources || [],
-        retrievedAt: retrieved.evidence.retrievedAt ?? null,
-      }]);
-
+      let assistantContent = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         textBuffer += decoder.decode(value, { stream: true });
-
-        let newlineIndex: number;
-        while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
-          let line = textBuffer.slice(0, newlineIndex);
+        let newlineIndex = textBuffer.indexOf('\n');
+        while (newlineIndex !== -1) {
+          const line = textBuffer.slice(0, newlineIndex).replace(/\r$/, '');
           textBuffer = textBuffer.slice(newlineIndex + 1);
-
-          if (line.endsWith('\r')) line = line.slice(0, -1);
-          if (line.startsWith(':') || line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === '[DONE]') break;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const deltaContent = parsed.choices?.[0]?.delta?.content;
-            if (deltaContent) {
-              assistantContent += deltaContent;
-
-              let displayContent = assistantContent;
-              if (displayContent.length > serverMaxChars) {
-                displayContent = displayContent.substring(0, serverMaxChars);
+          if (line.startsWith('data: ') && line.slice(6).trim() !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              const delta = parsed.choices?.[0]?.delta?.content;
+              if (typeof delta === 'string') {
+                assistantContent = (assistantContent + delta).slice(0, MAX_RESPONSE_CHARACTERS);
+                setMessages((previous) => previous.map((message) => message.id === assistantId ? { ...message, content: assistantContent } : message));
               }
-
-              setMessages(prev =>
-                prev.map(msg =>
-                  msg.id === assistantId ? { ...msg, content: displayContent } : msg
-                )
-              );
+            } catch {
+              // Wait for the next complete event.
             }
-          } catch {
-            // Partial JSON
           }
+          newlineIndex = textBuffer.indexOf('\n');
         }
       }
-
-      let finalContent = assistantContent;
-      const wasTruncated = finalContent.length > serverMaxChars;
-      if (wasTruncated) finalContent = finalContent.substring(0, serverMaxChars);
-
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === assistantId
-            ? {
-                ...msg,
-                content: finalContent,
-                isTruncated: wasTruncated,
-                userTier: serverTier as UserTier,
-                maxCharacters: serverMaxChars,
-              }
-            : msg
-        )
-      );
-
-      if (serverQueriesUsed > 0) {
-        setQueriesUsedToday(serverQueriesUsed);
-      } else {
-        setQueriesUsedToday(prev => prev + 1);
-      }
-
-      // Persist to chat history
-      try {
-        const saveHeaders = await getAuthHeaders();
-        await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=save`, {
-          method: 'POST',
-          headers: saveHeaders,
-          body: JSON.stringify({
-            sessionId: sessionIdRef.current,
-            userContent: content,
-            assistantContent: finalContent,
-          }),
-        });
-      } catch (saveErr) {
-        console.error('Failed to save chat history:', saveErr);
-      }
-
     } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => [...prev, {
-        id: generateId(), role: 'assistant',
-        content: error instanceof Error ? error.message : 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date(),
+      setMessages((previous) => [...previous, {
+        id: generateId(), role: 'assistant', content: error instanceof Error ? error.message : UNAVAILABLE_MESSAGE, timestamp: new Date(),
       }]);
     } finally {
       setIsTyping(false);
     }
-  }, [messages, tier, queriesRemaining, limits.maxCharacters, violations, cooldownUntil, isAuthenticated, privyUserId, getAuthHeaders, retrieveEvidence, tierOverride, isSuperAdmin]);
+  }, [messages, retrieveEvidence]);
 
-  /**
-   * Verify the factual claims in submitted text. No scoring of any kind.
-   */
   const sendVerifyText = useCallback(async (submittedText: string) => {
-    if (!isAuthenticated || !privyUserId) return;
-    if (queriesRemaining <= 0) return;
-
-    const userMessage: Message = {
-      id: generateId(), role: 'user', content: `[VERIFY TEXT] ${submittedText}`, timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage: Message = { id: generateId(), role: 'user', content: `[VERIFY TEXT] ${submittedText}`, timestamp: new Date() };
+    setMessages((previous) => [...previous, userMessage]);
     setIsTyping(true);
-
     try {
-      const headers = await getAuthHeaders();
-
       const retrieved = await retrieveEvidence(submittedText);
-      if (!retrieved) {
-        setMessages(prev => [...prev, {
-          id: generateId(), role: 'assistant', content: UNAVAILABLE_MESSAGE, timestamp: new Date(),
-        }]);
-        return;
-      }
-
-      const resp = await fetch(VERIFY_TEXT_URL, {
+      if (!retrieved) throw new Error(UNAVAILABLE_MESSAGE);
+      const response = await fetch(VERIFY_TEXT_URL, {
         method: 'POST',
-        headers,
-        body: JSON.stringify({
-          submittedText: submittedText.trim(),
-          context: retrieved.context,
-          evidence: retrieved.evidence,
-        }),
+        headers: publicHeaders,
+        body: JSON.stringify({ submittedText: submittedText.trim(), context: retrieved.context, evidence: retrieved.evidence }),
       });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Verification is unavailable right now.');
 
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err.error || 'Verification failed');
-      }
-
-      const data = await resp.json();
-
-      const verdictIcon = (v: string) =>
-        v === 'SUPPORTED' ? '✅' : v === 'UNSUPPORTED' ? '❌' : v === 'OUTDATED' ? '🕓' : '❓';
-
-      let resultContent = `## 🦆 Text verification\n\n`;
-      if (data.summary) resultContent += `${data.summary}\n\n`;
-
-      if (data.claim_analysis?.length > 0) {
-        resultContent += `### Claims\n`;
-        for (const c of data.claim_analysis) {
-          resultContent += `${verdictIcon(c.verdict)} **"${c.claim}"** — ${c.verdict}: ${c.evidence}\n`;
-          if (c.source_url) {
-            resultContent += `   Source: ${c.source_url} · Published: ${c.published_at || 'not stated'}\n`;
-          }
-          resultContent += `\n`;
+      const icon = (verdict: string) => verdict === 'SUPPORTED' ? '✅' : verdict === 'UNSUPPORTED' ? '❌' : verdict === 'OUTDATED' ? '🕓' : '❓';
+      let output = `## Text verification\n\n${data.summary || ''}\n\n`;
+      if (data.claim_analysis?.length) {
+        output += '### Claims\n';
+        for (const claim of data.claim_analysis) {
+          output += `${icon(claim.verdict)} **"${claim.claim}"** — ${claim.verdict}: ${claim.evidence}\n`;
+          if (claim.source_url) output += `Source: ${claim.source_url} · Published: ${claim.published_at || 'not stated'}\n`;
+          output += '\n';
         }
       }
-
-      if (data.corrections?.length > 0) {
-        resultContent += `### Factual corrections\n`;
-        for (const c of data.corrections) {
-          resultContent += `- "${c.incorrect_statement}" → ${c.correction}`;
-          if (c.source_url) resultContent += ` (Source: ${c.source_url}${c.published_at ? `, published ${c.published_at}` : ''})`;
-          resultContent += `\n`;
-        }
-        resultContent += `\n`;
-      }
-
-      if (data.supporting_sources?.length > 0) {
-        resultContent += `### Sources\n`;
-        for (const s of data.supporting_sources) {
-          resultContent += `- ${s.url}${s.published_at ? ` · Published: ${s.published_at}` : ''}\n`;
+      if (data.corrections?.length) {
+        output += '### Factual corrections\n';
+        for (const correction of data.corrections) {
+          output += `- "${correction.incorrect_statement}" → ${correction.correction}`;
+          if (correction.source_url) output += ` (Source: ${correction.source_url}${correction.published_at ? `, published ${correction.published_at}` : ''})`;
+          output += '\n';
         }
       }
-
-      let finalContent = resultContent.trim();
-      const maxChars = limits.maxCharacters;
-      const truncated = finalContent.length > maxChars;
-      if (truncated) finalContent = finalContent.substring(0, maxChars);
-
-      setMessages(prev => [...prev, {
-        id: generateId(), role: 'assistant', content: finalContent, timestamp: new Date(),
-        isTruncated: truncated,
-        userTier: tier,
-        maxCharacters: maxChars,
-        sources: retrieved.evidence.sources || [],
-        retrievedAt: retrieved.evidence.retrievedAt ?? null,
+      setMessages((previous) => [...previous, {
+        id: generateId(), role: 'assistant', content: output.trim().slice(0, MAX_RESPONSE_CHARACTERS), timestamp: new Date(),
+        sources: retrieved.evidence.sources || [], retrievedAt: retrieved.evidence.retrievedAt ?? null,
       }]);
-
-      setQueriesUsedToday(prev => prev + 1);
     } catch (error) {
-      setMessages(prev => [...prev, {
-        id: generateId(), role: 'assistant',
-        content: error instanceof Error ? error.message : 'Verification failed. Please try again.',
-        timestamp: new Date(),
+      setMessages((previous) => [...previous, {
+        id: generateId(), role: 'assistant', content: error instanceof Error ? error.message : UNAVAILABLE_MESSAGE, timestamp: new Date(),
       }]);
     } finally {
       setIsTyping(false);
     }
-  }, [isAuthenticated, privyUserId, queriesRemaining, getAuthHeaders, retrieveEvidence, limits.maxCharacters, tier]);
+  }, [retrieveEvidence]);
 
   const clearMessages = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
     setMessages([]);
-    sessionIdRef.current = generateSessionId();
   }, []);
 
-  return {
-    messages,
-    isTyping,
-    queriesUsedToday,
-    queriesRemaining,
-    sendMessage,
-    sendVerifyText,
-    clearMessages,
-    cooldownUntil,
-    isOnCooldown,
-    resetTime,
-    usageLoaded,
-  };
+  return { messages, isTyping, sendMessage, sendVerifyText, clearMessages };
 }
