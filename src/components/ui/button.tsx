@@ -16,10 +16,10 @@ const buttonVariants = cva(
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         // Custom quackGPT variants
-        hero: "bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold shadow-lg hover:shadow-[0_0_40px_hsl(42_92%_58%_/_0.4)] hover:scale-[1.03] active:scale-[0.98]",
-        glow: "bg-primary text-primary-foreground shadow-[0_0_20px_hsl(42_92%_58%_/_0.3)] hover:shadow-[0_0_40px_hsl(42_92%_58%_/_0.5)] hover:scale-[1.02]",
+        hero: "bg-gradient-to-r from-primary to-accent text-primary-foreground font-semibold shadow-lg hover:shadow-[0_0_40px_hsl(var(--primary)/0.4)] hover:scale-[1.03] active:scale-[0.98]",
+        glow: "bg-primary text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_40px_hsl(var(--primary)/0.5)] hover:scale-[1.02]",
         glass: "bg-card/50 backdrop-blur-sm border border-border/50 text-foreground hover:bg-card/80 hover:border-primary/30",
-        send: "bg-primary text-primary-foreground rounded-full hover:bg-primary/90 shadow-lg hover:shadow-[0_0_30px_hsl(42_92%_58%_/_0.4)]",
+        send: "bg-primary text-primary-foreground rounded-full hover:bg-primary/90 shadow-lg hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)]",
       },
       size: {
         default: "h-10 px-4 py-2",

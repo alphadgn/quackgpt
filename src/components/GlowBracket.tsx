@@ -1,5 +1,5 @@
 /**
- * GlowBracket – yellow bracket-and-arrows SVG overlay with heartbeat pulse.
+ * GlowBracket – orange bracket-and-arrows SVG overlay with heartbeat pulse.
  *
  * Shape:
  *        |              (vertical stem from top center)
@@ -25,7 +25,7 @@ interface GlowBracketProps {
 export function GlowBracket({ visible }: GlowBracketProps) {
   const uid = useId().replace(/:/g, "");
 
-  const yellow = "hsl(42, 92%, 58%)";
+  const orange = "hsl(18, 95%, 58%)";
   const sw = 2.5;
 
   // Geometry
@@ -103,8 +103,8 @@ export function GlowBracket({ visible }: GlowBracketProps) {
     width: ballSize,
     height: ballSize,
     borderRadius: "50%",
-    background: "radial-gradient(circle, hsl(42,100%,85%) 0%, hsl(42,100%,85%,0) 70%)",
-    boxShadow: "0 0 6px 2px hsl(42,100%,75%,0.6)",
+    background: "radial-gradient(circle, hsl(24,100%,85%) 0%, hsl(18,100%,58%,0) 70%)",
+    boxShadow: "0 0 6px 2px hsl(18,100%,65%,0.6)",
     offsetPath: `path("${path}")`,
     offsetRotate: "0deg",
     animation: `${animName} ${dur} ease-in-out infinite`,
@@ -144,8 +144,8 @@ export function GlowBracket({ visible }: GlowBracketProps) {
             </feMerge>
           </filter>
           <radialGradient id={pulseGrad} cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="hsl(42,100%,85%)" stopOpacity="1" />
-            <stop offset="100%" stopColor="hsl(42,100%,85%)" stopOpacity="0" />
+            <stop offset="0%" stopColor="hsl(24,100%,85%)" stopOpacity="1" />
+            <stop offset="100%" stopColor="hsl(18,100%,58%)" stopOpacity="0" />
           </radialGradient>
 
           {/* Paths for the heartbeat pulse to follow */}
@@ -162,35 +162,35 @@ export function GlowBracket({ visible }: GlowBracketProps) {
 
           {/* Top vertical stem */}
           <line x1={cx} y1={stemTop} x2={cx} y2={barY}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Horizontal bar */}
           <line x1={lx} y1={barY} x2={rx} y2={barY}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Left vertical drop */}
           <line x1={lx} y1={barY} x2={lx} y2={dropEnd}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Center vertical drop */}
           <line x1={cx} y1={barY} x2={cx} y2={dropEnd}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Right vertical drop */}
           <line x1={rx} y1={barY} x2={rx} y2={dropEnd}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" />
 
           {/* Left arrow chevron */}
           <polyline points={`${lx-8},${dropEnd-8} ${lx},${chevronTip} ${lx+8},${dropEnd-8}`}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
 
           {/* Center arrow chevron */}
           <polyline points={`${cx-8},${dropEnd-8} ${cx},${chevronTip} ${cx+8},${dropEnd-8}`}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
 
           {/* Right arrow chevron */}
           <polyline points={`${rx-8},${dropEnd-8} ${rx},${chevronTip} ${rx+8},${dropEnd-8}`}
-            stroke={yellow} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            stroke={orange} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
 
         {/* === Heartbeat pulse balls using SMIL animateMotion === */}

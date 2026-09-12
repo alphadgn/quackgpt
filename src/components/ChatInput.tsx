@@ -1,34 +1,22 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, AlertCircle, Loader2, User } from "lucide-react";
+import { Send, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { UserTier, TIER_LIMITS, BLOCKED_CONTENT_KEYWORDS } from "@/types";
-import { toast } from "sonner";
+import { BLOCKED_CONTENT_KEYWORDS } from "@/types";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   disabled?: boolean;
-  tier: UserTier;
-  queriesRemaining: number;
   className?: string;
   prefillValue?: string;
   onPrefillConsumed?: () => void;
-  cooldownUntil?: number | null;
-  privyUserId?: string | null;
   selectionComplete?: boolean;
-  profilePictureUrl?: string | null;
 }
 
-export function ChatInput({ onSend, disabled, tier, queriesRemaining, className, prefillValue, onPrefillConsumed, cooldownUntil, privyUserId, selectionComplete = true, profilePictureUrl }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, className, prefillValue, onPrefillConsumed, selectionComplete = true }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [isBlocked, setIsBlocked] = useState(false);
-  const [showDepletedOverlay, setShowDepletedOverlay] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const navigate = useNavigate();
-  const limits = TIER_LIMITS[tier];
 
   // Handle prefill from "Try asking" buttons
   useEffect(() => {
@@ -56,19 +44,8 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
     }
   }, [value]);
 
-  // Auto-hide depleted overlay after 4 seconds
-  useEffect(() => {
-    if (showDepletedOverlay) {
-      const timer = setTimeout(() => setShowDepletedOverlay(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [showDepletedOverlay]);
-
-  const isOnCooldown = cooldownUntil != null && Date.now() < cooldownUntil;
-  const isLoadingUsage = queriesRemaining < 0;
-
   const handleSubmit = () => {
-    if (!value.trim() || disabled || isBlocked || queriesRemaining <= 0 || isOnCooldown || isLoadingUsage) return;
+    if (!value.trim() || disabled || isBlocked) return;
     onSend(value.trim());
     setValue("");
   };
@@ -80,46 +57,6 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
     }
   };
 
-  const isDepleted = queriesRemaining <= 0 && !isLoadingUsage;
-  const isDisabled = disabled || queriesRemaining <= 0 || isOnCooldown || isLoadingUsage;
-
-  const handleDepletedClick = () => {
-    if (isDepleted) {
-      setShowDepletedOverlay(true);
-    }
-  };
-
-  const handleCheckout = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!privyUserId) {
-      navigate("/settings");
-      return;
-    }
-    setCheckoutLoading(true);
-    try {
-      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-      });
-      const data = await resp.json();
-      if (data.url) {
-        const w = window.open(data.url, '_blank');
-        if (!w) window.location.href = data.url;
-      } else {
-        toast.error(data.error || "Failed to create checkout session");
-      }
-    } catch {
-      toast.error("Failed to start checkout");
-    } finally {
-      setCheckoutLoading(false);
-    }
-  };
-
-  const cooldownMinutes = isOnCooldown ? Math.ceil((cooldownUntil! - Date.now()) / 60000) : 0;
-
   return (
     <div className={cn("relative", className)}>
       {/* Blocked content warning */}
@@ -130,120 +67,56 @@ export function ChatInput({ onSend, disabled, tier, queriesRemaining, className,
         </div>
       )}
 
-      {/* Cooldown warning */}
-      {isOnCooldown && (
-        <div className="absolute -top-16 left-0 right-0 flex items-center gap-2 px-4 py-2 bg-destructive/10 border border-destructive/30 rounded-lg text-destructive text-sm">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>⏳ Cooldown active — {cooldownMinutes} min remaining</span>
-        </div>
-      )}
-      
       {/* Input container */}
       <div
-        onClick={isDepleted ? handleDepletedClick : undefined}
         className={cn(
         "relative flex items-end gap-2 p-2 rounded-2xl border transition-all duration-300",
         !selectionComplete
           ? "border-border/30 bg-secondary/10 opacity-60 cursor-not-allowed"
-          : isDepleted
-            ? "border-destructive/50 bg-destructive/5 cursor-pointer"
-            : isBlocked || isOnCooldown
+          : isBlocked
               ? "border-destructive/50 bg-destructive/5" 
               : "border-primary/30 bg-secondary/30 focus-within:bg-secondary/50 focus-within:animate-none"
       )}
-        style={!selectionComplete || isDepleted || isBlocked || isOnCooldown ? undefined : {
-          borderColor: 'hsl(42 92% 58% / 0.5)',
-          boxShadow: '0 0 12px hsl(42 92% 58% / 0.35), 0 0 30px hsl(42 92% 58% / 0.2), 0 0 50px hsl(42 92% 58% / 0.08)',
-        } as React.CSSProperties}
+        style={!selectionComplete || isBlocked ? undefined : { borderColor: 'hsl(var(--primary) / 0.5)', boxShadow: 'var(--glow-primary)' }}
       >
-        {/* Depleted overlay notification */}
-        {showDepletedOverlay && isDepleted && (
-          <div className="absolute inset-0 z-10 flex items-center justify-between px-4 rounded-2xl bg-destructive/95 backdrop-blur-sm animate-fade-in">
-            <div className="flex items-center gap-2 text-destructive-foreground text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>Daily queries depleted — upgrade to continue</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCheckout}
-              disabled={checkoutLoading}
-              className="shrink-0 bg-destructive-foreground text-destructive hover:bg-destructive-foreground/90 border-none gap-1"
-            >
-              {checkoutLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-              Subscribe
-            </Button>
-          </div>
-        )}
-
         <textarea
           ref={textareaRef}
           value={value}
-          onChange={(e) => !isDepleted && setValue(e.target.value)}
+          onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={isDepleted ? (e) => { e.target.blur(); handleDepletedClick(); } : undefined}
-          onClick={isDepleted ? handleDepletedClick : undefined}
           placeholder={
             !selectionComplete
               ? "Select a search mode above to begin..."
-              : isLoadingUsage
-                ? "Loading usage data..."
-                : isOnCooldown
-                  ? `Cooldown active — ${cooldownMinutes} min remaining...`
-                  : queriesRemaining <= 0 
-                    ? "Daily query limit reached..." 
-                    : "Ask anything about Ugly Duck Society..."
+              : "Ask anything about Ugly Duck Society..."
           }
-          disabled={isDisabled && !isDepleted}
-          readOnly={isDepleted}
+          disabled={disabled}
           rows={1}
           className={cn(
             "flex-1 bg-transparent resize-none border-0 outline-none text-foreground placeholder:text-primary/50 placeholder:animate-search-text-pulse px-3 py-2 max-h-[200px] text-sm leading-relaxed",
-            isDepleted && "cursor-pointer opacity-50",
-            isDisabled && !isDepleted && "opacity-50 cursor-not-allowed"
+            disabled && "opacity-50 cursor-not-allowed"
           )}
         />
         
         {(() => {
-          const buttonDisabled = !isDepleted && (isDisabled || !value.trim() || isBlocked);
+          const buttonDisabled = disabled || !value.trim() || isBlocked;
           const isActive = !buttonDisabled;
           return (
             <Button
               variant="send"
               size="icon"
-              onClick={isDepleted ? handleDepletedClick : handleSubmit}
+              onClick={handleSubmit}
               disabled={buttonDisabled}
               className={cn(
                 "shrink-0 transition-all duration-200 rounded-full overflow-hidden p-0",
                 !isActive && "opacity-100"
               )}
             >
-              {profilePictureUrl ? (
-                <Avatar className={cn("w-8 h-8 transition-all duration-200", isActive ? "opacity-100 saturate-100" : "opacity-40 saturate-0")}>
-                  <AvatarImage src={profilePictureUrl} alt="Send" className="object-cover" />
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    <Send className="w-4 h-4" />
-                  </AvatarFallback>
-                </Avatar>
-              ) : (
-                <Send className={cn("w-4 h-4", !isActive && "opacity-50")} />
-              )}
+              <Send className={cn("w-4 h-4", !isActive && "opacity-50")} />
             </Button>
           );
         })()}
       </div>
       
-      {/* Character and query info */}
-      <div className="flex items-center justify-between px-2 mt-2 text-xs text-muted-foreground">
-        <span>
-          Response limit: {limits.maxCharacters} characters
-        </span>
-        <span className={cn(
-          queriesRemaining === 0 && !isLoadingUsage && "text-destructive"
-        )}>
-          {isLoadingUsage ? "Loading…" : `${queriesRemaining}/${limits.maxQueries} queries remaining today`}
-        </span>
-      </div>
     </div>
   );
 }

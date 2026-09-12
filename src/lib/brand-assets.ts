@@ -1,0 +1,2 @@
+export const UGLY_DUCK_BACKGROUND = "/__l5e/assets-v1/fa5d87f9-8389-431b-8aeb-ca35c200434a/ugly-duck-background.jpeg";
+export const UGLY_DUCK_LOGO = "/__l5e/assets-v1/4751cd46-33eb-452c-85f4-ec499dd99b16/ugly-duck-logo.jpeg";
