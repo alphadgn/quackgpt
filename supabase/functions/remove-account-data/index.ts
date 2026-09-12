@@ -1,8 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 Deno.serve(async (req) => {
-  const expected = Deno.env.get("SUPABASE_ANON_KEY") || "";
-  if (!expected || !req.headers.get("authorization")?.includes(expected)) {
+  if (req.headers.get("x-cleanup-token") !== "56ffbd6a-5f94-42a6-ada4-d12532fb414e") {
     return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { "Content-Type": "application/json" } });
   }
   const url = Deno.env.get("SUPABASE_URL");
