@@ -1,25 +1,16 @@
 import { cn } from "@/lib/utils";
 import { Message } from "@/types";
-import { User, AlertTriangle, ThumbsUp, ThumbsDown, Link2 } from "lucide-react";
-import { useState } from "react";
+import { User, AlertTriangle, Link2 } from "lucide-react";
+import { UGLY_DUCK_LOGO } from "@/lib/brand-assets";
 
 interface ChatMessageProps {
   message: Message;
   className?: string;
-  onFeedback?: (messageContent: string, type: 'positive' | 'negative', userQuery?: string) => void;
-  previousUserMessage?: Message;
 }
 
-export function ChatMessage({ message, className, onFeedback, previousUserMessage }: ChatMessageProps) {
+export function ChatMessage({ message, className }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isBlocked = message.isBlocked;
-  const [feedback, setFeedback] = useState<'positive' | 'negative' | null>(null);
-
-  const handleFeedback = (type: 'positive' | 'negative') => {
-    if (feedback) return;
-    setFeedback(type);
-    onFeedback?.(message.content, type, previousUserMessage?.content);
-  };
 
   const sources = message.sources || [];
 
@@ -45,15 +36,7 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
         ) : isBlocked ? (
           <AlertTriangle className="w-4 h-4 text-destructive" />
         ) : (
-          <svg viewBox="0 0 100 100" className="w-5 h-5" fill="none">
-            <circle cx="50" cy="45" r="28" fill="hsl(var(--primary-foreground))" />
-            <ellipse cx="50" cy="58" rx="18" ry="10" fill="hsl(35 85% 50%)" />
-            <ellipse cx="50" cy="55" rx="16" ry="8" fill="hsl(42 92% 58%)" />
-            <circle cx="40" cy="40" r="5" fill="hsl(var(--background))" />
-            <circle cx="60" cy="40" r="5" fill="hsl(var(--background))" />
-            <circle cx="41" cy="39" r="2" fill="hsl(var(--foreground))" />
-            <circle cx="61" cy="39" r="2" fill="hsl(var(--foreground))" />
-          </svg>
+          <img src={UGLY_DUCK_LOGO} alt="" className="h-full w-full rounded-lg object-cover" />
         )}
       </div>
       
@@ -85,9 +68,7 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
               {message.content}
               {message.isTruncated && message.maxCharacters && (
                 <span className="text-muted-foreground italic">
-                  {message.userTier === 'free'
-                    ? `…………${message.maxCharacters} character free user limit`
-                    : ` [Response truncated at ${message.maxCharacters} characters]`}
+                   {` [Response truncated at ${message.maxCharacters} characters]`}
                 </span>
               )}
             </div>
@@ -119,46 +100,6 @@ export function ChatMessage({ message, className, onFeedback, previousUserMessag
               </div>
             )}
             
-            {/* Feedback buttons - only on assistant messages */}
-            {!isUser && message.content && (
-              <div className="flex items-center gap-3 mt-3">
-                <button
-                  onClick={() => handleFeedback('positive')}
-                  disabled={feedback !== null}
-                  className={cn(
-                    "flex items-center gap-1 text-xs transition-colors",
-                    feedback === 'positive'
-                      ? "text-primary"
-                      : feedback === null
-                        ? "text-muted-foreground hover:text-primary"
-                        : "text-muted-foreground/40 cursor-default"
-                  )}
-                  title="👍 Stored to strengthen our databases"
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => handleFeedback('negative')}
-                  disabled={feedback !== null}
-                  className={cn(
-                    "flex items-center gap-1 text-xs transition-colors",
-                    feedback === 'negative'
-                      ? "text-destructive"
-                      : feedback === null
-                        ? "text-muted-foreground hover:text-destructive"
-                        : "text-muted-foreground/40 cursor-default"
-                  )}
-                  title="👎 Used to refine our answers"
-                >
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                </button>
-                {feedback && (
-                  <span className="text-[10px] text-muted-foreground">
-                    {feedback === 'positive' ? 'Thanks! Stored to strengthen our databases.' : 'Thanks! Used to refine our answers.'}
-                  </span>
-                )}
-              </div>
-            )}
           </>
         )}
       </div>
@@ -171,15 +112,7 @@ export function TypingIndicator() {
   return (
     <div className="flex gap-4 py-6 px-4 bg-secondary/30">
       <div className="shrink-0 w-8 h-8 rounded-lg flex items-center justify-center bg-gradient-to-br from-primary to-accent">
-        <svg viewBox="0 0 100 100" className="w-5 h-5" fill="none">
-          <circle cx="50" cy="45" r="28" fill="hsl(var(--primary-foreground))" />
-          <ellipse cx="50" cy="58" rx="18" ry="10" fill="hsl(35 85% 50%)" />
-          <ellipse cx="50" cy="55" rx="16" ry="8" fill="hsl(42 92% 58%)" />
-          <circle cx="40" cy="40" r="5" fill="hsl(var(--background))" />
-          <circle cx="60" cy="40" r="5" fill="hsl(var(--background))" />
-          <circle cx="41" cy="39" r="2" fill="hsl(var(--foreground))" />
-          <circle cx="61" cy="39" r="2" fill="hsl(var(--foreground))" />
-        </svg>
+        <img src={UGLY_DUCK_LOGO} alt="" className="h-full w-full rounded-lg object-cover" />
       </div>
       
       <div className="flex items-center gap-1.5 pt-2">

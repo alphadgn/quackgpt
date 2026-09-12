@@ -1,37 +1,4 @@
-export type UserTier = 'free' | 'nft_holder' | 'paid';
-
-export interface User {
-  id: string;
-  email: string;
-  tier: UserTier;
-  walletAddress?: string;
-  queriesUsedToday: number;
-  lastQueryDate: string;
-}
-
-export interface TierLimits {
-  maxQueries: number;
-  maxCharacters: number;
-  maxImages: number;
-}
-
-export const TIER_LIMITS: Record<UserTier, TierLimits> = {
-  free: {
-    maxQueries: 1,
-    maxCharacters: 100,
-    maxImages: 0,
-  },
-  nft_holder: {
-    maxQueries: 5, // Per verified NFT
-    maxCharacters: 1000,
-    maxImages: 5,
-  },
-  paid: {
-    maxQueries: 3,
-    maxCharacters: 300,
-    maxImages: 3,
-  },
-};
+export const MAX_RESPONSE_CHARACTERS = 8000;
 
 export interface EvidenceSource {
   canonicalUrl: string;
@@ -48,7 +15,6 @@ export interface Message {
   isBlocked?: boolean;
   blockReason?: string;
   isTruncated?: boolean;
-  userTier?: UserTier;
   maxCharacters?: number;
   /** Canonical sources cited for this answer, with their timestamps. */
   sources?: EvidenceSource[];
