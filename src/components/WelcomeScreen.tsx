@@ -1,32 +1,10 @@
-import { useState, useCallback, useEffect } from "react";
 import { ScrollBendContainer } from "./ScrollBendContainer";
 import { QuackLogo } from "./QuackLogo";
-import { TierBadge } from "./TierBadge";
-import { UserTier } from "@/types";
-import { Database, Shield, FileCheck, ChevronRight, Loader2, Trash2, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
+import { Database, Shield, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface ChatMessage {
-  role: string;
-  content: string;
-  created_at: string;
-}
-
-interface ChatSession {
-  session_id: string;
-  created_at: string;
-  preview: string;
-  messages: ChatMessage[];
-  user_deleted: boolean;
-}
-
 interface WelcomeScreenProps {
-  tier: UserTier;
-  queriesRemaining: number;
   onQuerySelect?: (query: string) => void;
-  isAuthenticated?: boolean;
-  onLogin?: () => void;
-  getAuthHeaders?: () => Promise<Record<string, string>>;
 }
 
 const features = [
@@ -54,182 +32,7 @@ const exampleQueries = [
   "Tell me about the NFT collection",
 ];
 
-export function InlineQueryHistory({ getAuthHeaders, historyFilter = "all" }: { getAuthHeaders: () => Promise<Record<string, string>>; historyFilter?: "all" | "search" | "quack-check" | "verify-text" }) {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [expandedSession, setExpandedSession] = useState<string | null>(null);
-  const [deletingSession, setDeletingSession] = useState<string | null>(null);
-  const [feedbackByQuery, setFeedbackByQuery] = useState<Record<string, string>>({});
-
-  const fetchSessions = useCallback(async () => {
-    setLoading(true);
-    try {
-      const headers = await getAuthHeaders();
-      if (!headers['x-privy-token']) { setLoading(false); return; }
-      const [sessResp, fbResp] = await Promise.all([
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-sessions`, { headers }),
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=list-feedback`, { headers }),
-      ]);
-      const sessData = await sessResp.json();
-      if (sessResp.ok && sessData.sessions) setSessions(sessData.sessions);
-      const fbData = await fbResp.json().catch(() => ({ feedback: [] }));
-      if (fbData.feedback) {
-        const map: Record<string, string> = {};
-        for (const fb of fbData.feedback) {
-          const key = fb.user_query?.trim().toLowerCase() || "";
-          if (key) map[key] = fb.feedback_type;
-        }
-        setFeedbackByQuery(map);
-      }
-    } catch (err) {
-      console.error("Failed to fetch history:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [getAuthHeaders]);
-
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
-
-  const handleDelete = async (sessionId: string) => {
-    setDeletingSession(sessionId);
-    try {
-      const headers = await getAuthHeaders();
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-history?action=user-delete`, {
-        method: "POST", headers, body: JSON.stringify({ sessionId }),
-      });
-      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
-    } catch (err) {
-      console.error("Failed to delete session:", err);
-    } finally {
-      setDeletingSession(null);
-    }
-  };
-
-  const getFeedbackForQuery = (userContent: string) => {
-    const key = userContent?.trim().toLowerCase() || "";
-    return feedbackByQuery[key] || null;
-  };
-
-  const getQAPairs = (messages: ChatMessage[]) => {
-    const pairs: { user: ChatMessage; assistant: ChatMessage | null }[] = [];
-    for (let i = 0; i < messages.length; i++) {
-      if (messages[i].role === "user") {
-        const next = messages[i + 1];
-        pairs.push({ user: messages[i], assistant: next?.role === "assistant" ? next : null });
-        if (next?.role === "assistant") i++;
-      }
-    }
-    return pairs;
-  };
-
-  /**
-   * Legacy compatibility adapter: sessions recorded before the app became a
-   * dedicated Ugly Duck Society assistant are read-only and clearly marked.
-   * They are never re-labelled, and never routed to a current request.
-   */
-  const isLegacySession = (preview: string): boolean => {
-    const upper = (preview || "").toUpperCase();
-    return /WALLCHAIN|WALL CHAIN|INFOFI|IDOS|\[BEYOND\]/.test(upper);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-4">
-        <Loader2 className="w-4 h-4 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Legacy sessions are hidden from the default history view.
-  const visibleSessions = sessions.filter((s) => !isLegacySession(s.preview));
-
-  if (visibleSessions.length === 0) {
-    return (
-      <div className="text-center py-4">
-        <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
-        <p className="text-xs text-muted-foreground">No query history yet</p>
-      </div>
-    );
-  }
-
-  const filteredSessions = visibleSessions.filter((session) => {
-    if (historyFilter === "all") return true;
-    const preview = (session.preview || "").toUpperCase();
-    if (historyFilter === "search") return !preview.includes("[QUACK CHECK]") && !preview.includes("[VERIFY TEXT]");
-    if (historyFilter === "quack-check") return preview.includes("[QUACK CHECK]");
-    if (historyFilter === "verify-text") return preview.includes("[VERIFY TEXT]");
-    return true;
-  });
-
-  if (filteredSessions.length === 0) {
-    return (
-      <div className="text-center py-4">
-        <MessageSquare className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
-        <p className="text-xs text-muted-foreground">No history for this mode</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-      {filteredSessions.map((session) => {
-        const pairs = getQAPairs(session.messages);
-        const isExpanded = expandedSession === session.session_id;
-        return (
-          <div key={session.session_id} className="rounded-lg border border-border/50 bg-card/40 overflow-hidden">
-            <button
-              className="w-full flex items-center gap-2 p-2.5 text-left hover:bg-muted/30 transition-colors"
-              onClick={() => setExpandedSession(isExpanded ? null : session.session_id)}
-            >
-              <ChevronRight className={`w-3 h-3 text-muted-foreground shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-foreground truncate">{session.preview || "Chat session"}</p>
-                <p className="text-[10px] text-muted-foreground">
-                  {new Date(session.created_at).toLocaleDateString()} • {pairs.length} {pairs.length === 1 ? "exchange" : "exchanges"}
-                </p>
-              </div>
-              <Button variant="ghost" size="icon" className="h-5 w-5 shrink-0 text-muted-foreground hover:text-destructive"
-                onClick={(e) => { e.stopPropagation(); handleDelete(session.session_id); }}
-                disabled={deletingSession === session.session_id}
-              >
-                {deletingSession === session.session_id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-              </Button>
-            </button>
-            {isExpanded && (
-              <div className="border-t border-border/30 bg-muted/10 max-h-52 overflow-y-auto p-2.5 space-y-2">
-                {pairs.map((pair, i) => {
-                  const fbType = getFeedbackForQuery(pair.user.content);
-                  return (
-                    <div key={i} className="rounded-md border border-border/30 bg-card/40 p-2.5 space-y-1.5">
-                      <div className="text-xs">
-                        <span className="font-semibold text-primary">You:</span>{" "}
-                        <span className="text-foreground/90">{pair.user.content}</span>
-                      </div>
-                      {pair.assistant && (
-                        <div className="text-xs">
-                          <span className="font-semibold text-muted-foreground">quackGPT:</span>{" "}
-                          <span className="text-foreground/70">{pair.assistant.content}</span>
-                        </div>
-                      )}
-                      {fbType && (
-                        <div className="flex items-center gap-1 pt-1 border-t border-border/20">
-                          {fbType === "positive" ? <ThumbsUp className="w-3 h-3 text-green-500" /> : <ThumbsDown className="w-3 h-3 text-destructive" />}
-                          <span className="text-[10px] text-muted-foreground">{fbType === "positive" ? "Liked" : "Disliked"}</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthenticated, onLogin, getAuthHeaders }: WelcomeScreenProps) {
+export function WelcomeScreen({ onQuerySelect }: WelcomeScreenProps) {
   return (
     <ScrollBendContainer className="flex-1 flex flex-col items-center justify-center px-4 py-12">
       {/* Logo */}
@@ -249,12 +52,6 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         Every answer comes from its official sources, with a link and a date. Nothing invented.
       </p>
       
-      {/* User tier with pointing hands */}
-      <div className="mb-8 flex flex-col items-center gap-4">
-        <TierBadge tier={tier} showLimits />
-        <span className="text-2xl animate-point-down">👇</span>
-      </div>
-      
       {/* Features grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mb-10">
         {features.map((feature) => (
@@ -269,33 +66,21 @@ export function WelcomeScreen({ tier, queriesRemaining, onQuerySelect, isAuthent
         ))}
       </div>
       
-      {/* Example queries or login */}
-      {isAuthenticated ? (
-        <div className="text-center">
+      <div className="text-center">
           <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
           <div className="flex flex-wrap justify-center gap-2">
             {exampleQueries.map((query) => (
-              <button
+              <Button
                 key={query}
+                variant="glass"
                 onClick={() => onQuerySelect?.(query)}
-                className="px-4 py-2 rounded-full bg-secondary/50 border border-border/50 text-sm text-foreground/80 hover:bg-secondary hover:border-primary/30 hover:text-foreground transition-all"
+                className="rounded-full"
               >
                 {query}
-              </button>
+              </Button>
             ))}
           </div>
-        </div>
-      ) : (
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-4">Create a free account</p>
-          <button 
-            onClick={onLogin}
-            className="px-6 py-2.5 rounded-full bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
-          >
-            Sign in to Quack check
-          </button>
-        </div>
-      )}
+      </div>
       
     </ScrollBendContainer>
   );
