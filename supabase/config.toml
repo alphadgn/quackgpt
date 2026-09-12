@@ -6,36 +6,6 @@ verify_jwt = false
 [functions.scrape-sources]
 verify_jwt = false
 
-[functions.verify-nft]
-verify_jwt = false
-
-[functions.admin-accounts]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.check-admin]
-verify_jwt = false
-
-[functions.check-usage]
-verify_jwt = false
-
-[functions.submit-feedback]
-verify_jwt = false
-
-[functions.admin-sources]
-verify_jwt = false
-
-[functions.chat-history]
-verify_jwt = false
-
 [functions.security-scan]
 verify_jwt = false
 
@@ -45,5 +15,3 @@ verify_jwt = false
 [functions.ingest-sources]
 verify_jwt = false
 
-[functions.user-profile]
-verify_jwt = false

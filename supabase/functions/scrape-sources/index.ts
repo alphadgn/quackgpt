@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { createRemoteJWKSet, jwtVerify } from "https://deno.land/x/jose@v5.2.2/index.ts";
 import {
   KNOWLEDGE_DOMAIN,
   checkUrl,
@@ -21,26 +20,8 @@ function getCorsHeaders(req: Request) {
   const origin = req.headers.get("origin") || "";
   return {
     "Access-Control-Allow-Origin": isAllowedOrigin(origin) ? origin : "https://quackgpt.lovable.app",
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-privy-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   };
-}
-
-const PRIVY_APP_ID = Deno.env.get("PRIVY_APP_ID") || "";
-const PRIVY_JWKS = createRemoteJWKSet(new URL("https://auth.privy.io/api/v1/apps/" + PRIVY_APP_ID + "/jwks.json"));
-
-async function verifyPrivyToken(req: Request): Promise<string | null> {
-  const token = req.headers.get("x-privy-token");
-  if (!token) return null;
-  try {
-    const { payload } = await jwtVerify(token, PRIVY_JWKS, {
-      issuer: "privy.io",
-      audience: PRIVY_APP_ID,
-    });
-    return (payload.sub as string) || null;
-  } catch (e) {
-    console.error("Privy JWT verification failed:", e);
-    return null;
-  }
 }
 
 const ipRequestCounts = new Map<string, { count: number; windowStart: number }>();
@@ -93,15 +74,12 @@ serve(async (req) => {
   let rejectedCount = 0;
 
   try {
-    const privyUserId = await verifyPrivyToken(req);
-    if (!privyUserId) {
-      return new Response(
-        JSON.stringify({ success: false, error: "Authentication required", context: "" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    const body = await req.json().catch(() => null);
+    if (!body || typeof body.query !== "string" || body.query.trim().length < 2 || body.query.length > 1_000) {
+      return new Response(JSON.stringify({ success: false, error: "A valid question is required", context: "" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
-
-    await req.json().catch(() => ({}));
 
     const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

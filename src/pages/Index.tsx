@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { ScrollBendContainer } from "@/components/ScrollBendContainer";
-import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { WelcomeScreen } from "@/components/WelcomeScreen";
@@ -67,20 +66,9 @@ const Index = () => {
             <WelcomeScreen onQuerySelect={setPrefillMessage} />
           ) : (
             <ScrollBendContainer className="divide-y divide-border/30">
-              {messages.map((message, index) => {
-                let previousUserMsg: Message | undefined;
-                if (message.role === 'assistant') {
-                  for (let i = index - 1; i >= 0; i--) {
-                    if (messages[i].role === 'user') {
-                      previousUserMsg = messages[i];
-                      break;
-                    }
-                  }
-                }
-                return (
+              {messages.map((message) => (
                   <ChatMessage key={message.id} message={message} />
-                );
-              })}
+              ))}
               {isTyping && <TypingIndicator />}
               <div ref={chatEndRef} />
             </ScrollBendContainer>
@@ -126,7 +114,7 @@ const Index = () => {
                 onPrefillConsumed={handlePrefillConsumed}
                 selectionComplete={selectionComplete}
               />
-            )
+            )}
 
           {messages.length > 0 && (
             <div className="mt-4 flex justify-center">

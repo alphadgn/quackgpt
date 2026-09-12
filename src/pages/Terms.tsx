@@ -25,7 +25,7 @@ const Terms = () => {
         <h1 className="text-3xl font-display font-bold text-gradient mb-8">Terms of Service</h1>
         
         <ScrollBendContainer className="prose prose-invert prose-sm max-w-none space-y-6">
-          <p className="text-muted-foreground">Last updated: January 2026</p>
+          <p className="text-muted-foreground">Last updated: September 2026</p>
           
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">1. Acceptance of Terms</h2>
@@ -42,13 +42,10 @@ const Terms = () => {
           </section>
           
           <section className="space-y-4">
-            <h2 className="text-xl font-semibold text-foreground">3. User Tiers and Limitations</h2>
-            <p className="text-foreground/80">The Service offers different access tiers:</p>
-            <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li><strong>Free Users:</strong> 1 query per 24 hours, 100 character response limit, no image generation</li>
-              <li><strong>Paid Users ($1.49/week — trial offer):</strong> 3 queries per 24 hours, 300 character response limit, 3 images per day. This is a limited-time trial offer; prices are subject to change after the trial period ends.</li>
-              <li><strong>Ugly Duck Society NFT Holders:</strong> 5 queries per 24 hours, 1000 character response limit, 5 images per day</li>
-            </ul>
+            <h2 className="text-xl font-semibold text-foreground">3. Free Access and Fair Use</h2>
+            <p className="text-foreground/80">
+              The Service is available without registration or payment. Short-window technical limits may temporarily slow excessive automated requests so the Service remains available to everyone.
+            </p>
           </section>
           
           <section className="space-y-4">
