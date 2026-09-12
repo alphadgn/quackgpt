@@ -14,7 +14,7 @@ const modes = [
   { id: "quack-check" as const, label: "Quack Check", icon: Shield, description: "Fact verification" },
 ];
 
-const baseButtonClass = "flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all whitespace-nowrap";
+const baseButtonClass = "flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2.5 rounded-xl text-sm sm:text-base font-semibold transition-all whitespace-nowrap";
 
 export function ChatModeSelector({ mode, onModeChange, className }: ChatModeSelectorProps) {
   return (
