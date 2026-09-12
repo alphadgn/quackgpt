@@ -29,7 +29,7 @@ const Privacy = () => {
           
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">1. Information We Collect</h2>
-            <p className="text-foreground/80">The Service does not create user accounts or store server-side conversation history. We process only:</p>
+            <p className="text-foreground/80">The Service does not require registration or store server-side conversation history. We process only:</p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li><strong>Submitted text:</strong> Questions or text you choose to verify, processed to return an answer</li>
               <li><strong>Technical data:</strong> IP addresses processed briefly to prevent automated abuse</li>
@@ -76,7 +76,7 @@ const Privacy = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">6. Data Retention</h2>
             <p className="text-foreground/80">
-              The Service does not retain account records or saved conversations. Infrastructure providers may retain limited technical logs under their own security and retention practices.
+              The Service does not retain identity records or saved conversations. Infrastructure providers may retain limited technical logs under their own security and retention practices.
             </p>
           </section>
           

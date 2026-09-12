@@ -37,7 +37,7 @@ const Terms = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">2. Service Description</h2>
             <p className="text-foreground/80">
-              quackGPT is an information verification and summarization system that provides factual, source-bound information about Ugly Duck Society, an NFT collection and community that exists to do good in the world, drawn only from its official website, official Instagram account and official X account. quackGPT is an independent tool and is not an official Ugly Duck Society channel. The Service does NOT create content, including but not limited to tweets, articles, marketing copy, or promotional materials.
+              quackGPT is an information verification and summarization system that provides factual, source-bound information about Ugly Duck Society, an NFT collection and community that exists to do good in the world, drawn only from its official website, Instagram profile and X profile. quackGPT is an independent tool and is not an official Ugly Duck Society channel. The Service does NOT create content, including but not limited to tweets, articles, marketing copy, or promotional materials.
             </p>
           </section>
           
