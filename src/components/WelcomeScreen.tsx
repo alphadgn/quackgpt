@@ -1,6 +1,6 @@
 import { ScrollBendContainer } from "./ScrollBendContainer";
 import { QuackLogo } from "./QuackLogo";
-import { Database, Shield, FileCheck } from "lucide-react";
+import { Database, Shield, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface WelcomeScreenProps {
@@ -19,9 +19,9 @@ const features = [
     description: "Check a claim against published evidence: true, false, partly true, unverified or outdated.",
   },
   {
-    icon: FileCheck,
-    title: "📄 Verify text",
-    description: "Paste any text and see which claims the official sources support, with corrections and citations.",
+    icon: Rocket,
+    title: "🚀 UDS Launchpad",
+    description: "Visit UDS Labs for tools, mints, and ecosystem entry points.",
   },
 ];
 
