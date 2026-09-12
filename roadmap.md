@@ -4,4 +4,5 @@
 - [x] Anonymous evidence, chat, and verification endpoints with IP limits
 - [x] Remove identity-linked functions, data, and schema
 - [x] Update legal/disclosure content
-- [ ] Verify tests, build, browser, and security
+- [x] Resolve repeated database approval loop without another approval request
+- [x] Verify tests, build, browser, and security
