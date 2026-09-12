@@ -25,16 +25,15 @@ const Privacy = () => {
         <h1 className="text-3xl font-display font-bold text-gradient mb-8">Privacy Policy</h1>
         
         <ScrollBendContainer className="prose prose-invert prose-sm max-w-none space-y-6">
-          <p className="text-muted-foreground">Last updated: January 2026</p>
+          <p className="text-muted-foreground">Last updated: September 2026</p>
           
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">1. Information We Collect</h2>
-            <p className="text-foreground/80">We collect the following types of information:</p>
+            <p className="text-foreground/80">The Service does not create user accounts or store server-side conversation history. We process only:</p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
-              <li><strong>Account Information:</strong> Email address for user registration</li>
-              <li><strong>Wallet Information:</strong> Public wallet addresses for NFT verification</li>
-              <li><strong>Usage Data:</strong> Query history, rate limit tracking, and access patterns</li>
-              <li><strong>Technical Data:</strong> IP addresses, browser type, and device information</li>
+              <li><strong>Submitted text:</strong> Questions or text you choose to verify, processed to return an answer</li>
+              <li><strong>Technical data:</strong> IP addresses processed briefly to prevent automated abuse</li>
+              <li><strong>Local chat:</strong> Recent messages saved only in your browser, where you can clear them</li>
             </ul>
           </section>
           
@@ -43,17 +42,15 @@ const Privacy = () => {
             <p className="text-foreground/80">Your information is used to:</p>
             <ul className="list-disc pl-6 text-foreground/80 space-y-2">
               <li>Provide and maintain the Service</li>
-              <li>Verify NFT ownership for tier access</li>
-              <li>Enforce rate limits and usage policies</li>
-              <li>Improve and optimize the Service</li>
-              <li>Communicate important updates</li>
+              <li>Return source-bound information and claim verification</li>
+              <li>Apply short-window safety limits against automated abuse</li>
             </ul>
           </section>
           
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">3. Data Storage and Security</h2>
             <p className="text-foreground/80">
-              We implement industry-standard security measures to protect your data. Wallet addresses are stored securely, and we never request or store private keys. All data is encrypted in transit and at rest.
+              Questions are sent securely for processing and are not saved to a user profile or server-side chat history. Recent chat displayed by the app remains in your browser until you clear it or remove browser data.
             </p>
           </section>
           
@@ -72,14 +69,14 @@ const Privacy = () => {
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">5. Third-Party Services</h2>
             <p className="text-foreground/80">
-              We may use third-party services for blockchain verification and analytics. These services have their own privacy policies and we encourage you to review them.
+              We use hosted infrastructure and AI processing services to answer requests. We do not use blockchain or payment services and do not collect private social data.
             </p>
           </section>
           
           <section className="space-y-4">
             <h2 className="text-xl font-semibold text-foreground">6. Data Retention</h2>
             <p className="text-foreground/80">
-              We retain your data for as long as your account is active or as needed to provide the Service. Query logs are retained for 30 days for rate limiting purposes.
+              The Service does not retain account records or saved conversations. Infrastructure providers may retain limited technical logs under their own security and retention practices.
             </p>
           </section>
           
