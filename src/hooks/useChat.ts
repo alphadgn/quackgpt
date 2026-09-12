@@ -3,11 +3,10 @@ import { BLOCKED_CONTENT_KEYWORDS, EvidenceSource, MAX_RESPONSE_CHARACTERS, Mess
 
 const RETRIEVE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const VERIFY_TEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-text`;
 const STORAGE_KEY = 'quackgpt-local-chat';
 const UNAVAILABLE_MESSAGE = 'SOME INFORMATION IS UNVERIFIED. No verified Ugly Duck Society source is available right now, so I cannot answer this. Please try again later.';
 
-export type AssistantMode = 'search' | 'quack-check' | 'verify-text';
+export type AssistantMode = 'search' | 'quack-check';
 
 interface RetrievedEvidence {
   context: string;
@@ -159,56 +158,10 @@ export function useChat() {
     }
   }, [messages, retrieveEvidence]);
 
-  const sendVerifyText = useCallback(async (submittedText: string) => {
-    const userMessage: Message = { id: generateId(), role: 'user', content: `[VERIFY TEXT] ${submittedText}`, timestamp: new Date() };
-    setMessages((previous) => [...previous, userMessage]);
-    setIsTyping(true);
-    try {
-      const retrieved = await retrieveEvidence(submittedText);
-      if (!retrieved) throw new Error(UNAVAILABLE_MESSAGE);
-      const response = await fetch(VERIFY_TEXT_URL, {
-        method: 'POST',
-        headers: publicHeaders,
-        body: JSON.stringify({ submittedText: submittedText.trim(), context: retrieved.context, evidence: retrieved.evidence }),
-      });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Verification is unavailable right now.');
-
-      const icon = (verdict: string) => verdict === 'SUPPORTED' ? '✅' : verdict === 'UNSUPPORTED' ? '❌' : verdict === 'OUTDATED' ? '🕓' : '❓';
-      let output = `## Text verification\n\n${data.summary || ''}\n\n`;
-      if (data.claim_analysis?.length) {
-        output += '### Claims\n';
-        for (const claim of data.claim_analysis) {
-          output += `${icon(claim.verdict)} **"${claim.claim}"** — ${claim.verdict}: ${claim.evidence}\n`;
-          if (claim.source_url) output += `Source: ${claim.source_url} · Published: ${claim.published_at || 'not stated'}\n`;
-          output += '\n';
-        }
-      }
-      if (data.corrections?.length) {
-        output += '### Factual corrections\n';
-        for (const correction of data.corrections) {
-          output += `- "${correction.incorrect_statement}" → ${correction.correction}`;
-          if (correction.source_url) output += ` (Source: ${correction.source_url}${correction.published_at ? `, published ${correction.published_at}` : ''})`;
-          output += '\n';
-        }
-      }
-      setMessages((previous) => [...previous, {
-        id: generateId(), role: 'assistant', content: output.trim().slice(0, MAX_RESPONSE_CHARACTERS), timestamp: new Date(),
-        sources: retrieved.evidence.sources || [], retrievedAt: retrieved.evidence.retrievedAt ?? null,
-      }]);
-    } catch (error) {
-      setMessages((previous) => [...previous, {
-        id: generateId(), role: 'assistant', content: error instanceof Error ? error.message : UNAVAILABLE_MESSAGE, timestamp: new Date(),
-      }]);
-    } finally {
-      setIsTyping(false);
-    }
-  }, [retrieveEvidence]);
-
   const clearMessages = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
     setMessages([]);
   }, []);
 
-  return { messages, isTyping, sendMessage, sendVerifyText, clearMessages };
+  return { messages, isTyping, sendMessage, clearMessages };
 }

@@ -20,7 +20,6 @@ const Index = () => {
     messages, 
     isTyping, 
     sendMessage,
-    sendVerifyText,
     clearMessages,
   } = useChat();
 
@@ -45,14 +44,12 @@ const Index = () => {
 
   const handleSendMessage = useCallback((content: string) => {
     if (!chatMode) return;
-    if (chatMode === "verify-text") {
-      sendVerifyText(content);
-    } else if (chatMode === "quack-check") {
+    if (chatMode === "quack-check") {
       sendMessage(`[QUACK CHECK] ${content}`, "quack-check");
     } else {
       sendMessage(content, "search");
     }
-  }, [chatMode, sendMessage, sendVerifyText]);
+  }, [chatMode, sendMessage]);
 
   return (
     <div className="flex flex-col min-h-screen relative overflow-x-hidden">
