@@ -20,7 +20,6 @@ const Index = () => {
     messages, 
     isTyping, 
     sendMessage,
-    sendVerifyText,
     clearMessages,
   } = useChat();
 
