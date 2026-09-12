@@ -14,138 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      app_users: {
-        Row: {
-          created_at: string
-          display_name: string | null
-          email: string | null
-          external_user_id: string
-          id: string
-          is_banned: boolean
-          notes: string | null
-          profile_picture_url: string | null
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          external_user_id: string
-          id?: string
-          is_banned?: boolean
-          notes?: string | null
-          profile_picture_url?: string | null
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          external_user_id?: string
-          id?: string
-          is_banned?: boolean
-          notes?: string | null
-          profile_picture_url?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      chat_feedback: {
-        Row: {
-          admin_override: string | null
-          admin_reviewed: boolean
-          created_at: string
-          external_user_id: string
-          feedback_type: string
-          id: string
-          message_content: string
-          user_query: string | null
-        }
-        Insert: {
-          admin_override?: string | null
-          admin_reviewed?: boolean
-          created_at?: string
-          external_user_id: string
-          feedback_type: string
-          id?: string
-          message_content: string
-          user_query?: string | null
-        }
-        Update: {
-          admin_override?: string | null
-          admin_reviewed?: boolean
-          created_at?: string
-          external_user_id?: string
-          feedback_type?: string
-          id?: string
-          message_content?: string
-          user_query?: string | null
-        }
-        Relationships: []
-      }
-      chat_history: {
-        Row: {
-          content: string
-          created_at: string
-          external_user_id: string
-          id: string
-          role: string
-          session_id: string
-          user_deleted: boolean
-        }
-        Insert: {
-          content: string
-          created_at?: string
-          external_user_id: string
-          id?: string
-          role: string
-          session_id?: string
-          user_deleted?: boolean
-        }
-        Update: {
-          content?: string
-          created_at?: string
-          external_user_id?: string
-          id?: string
-          role?: string
-          session_id?: string
-          user_deleted?: boolean
-        }
-        Relationships: []
-      }
-      daily_query_usage: {
-        Row: {
-          created_at: string
-          cycle_started_at: string
-          external_user_id: string | null
-          id: string
-          queries_used: number
-          query_date: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          cycle_started_at?: string
-          external_user_id?: string | null
-          id?: string
-          queries_used?: number
-          query_date?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          cycle_started_at?: string
-          external_user_id?: string | null
-          id?: string
-          queries_used?: number
-          query_date?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       incident_logs: {
         Row: {
           acknowledged_by: string | null
@@ -381,108 +249,6 @@ export type Database = {
         }
         Relationships: []
       }
-      legacy_backup_tweet_audits: {
-        Row: {
-          brand_alignment_score: number | null
-          composite_score: number | null
-          correctness_score: number | null
-          created_at: string | null
-          detailed_breakdown: Json | null
-          external_user_id: string | null
-          honesty_score: number | null
-          id: string | null
-          relevancy_score: number | null
-          risk_flags: string[] | null
-          suggested_improvements: string[] | null
-          supporting_sources: string[] | null
-          tweet_text: string | null
-        }
-        Insert: {
-          brand_alignment_score?: number | null
-          composite_score?: number | null
-          correctness_score?: number | null
-          created_at?: string | null
-          detailed_breakdown?: Json | null
-          external_user_id?: string | null
-          honesty_score?: number | null
-          id?: string | null
-          relevancy_score?: number | null
-          risk_flags?: string[] | null
-          suggested_improvements?: string[] | null
-          supporting_sources?: string[] | null
-          tweet_text?: string | null
-        }
-        Update: {
-          brand_alignment_score?: number | null
-          composite_score?: number | null
-          correctness_score?: number | null
-          created_at?: string | null
-          detailed_breakdown?: Json | null
-          external_user_id?: string | null
-          honesty_score?: number | null
-          id?: string | null
-          relevancy_score?: number | null
-          risk_flags?: string[] | null
-          suggested_improvements?: string[] | null
-          supporting_sources?: string[] | null
-          tweet_text?: string | null
-        }
-        Relationships: []
-      }
-      nft_token_bindings: {
-        Row: {
-          bound_at: string
-          expires_at: string
-          external_user_id: string | null
-          id: string
-          token_id: string
-          user_id: string
-        }
-        Insert: {
-          bound_at?: string
-          expires_at?: string
-          external_user_id?: string | null
-          id?: string
-          token_id: string
-          user_id: string
-        }
-        Update: {
-          bound_at?: string
-          expires_at?: string
-          external_user_id?: string | null
-          id?: string
-          token_id?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          created_at: string
-          external_user_id: string | null
-          id: string
-          tier: string
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          external_user_id?: string | null
-          id?: string
-          tier?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          external_user_id?: string | null
-          id?: string
-          tier?: string
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       scrape_jobs: {
         Row: {
           completed_at: string | null
@@ -518,7 +284,6 @@ export type Database = {
       }
       scrape_sources: {
         Row: {
-          added_by: string | null
           campaign: string | null
           created_at: string
           id: string
@@ -531,7 +296,6 @@ export type Database = {
           url: string
         }
         Insert: {
-          added_by?: string | null
           campaign?: string | null
           created_at?: string
           id?: string
@@ -544,7 +308,6 @@ export type Database = {
           url: string
         }
         Update: {
-          added_by?: string | null
           campaign?: string | null
           created_at?: string
           id?: string
@@ -676,80 +439,11 @@ export type Database = {
         }
         Relationships: []
       }
-      text_verifications: {
-        Row: {
-          claim_analysis: Json
-          corrections: Json
-          created_at: string
-          external_user_id: string
-          id: string
-          knowledge_domain: string
-          submitted_text: string
-          supporting_sources: Json
-        }
-        Insert: {
-          claim_analysis?: Json
-          corrections?: Json
-          created_at?: string
-          external_user_id: string
-          id?: string
-          knowledge_domain: string
-          submitted_text: string
-          supporting_sources?: Json
-        }
-        Update: {
-          claim_analysis?: Json
-          corrections?: Json
-          created_at?: string
-          external_user_id?: string
-          id?: string
-          knowledge_domain?: string
-          submitted_text?: string
-          supporting_sources?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "text_verifications_knowledge_domain_fkey"
-            columns: ["knowledge_domain"]
-            isOneToOne: false
-            referencedRelation: "knowledge_domains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles: {
-        Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
       match_documents:
         | {
             Args: {
@@ -792,7 +486,7 @@ export type Database = {
           }
     }
     Enums: {
-      app_role: "admin" | "super_admin" | "user"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -919,8 +613,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "super_admin", "user"],
-    },
+    Enums: {},
   },
 } as const
