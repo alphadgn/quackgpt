@@ -3,11 +3,10 @@ import { BLOCKED_CONTENT_KEYWORDS, EvidenceSource, MAX_RESPONSE_CHARACTERS, Mess
 
 const RETRIEVE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-sources`;
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat`;
-const VERIFY_TEXT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-text`;
 const STORAGE_KEY = 'quackgpt-local-chat';
 const UNAVAILABLE_MESSAGE = 'SOME INFORMATION IS UNVERIFIED. No verified Ugly Duck Society source is available right now, so I cannot answer this. Please try again later.';
 
-export type AssistantMode = 'search' | 'quack-check' | 'verify-text';
+export type AssistantMode = 'search' | 'quack-check';
 
 interface RetrievedEvidence {
   context: string;
