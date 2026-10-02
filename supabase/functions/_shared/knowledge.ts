@@ -122,14 +122,17 @@ export function checkUrl(raw: string): UrlCheck {
   if (!normalized) return { approved: false, reason: "malformed_url" };
 
   const [host, ...segments] = normalized.split("/");
-  const source = APPROVED_SOURCES.find((s) => s.hosts.includes(host));
-  if (!source) return { approved: false, normalized, reason: "unapproved_host" };
+  const hostSources = APPROVED_SOURCES.filter((s) => s.hosts.includes(host));
+  if (hostSources.length === 0) {
+    return { approved: false, normalized, reason: "unapproved_host" };
+  }
 
-  if (source.handle) {
-    const firstSegment = (segments[0] || "").toLowerCase();
-    if (firstSegment !== source.handle) {
-      return { approved: false, normalized, reason: "unapproved_handle" };
-    }
+  const firstSegment = (segments[0] || "").toLowerCase();
+  const source = hostSources.find((candidate) =>
+    candidate.handle ? candidate.handle === firstSegment : true
+  );
+  if (!source) {
+    return { approved: false, normalized, reason: "unapproved_handle" };
   }
 
   return {
