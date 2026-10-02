@@ -145,6 +145,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ url: src.url, formats: ["markdown"], onlyMainContent: true }),
+            signal: AbortSignal.timeout(20_000),
           });
           if (!response.ok) {
             console.error(JSON.stringify({ event: "scrape_failed", url: src.url, status: response.status }));

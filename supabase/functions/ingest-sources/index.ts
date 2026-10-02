@@ -141,7 +141,7 @@ serve(async (req) => {
     let rejectedCount = 0;
     const errors: any[] = [];
 
-    for (const source of sources || []) {
+    await Promise.all((sources || []).map(async (source) => {
       const check = checkUrl(source.url);
       if (!check.approved) {
         rejectedCount++;
@@ -161,6 +161,7 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
+          signal: AbortSignal.timeout(20_000),
         });
 
         if (!scrapeResp.ok) {
@@ -269,7 +270,7 @@ serve(async (req) => {
         console.error(JSON.stringify({ event: "ingestion_error", url, error: String(e) }));
         errors.push({ url, error: String(e) });
       }
-    }
+    }));
 
     if (jobId) {
       await supabase.from("scrape_jobs").update({
