@@ -6,3 +6,10 @@
 - [x] Update legal/disclosure content
 - [x] Resolve repeated database approval loop without another approval request
 - [x] Verify tests, build, browser, and security
+
+# Expand approved UDS sources
+- [x] Verify supplied claims with Firecrawl
+- [x] Add UDS Labs and founder X profiles to the strict allowlist
+- [x] Isolate redirects and crawling by exact source identity
+- [ ] Add source records and ingest verified evidence
+- [ ] Verify tests, deployed retrieval, and build

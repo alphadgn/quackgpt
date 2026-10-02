@@ -48,7 +48,7 @@ const AIDisclosure = () => {
             <ul className="space-y-3 text-foreground/80">
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>
-                quackGPT provides information ONLY from the official Ugly Duck Society sources (its website, Instagram profile and X profile)
+                quackGPT provides information ONLY from the approved Ugly Duck Society websites, Instagram profile and X profiles listed below
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary">•</span>

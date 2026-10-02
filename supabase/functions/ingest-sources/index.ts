@@ -174,7 +174,7 @@ serve(async (req) => {
         // Reject redirects that leave the approved source.
         const finalUrl = meta.sourceURL || meta.url || url;
         const finalCheck = checkUrl(finalUrl);
-        if (!finalCheck.approved || finalCheck.family !== sourceFamily) {
+        if (!finalCheck.approved || finalCheck.sourceId !== check.sourceId) {
           rejectedCount++;
           errors.push({ url, error: `redirect to unapproved destination: ${finalUrl}` });
           console.error(JSON.stringify({ event: "redirect_rejected", from: url, to: finalUrl }));
