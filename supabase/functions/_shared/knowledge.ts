@@ -14,6 +14,8 @@ export const QUARANTINE_DOMAIN = "quarantine";
 export type SourceFamily = "website" | "instagram" | "x";
 
 interface ApprovedSource {
+  /** Stable identity used to prevent cross-account redirects and crawling. */
+  id: string;
   family: SourceFamily;
   /** Exact hostnames (after stripping a leading "www."). No suffix matching. */
   hosts: string[];
@@ -29,22 +31,46 @@ interface ApprovedSource {
  */
 export const APPROVED_SOURCES: ApprovedSource[] = [
   {
+    id: "uds_website",
     family: "website",
     hosts: ["uglyducksociety.tech"],
     handle: "",
     canonicalRoot: "https://uglyducksociety.tech",
   },
   {
+    id: "uds_labs",
+    family: "website",
+    hosts: ["udslabs.tech"],
+    handle: "",
+    canonicalRoot: "https://udslabs.tech",
+  },
+  {
+    id: "uds_instagram",
     family: "instagram",
     hosts: ["instagram.com"],
     handle: "uglyducksociety",
     canonicalRoot: "https://www.instagram.com/uglyducksociety",
   },
   {
+    id: "uds_x",
     family: "x",
     hosts: ["x.com", "twitter.com", "mobile.twitter.com"],
     handle: "uglyducklabz",
     canonicalRoot: "https://x.com/uglyducklabz",
+  },
+  {
+    id: "founder_web3_kimberly",
+    family: "x",
+    hosts: ["x.com", "twitter.com", "mobile.twitter.com"],
+    handle: "web3_kimberly",
+    canonicalRoot: "https://x.com/Web3_Kimberly",
+  },
+  {
+    id: "founder_uglyduckscrooge",
+    family: "x",
+    hosts: ["x.com", "twitter.com", "mobile.twitter.com"],
+    handle: "uglyduckscrooge",
+    canonicalRoot: "https://x.com/uglyduckscrooge",
   },
 ];
 
@@ -56,6 +82,7 @@ export type RejectionReason =
 
 export interface UrlCheck {
   approved: boolean;
+  sourceId?: string;
   family?: SourceFamily;
   normalized?: string;
   canonical?: string;
@@ -95,18 +122,22 @@ export function checkUrl(raw: string): UrlCheck {
   if (!normalized) return { approved: false, reason: "malformed_url" };
 
   const [host, ...segments] = normalized.split("/");
-  const source = APPROVED_SOURCES.find((s) => s.hosts.includes(host));
-  if (!source) return { approved: false, normalized, reason: "unapproved_host" };
+  const hostSources = APPROVED_SOURCES.filter((s) => s.hosts.includes(host));
+  if (hostSources.length === 0) {
+    return { approved: false, normalized, reason: "unapproved_host" };
+  }
 
-  if (source.handle) {
-    const firstSegment = (segments[0] || "").toLowerCase();
-    if (firstSegment !== source.handle) {
-      return { approved: false, normalized, reason: "unapproved_handle" };
-    }
+  const firstSegment = (segments[0] || "").toLowerCase();
+  const source = hostSources.find((candidate) =>
+    candidate.handle ? candidate.handle === firstSegment : true
+  );
+  if (!source) {
+    return { approved: false, normalized, reason: "unapproved_handle" };
   }
 
   return {
     approved: true,
+    sourceId: source.id,
     family: source.family,
     normalized,
     canonical: canonicalizeUrl(normalized, source),
@@ -134,7 +165,7 @@ export function isApprovedUrl(raw: string): boolean {
 export function isSameApprovedSource(fromUrl: string, toUrl: string): boolean {
   const a = checkUrl(fromUrl);
   const b = checkUrl(toUrl);
-  return !!(a.approved && b.approved && a.family === b.family);
+  return !!(a.approved && b.approved && a.sourceId === b.sourceId);
 }
 
 /** Crawl guardrails. */

@@ -18,8 +18,9 @@ describe("knowledge domain identity", () => {
     expect(LEGACY_DOMAIN).not.toBe(KNOWLEDGE_DOMAIN);
   });
 
-  it("approves exactly three source families", () => {
-    expect(APPROVED_SOURCES.map((s) => s.family).sort()).toEqual([
+  it("approves six sources across exactly three source families", () => {
+    expect(APPROVED_SOURCES).toHaveLength(6);
+    expect([...new Set(APPROVED_SOURCES.map((s) => s.family))].sort()).toEqual([
       "instagram",
       "website",
       "x",
@@ -46,10 +47,13 @@ describe("url normalization", () => {
 });
 
 describe("allowlist enforcement", () => {
-  it("approves the three official sources", () => {
+  it("approves all six official sources", () => {
     expect(isApprovedUrl("https://uglyducksociety.tech")).toBe(true);
+    expect(isApprovedUrl("https://udslabs.tech")).toBe(true);
     expect(isApprovedUrl("https://www.instagram.com/uglyducksociety/")).toBe(true);
     expect(isApprovedUrl("https://x.com/uglyducklabz")).toBe(true);
+    expect(isApprovedUrl("https://x.com/Web3_Kimberly")).toBe(true);
+    expect(isApprovedUrl("https://x.com/uglyduckscrooge")).toBe(true);
   });
 
   it("rejects lookalike domains", () => {
@@ -58,6 +62,8 @@ describe("allowlist enforcement", () => {
       "https://ugly-duck-society.tech",
       "https://uglyducksociety.com",
       "https://uglyducksociety.tech.co",
+      "https://udslabs.tech.evil.com",
+      "https://uds-labs.tech",
       "https://notinstagram.com/uglyducksociety",
     ]) {
       const result = checkUrl(url);
@@ -74,6 +80,8 @@ describe("allowlist enforcement", () => {
     const x = checkUrl("https://x.com/fakeduck");
     expect(x.approved).toBe(false);
     expect(x.reason).toBe("unapproved_handle");
+    expect(checkUrl("https://x.com/web3kimberly").reason).toBe("unapproved_handle");
+    expect(checkUrl("https://x.com/Web3_Kimberly2").reason).toBe("unapproved_handle");
   });
 
   it("rejects non-https schemes", () => {
@@ -87,6 +95,12 @@ describe("allowlist enforcement", () => {
     );
     expect(checkUrl("https://x.com/uglyducklabz/status/123").canonical).toBe(
       "https://x.com/uglyducklabz/status/123",
+    );
+    expect(checkUrl("https://udslabs.tech/explore").canonical).toBe(
+      "https://udslabs.tech/explore",
+    );
+    expect(checkUrl("https://twitter.com/web3_kimberly/status/123").canonical).toBe(
+      "https://x.com/Web3_Kimberly/status/123",
     );
   });
 
@@ -107,6 +121,12 @@ describe("allowlist enforcement", () => {
     expect(
       isSameApprovedSource("https://uglyducksociety.tech", "https://x.com/uglyducklabz"),
     ).toBe(false);
+    expect(
+      isSameApprovedSource("https://x.com/uglyducklabz", "https://x.com/Web3_Kimberly"),
+    ).toBe(false);
+    expect(
+      isSameApprovedSource("https://x.com/Web3_Kimberly", "https://x.com/Web3_Kimberly/status/123"),
+    ).toBe(true);
     expect(
       isSameApprovedSource("https://uglyducksociety.tech", "https://example.com/redirect"),
     ).toBe(false);

@@ -9,10 +9,13 @@ const SHARED_RULES = `IDENTITY OF THE SUBJECT
 Ugly Duck Society is an existing NFT collection and community that exists to do good in the world. It is NOT a campaign, promotion, marketing programme or ecosystem play. Never describe it as any of those.
 
 APPROVED EVIDENCE — THE ONLY EVIDENCE
-You may use ONLY retrieved content from these three official sources:
+You may use ONLY retrieved content from these six approved official sources:
 - https://uglyducksociety.tech (official website)
+- https://udslabs.tech (official UDS Labs website)
 - the official Ugly Duck Society Instagram account
 - https://x.com/uglyducklabz (official X account)
+- https://x.com/Web3_Kimberly (founder X account)
+- https://x.com/uglyduckscrooge (founder X account)
 You must NOT use: general web knowledge, model memory, unofficial accounts, fan pages, aggregators, other projects, or anything not present in the retrieved evidence below.
 
 ABSOLUTE CONSTRAINTS

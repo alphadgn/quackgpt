@@ -124,7 +124,7 @@ serve(async (req) => {
 
       if (sourcesErr) console.error("Failed to load approved sources:", sourcesErr);
 
-      const approved: { url: string; canonical: string }[] = [];
+      const approved: { url: string; canonical: string; sourceId: string }[] = [];
       for (const s of sources || []) {
         const check = checkUrl(s.url);
         if (!check.approved) {
@@ -132,7 +132,7 @@ serve(async (req) => {
           console.error(JSON.stringify({ event: "source_rejected", url: s.url, reason: check.reason }));
           continue;
         }
-        approved.push({ url: s.url, canonical: check.canonical! });
+        approved.push({ url: s.url, canonical: check.canonical!, sourceId: check.sourceId! });
       }
 
       const results = await Promise.all(approved.map(async (src) => {
@@ -145,6 +145,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ url: src.url, formats: ["markdown"], onlyMainContent: true }),
+            signal: AbortSignal.timeout(20_000),
           });
           if (!response.ok) {
             console.error(JSON.stringify({ event: "scrape_failed", url: src.url, status: response.status }));
@@ -156,7 +157,7 @@ serve(async (req) => {
           // A redirect that leaves the approved source is rejected outright.
           const finalUrl = meta.sourceURL || meta.url || src.url;
           const finalCheck = checkUrl(finalUrl);
-          if (!finalCheck.approved) {
+          if (!finalCheck.approved || finalCheck.sourceId !== src.sourceId) {
             rejectedCount++;
             console.error(JSON.stringify({ event: "redirect_rejected", from: src.url, to: finalUrl, reason: finalCheck.reason }));
             return null;

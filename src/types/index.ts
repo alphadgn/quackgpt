@@ -29,13 +29,16 @@ export interface ChatSession {
 }
 
 /**
- * The only official Ugly Duck Society sources. Nothing outside this list is
+ * The approved official Ugly Duck Society sources. Nothing outside this list is
  * ingested, retrieved or cited.
  */
 export const APPROVED_SOURCES = [
   'https://uglyducksociety.tech',
+  'https://udslabs.tech',
   'https://www.instagram.com/uglyducksociety/',
   'https://x.com/uglyducklabz',
+  'https://x.com/Web3_Kimberly',
+  'https://x.com/uglyduckscrooge',
 ] as const;
 
 // Content creation keywords to block

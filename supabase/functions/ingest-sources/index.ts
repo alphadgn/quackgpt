@@ -141,13 +141,13 @@ serve(async (req) => {
     let rejectedCount = 0;
     const errors: any[] = [];
 
-    for (const source of sources || []) {
+    await Promise.all((sources || []).map(async (source) => {
       const check = checkUrl(source.url);
       if (!check.approved) {
         rejectedCount++;
         errors.push({ url: source.url, error: `rejected: ${check.reason}` });
         console.error(JSON.stringify({ event: "source_rejected", url: source.url, reason: check.reason }));
-        continue;
+        return;
       }
 
       sourcesChecked++;
@@ -161,11 +161,12 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${FIRECRAWL_API_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({ url, formats: ["markdown"], onlyMainContent: true }),
+          signal: AbortSignal.timeout(20_000),
         });
 
         if (!scrapeResp.ok) {
           errors.push({ url, error: `HTTP ${scrapeResp.status}` });
-          continue;
+          return;
         }
 
         const scrapeData = await scrapeResp.json();
@@ -174,18 +175,18 @@ serve(async (req) => {
         // Reject redirects that leave the approved source.
         const finalUrl = meta.sourceURL || meta.url || url;
         const finalCheck = checkUrl(finalUrl);
-        if (!finalCheck.approved || finalCheck.family !== sourceFamily) {
+        if (!finalCheck.approved || finalCheck.sourceId !== check.sourceId) {
           rejectedCount++;
           errors.push({ url, error: `redirect to unapproved destination: ${finalUrl}` });
           console.error(JSON.stringify({ event: "redirect_rejected", from: url, to: finalUrl }));
-          continue;
+          return;
         }
 
         const rawMarkdown = scrapeData.data?.markdown || scrapeData.markdown || "";
         const markdown = sanitizeRetrievedContent(rawMarkdown, 60000);
         if (!markdown || markdown.length < 50) {
           errors.push({ url, error: "Insufficient content" });
-          continue;
+          return;
         }
 
         const title = meta.title || source.label || canonicalUrl;
@@ -211,7 +212,7 @@ serve(async (req) => {
             .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
             .eq("normalized_url", normalizedUrl)
             .eq("is_current", true);
-          continue;
+          return;
         }
 
         // Content changed: keep the previous version as history, insert a new one.
@@ -269,7 +270,7 @@ serve(async (req) => {
         console.error(JSON.stringify({ event: "ingestion_error", url, error: String(e) }));
         errors.push({ url, error: String(e) });
       }
-    }
+    }));
 
     if (jobId) {
       await supabase.from("scrape_jobs").update({
