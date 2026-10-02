@@ -11,5 +11,5 @@
 - [x] Verify supplied claims with Firecrawl
 - [x] Add UDS Labs and founder X profiles to the strict allowlist
 - [x] Isolate redirects and crawling by exact source identity
-- [ ] Add source records and ingest verified evidence
-- [ ] Verify tests, deployed retrieval, and build
+- [x] Add source records and ingest verified evidence
+- [x] Verify tests, deployed retrieval, and build
