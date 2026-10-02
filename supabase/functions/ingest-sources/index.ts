@@ -147,7 +147,7 @@ serve(async (req) => {
         rejectedCount++;
         errors.push({ url: source.url, error: `rejected: ${check.reason}` });
         console.error(JSON.stringify({ event: "source_rejected", url: source.url, reason: check.reason }));
-        continue;
+        return;
       }
 
       sourcesChecked++;
@@ -166,7 +166,7 @@ serve(async (req) => {
 
         if (!scrapeResp.ok) {
           errors.push({ url, error: `HTTP ${scrapeResp.status}` });
-          continue;
+          return;
         }
 
         const scrapeData = await scrapeResp.json();
@@ -179,14 +179,14 @@ serve(async (req) => {
           rejectedCount++;
           errors.push({ url, error: `redirect to unapproved destination: ${finalUrl}` });
           console.error(JSON.stringify({ event: "redirect_rejected", from: url, to: finalUrl }));
-          continue;
+          return;
         }
 
         const rawMarkdown = scrapeData.data?.markdown || scrapeData.markdown || "";
         const markdown = sanitizeRetrievedContent(rawMarkdown, 60000);
         if (!markdown || markdown.length < 50) {
           errors.push({ url, error: "Insufficient content" });
-          continue;
+          return;
         }
 
         const title = meta.title || source.label || canonicalUrl;
@@ -212,7 +212,7 @@ serve(async (req) => {
             .eq("knowledge_domain", KNOWLEDGE_DOMAIN)
             .eq("normalized_url", normalizedUrl)
             .eq("is_current", true);
-          continue;
+          return;
         }
 
         // Content changed: keep the previous version as history, insert a new one.
